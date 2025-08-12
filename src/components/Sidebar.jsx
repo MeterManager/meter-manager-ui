@@ -1,69 +1,37 @@
-import { Layout, Menu } from 'antd';
-import { DashboardOutlined, ThunderboltOutlined, BarChartOutlined, SettingOutlined } from '@ant-design/icons';
+import { Menu, Layout } from 'antd';
+import { DashboardOutlined, SettingOutlined, FileTextOutlined, EnvironmentOutlined } from '@ant-design/icons';
 
 const { Sider } = Layout;
 
 const Sidebar = ({ collapsed, onCollapse, selectedMenuItem, onMenuSelect }) => {
-  const menuItems = [
-    {
-      key: '1',
-      icon: <DashboardOutlined />,
-      label: 'Панель керування',
-    },
-    {
-      key: '2',
-      icon: <ThunderboltOutlined />,
-      label: 'Лічильники',
-      children: [
-        { key: '2-1', label: 'Всі лічильники' },
-        { key: '2-2', label: 'Електрика' },
-        { key: '2-3', label: 'Вода' },
-        { key: '2-4', label: 'Газ' },
-      ],
-    },
-    {
-      key: '3',
-      icon: <BarChartOutlined />,
-      label: 'Звіти',
-    },
-    {
-      key: '4',
-      icon: <SettingOutlined />,
-      label: 'Налаштування',
-    },
-  ];
-
   return (
-    <Sider
-      collapsible
-      collapsed={collapsed}
-      onCollapse={onCollapse}
-      style={{
-        background: '#001529',
-      }}
-    >
-      <div
-        style={{
-          height: 64,
-          margin: 16,
-          background: 'rgba(255, 255, 255, 0.3)',
-          borderRadius: 8,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontWeight: 'bold',
-        }}
-      >
-        {collapsed ? 'MM' : 'MeterManager'}
-      </div>
+    <Sider collapsible collapsed={collapsed} onCollapse={onCollapse}>
+      <div className="logo" />
       <Menu
         theme="dark"
         selectedKeys={[selectedMenuItem]}
-        mode="inline"
-        items={menuItems}
         onSelect={({ key }) => onMenuSelect(key)}
-      />
+        mode="inline"
+      >
+        <Menu.Item key="1" icon={<DashboardOutlined />}>
+          Панель керування
+        </Menu.Item>
+        <Menu.SubMenu key="2" icon={<SettingOutlined />} title="Лічильники">
+          <Menu.Item key="2-1">Всі лічильники</Menu.Item>
+          <Menu.Item key="2-2">Електрика</Menu.Item>
+          <Menu.Item key="2-3">Вода</Menu.Item>
+          <Menu.Item key="2-4">Газ</Menu.Item>
+        </Menu.SubMenu>
+        <Menu.Item key="3" icon={<FileTextOutlined />}>
+          Звіти
+        </Menu.Item>
+        <Menu.Item key="4" icon={<SettingOutlined />}>
+          Налаштування
+        </Menu.Item>
+        <Menu.Item key="5" icon={<EnvironmentOutlined />}>
+          Локації
+        </Menu.Item>
+      </Menu>
     </Sider>
   );
 };

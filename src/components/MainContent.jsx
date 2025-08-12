@@ -1,4 +1,5 @@
 import { Layout, Typography } from 'antd';
+import LocationsPage from '../pages/LocationsPage'; // Імпортуємо сторінку локацій
 
 const { Content } = Layout;
 const { Title } = Typography;
@@ -56,6 +57,8 @@ const MainContent = ({ selectedMenuItem }) => {
             <p>Тут будуть налаштування системи.</p>
           </div>
         );
+      case '5': // Новий пункт для локацій
+        return <LocationsPage />;
       default:
         return (
           <div>
