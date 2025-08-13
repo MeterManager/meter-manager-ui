@@ -1,29 +1,75 @@
-import { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert } from '@mui/material';
 
-const LocationForm = ({ open, onClose, onSubmit, initialData = {} }) => {
+const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locations }) => {
   const [formData, setFormData] = useState(initialData);
+  const [formErrors, setFormErrors] = useState({});
+
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        name: initialData.name || '',
+        address: initialData.address || '',
+        isActive: initialData.isActive ?? false,
+        id: initialData.id,
+      });
+      setFormErrors({});
+    }
+  }, [open, initialData]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormErrors({ ...formErrors, [e.target.name]: '' });
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.name) errors.name = 'Назва обов’язкова';
+    if (!formData.address) errors.address = 'Адреса обов’язкова';
+    if (formData.name && locations.some((loc) => loc.name === formData.name && loc.id !== initialData.id)) {
+      errors.name = 'Локація з такою назвою вже існує';
+    }
+    return errors;
   };
 
   const handleSubmit = () => {
-    onSubmit(formData);
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    onSubmit({
+      ...formData,
+      isActive: formData.isActive ?? initialData.isActive ?? false,
+    });
+
+    setFormData({});
+  };
+
+  const handleClose = () => {
+    setFormData({});
+    setFormErrors({});
     onClose();
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={handleClose}>
       <DialogTitle>{initialData.id ? 'Редагувати локацію' : 'Додати локацію'}</DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ pb: 0 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 1 }}>
+            {error}
+          </Alert>
+        )}
         <TextField
           name="name"
           label="Назва"
           value={formData.name || ''}
           onChange={handleChange}
           fullWidth
-          sx={{ mb: 2 }}
+          sx={{ mb: 1, mt: 1 }}
+          error={!!formErrors.name}
+          helperText={formErrors.name || ' '}
         />
         <TextField
           name="address"
@@ -31,11 +77,17 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {} }) => {
           value={formData.address || ''}
           onChange={handleChange}
           fullWidth
+          error={!!formErrors.address}
+          helperText={formErrors.address || ' '}
         />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Скасувати</Button>
-        <Button onClick={handleSubmit}>Зберегти</Button>
+      <DialogActions sx={{ px: 3, mb: 1 }}>
+        <Button variant="outlined" size="small" onClick={handleClose}>
+          Скасувати
+        </Button>
+        <Button variant="contained" size="small" onClick={handleSubmit}>
+          Зберегти
+        </Button>
       </DialogActions>
     </Dialog>
   );

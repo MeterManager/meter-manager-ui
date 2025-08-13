@@ -1,10 +1,5 @@
-import { useState } from 'react';
-import {
-  Container,
-  Typography,
-  Snackbar,
-  Alert,
-} from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Container, Typography, Snackbar, Alert } from '@mui/material';
 import LocationsTable from '../components/locations/LocationsTable';
 import LocationForm from '../components/locations/LocationForm';
 import { useLocations } from '../hooks/useLocations';
@@ -14,17 +9,10 @@ const LocationsPage = () => {
   const [editData, setEditData] = useState({});
   const [localError, setLocalError] = useState(null);
 
-  const {
-    locations,
-    search,
-    setSearch,
-    addLocation,
-    editLocation,
-    removeLocation,
-    error,
-  } = useLocations();
+  const { locations, search, setSearch, addLocation, editLocation, removeLocation, updateLocationStatus, error } =
+    useLocations();
 
-  useState(() => {
+  useEffect(() => {
     if (error) setLocalError(error);
   }, [error]);
 
@@ -38,13 +26,18 @@ const LocationsPage = () => {
     setOpenForm(true);
   };
 
-  const handleSubmit = (data) => {
-    if (data.id) {
-      editLocation(data.id, data);
-    } else {
-      addLocation(data);
+  const handleSubmit = async (data) => {
+    try {
+      if (data.id) {
+        await editLocation(data.id, data);
+      } else {
+        await addLocation(data);
+      }
+      setOpenForm(false);
+      setLocalError(null);
+    } catch (err) {
+      setLocalError(err.message || 'Помилка при збереженні локації');
     }
-    setOpenForm(false);
   };
 
   return (
@@ -55,20 +48,25 @@ const LocationsPage = () => {
 
       <LocationsTable
         onEdit={handleEdit}
-        onAdd={handleAdd} 
+        onAdd={handleAdd}
         locations={locations}
         removeLocation={removeLocation}
+        updateLocationStatus={updateLocationStatus}
         search={search}
         setSearch={setSearch}
-        error={localError}
-        setError={setLocalError}
+        setLocalError={setLocalError}
       />
 
       <LocationForm
         open={openForm}
-        onClose={() => setOpenForm(false)}
+        onClose={() => {
+          setOpenForm(false);
+          setLocalError(null);
+        }}
         onSubmit={handleSubmit}
         initialData={editData}
+        error={localError}
+        locations={locations}
       />
 
       <Snackbar

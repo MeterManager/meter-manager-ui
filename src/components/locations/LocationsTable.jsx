@@ -8,6 +8,7 @@ import {
   Paper,
   Button,
   Box,
+  Switch,
 } from '@mui/material';
 import SearchField from '../ui/SearchField';
 
@@ -18,7 +19,24 @@ const LocationsTable = ({
   onEdit,
   onAdd,
   removeLocation,
+  updateLocationStatus,
+  setLocalError,
 }) => {
+  const handleStatusChange = async (location) => {
+    try {
+      await updateLocationStatus(location.id, {
+        is_active: !location.isActive,
+      });
+    } catch (err) {
+      setLocalError(err.message || 'Помилка при зміні статусу локації');
+    }
+  };
+
+  const filteredLocations = locations.filter(
+    (loc) =>
+      loc.name.toLowerCase().includes(search.toLowerCase()) || loc.address.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <Box>
       <Box
@@ -31,14 +49,11 @@ const LocationsTable = ({
           gap: 1,
         }}
       >
-        <Button variant="contained" onClick={onAdd} sx={{ whiteSpace: 'nowrap' }}>
+        <Button variant="contained" size="small" onClick={onAdd} sx={{ whiteSpace: 'nowrap' }}>
           Додати локацію
         </Button>
         <Box sx={{ flexGrow: 1, minWidth: 200, maxWidth: 400 }}>
-          <SearchField
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <SearchField value={search} onChange={(e) => setSearch(e.target.value)} />
         </Box>
       </Box>
 
@@ -46,27 +61,33 @@ const LocationsTable = ({
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Назва</TableCell>
-              <TableCell>Адреса</TableCell>
-              <TableCell>Дії</TableCell>
+              <TableCell sx={{ width: '20%' }}>Назва</TableCell>
+              <TableCell sx={{ width: '40%' }}>Адреса</TableCell>
+              <TableCell sx={{ width: '20%' }}>Статус</TableCell>
+              <TableCell sx={{ width: '20%' }}>Дії</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {locations.map((loc) => (
-              <TableRow key={loc.id}>
-                <TableCell>{loc.id}</TableCell>
-                <TableCell>{loc.name}</TableCell>
-                <TableCell>{loc.address}</TableCell>
-                <TableCell>
-                  <Button onClick={() => onEdit(loc)}>Редагувати</Button>
-                  <Button onClick={() => removeLocation(loc.id)} color="error">
-                    Видалити
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {locations.length === 0 && (
+            {filteredLocations.length > 0 ? (
+              filteredLocations.map((loc) => (
+                <TableRow key={loc.id}>
+                  <TableCell>{loc.name}</TableCell>
+                  <TableCell>{loc.address}</TableCell>
+                  <TableCell>
+                    <Switch checked={loc.isActive} onChange={() => handleStatusChange(loc)} color="primary" />
+                    {loc.isActive ? 'Активна' : 'Неактивна'}
+                  </TableCell>
+                  <TableCell>
+                    <Button size="small" onClick={() => onEdit(loc)}>
+                      Редагувати
+                    </Button>
+                    <Button size="small" onClick={() => removeLocation(loc.id)} color="error" disabled={loc.isActive}>
+                      Видалити
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
               <TableRow>
                 <TableCell colSpan={4} align="center">
                   Локації не знайдено

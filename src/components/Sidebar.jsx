@@ -7,12 +7,7 @@ const Sidebar = ({ collapsed, onCollapse, selectedMenuItem, onMenuSelect }) => {
   return (
     <Sider collapsible collapsed={collapsed} onCollapse={onCollapse}>
       <div className="logo" />
-      <Menu
-        theme="dark"
-        selectedKeys={[selectedMenuItem]}
-        onSelect={({ key }) => onMenuSelect(key)}
-        mode="inline"
-      >
+      <Menu theme="dark" selectedKeys={[selectedMenuItem]} onSelect={({ key }) => onMenuSelect(key)} mode="inline">
         <Menu.Item key="1" icon={<DashboardOutlined />}>
           Панель керування
         </Menu.Item>

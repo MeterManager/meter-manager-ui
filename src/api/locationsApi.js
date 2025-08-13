@@ -5,7 +5,6 @@ export const getLocations = async (page = 1, limit = 10, search = '') => {
   return response.data;
 };
 
-
 export const createLocation = async (data) => {
   const response = await api.post('/locations', data);
   return response.data;

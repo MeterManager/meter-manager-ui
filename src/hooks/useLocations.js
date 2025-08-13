@@ -14,7 +14,13 @@ export const useLocations = () => {
     setError(null);
     try {
       const response = await getLocations(page, 10, search);
-      setLocations(response.data || []);
+      console.log('Дані з бекенду:', response.data);
+      setLocations(
+        (response.data || []).map((loc) => ({
+          ...loc,
+          isActive: loc.is_active === true,
+        }))
+      );
       setTotal(response.count || 0);
     } catch (err) {
       setError('Помилка при завантаженні локацій');
@@ -23,26 +29,35 @@ export const useLocations = () => {
     }
   }, [page, search]);
 
-
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   const addLocation = async (data) => {
     try {
-      await createLocation(data);
+      const response = await createLocation(data);
+      if (response.error) {
+        throw new Error(response.error);
+      }
       await fetchData();
     } catch (err) {
-      setError('Помилка при додаванні локації');
+      throw new Error(err.response?.data?.message || 'Помилка при додаванні локації');
     }
   };
 
   const editLocation = async (id, data) => {
     try {
-      await updateLocation(id, data);
+      const response = await updateLocation(id, {
+        name: data.name,
+        address: data.address,
+        is_active: data.isActive,
+      });
+      if (response.error) {
+        throw new Error(response.error);
+      }
       await fetchData();
     } catch (err) {
-      setError('Помилка при редагуванні локації');
+      throw new Error(err.response?.data?.message || 'Помилка при редагуванні локації');
     }
   };
 
@@ -51,7 +66,19 @@ export const useLocations = () => {
       await deleteLocation(id);
       await fetchData();
     } catch (err) {
-      setError('Помилка при видаленні локації');
+      throw new Error(err.response?.data?.message || 'Помилка при видаленні локації');
+    }
+  };
+
+  const updateLocationStatus = async (id, data) => {
+    try {
+      const response = await updateLocation(id, data);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      await fetchData();
+    } catch (err) {
+      throw new Error(err.response?.data?.message || 'Помилка при зміні статусу локації');
     }
   };
 
@@ -66,6 +93,8 @@ export const useLocations = () => {
     addLocation,
     editLocation,
     removeLocation,
+    updateLocationStatus,
     error,
+    setError,
   };
 };
