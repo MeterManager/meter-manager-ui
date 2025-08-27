@@ -28,10 +28,7 @@ const App = () => {
           selectedMenuItem={selectedMenuItem}
           onMenuSelect={handleMenuSelect}
         />
-        <MainContent 
-          selectedMenuItem={selectedMenuItem} 
-          collapsed={collapsed}
-        />
+        <MainContent selectedMenuItem={selectedMenuItem} collapsed={collapsed} />
       </Box>
     </ThemeProvider>
   );

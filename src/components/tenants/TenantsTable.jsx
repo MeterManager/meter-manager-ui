@@ -38,7 +38,7 @@ const TenantsTable = ({
   };
 
   const getLocationName = (locationId) => {
-    const location = locations.find(loc => loc.id === locationId);
+    const location = locations.find((loc) => loc.id === locationId);
     return location ? location.name : 'Невідома локація';
   };
 
@@ -82,29 +82,19 @@ const TenantsTable = ({
                         {tenant.name}
                       </Typography>
                       {tenant.contactPerson && (
-                        <Typography 
-                          variant="caption" 
-                          sx={{ color: theme.palette.text.secondary }}
-                        >
+                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
                           {tenant.contactPerson}
                         </Typography>
                       )}
                     </Box>
                   </TableCell>
                   <TableCell>{getLocationName(tenant.locationId)}</TableCell>
-                  <TableCell>
-                    {tenant.occupiedArea ? `${tenant.occupiedArea} м²` : '-'}
-                  </TableCell>
+                  <TableCell>{tenant.occupiedArea ? `${tenant.occupiedArea} м²` : '-'}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                      {tenant.phone && (
-                        <Typography variant="caption">{tenant.phone}</Typography>
-                      )}
+                      {tenant.phone && <Typography variant="caption">{tenant.phone}</Typography>}
                       {tenant.email && (
-                        <Typography 
-                          variant="caption" 
-                          sx={{ color: theme.palette.text.secondary }}
-                        >
+                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
                           {tenant.email}
                         </Typography>
                       )}
@@ -113,25 +103,23 @@ const TenantsTable = ({
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Switch 
-                        checked={tenant.isActive} 
-                        onChange={() => handleStatusChange(tenant)} 
-                        color="primary" 
+                      <Switch
+                        checked={tenant.isActive}
+                        onChange={() => handleStatusChange(tenant)}
+                        color="primary"
                         size="small"
                       />
-                      <Typography variant="caption">
-                        {tenant.isActive ? 'Активний' : 'Неактивний'}
-                      </Typography>
+                      <Typography variant="caption">{tenant.isActive ? 'Активний' : 'Неактивний'}</Typography>
                     </Box>
                   </TableCell>
                   <TableCell>
                     <Button size="small" onClick={() => onEdit(tenant)}>
                       Редагувати
                     </Button>
-                    <Button 
-                      size="small" 
-                      onClick={() => removeTenant(tenant.id)} 
-                      color="error" 
+                    <Button
+                      size="small"
+                      onClick={() => removeTenant(tenant.id)}
+                      color="error"
                       disabled={tenant.isActive}
                     >
                       Видалити

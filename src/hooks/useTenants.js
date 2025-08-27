@@ -14,7 +14,7 @@ export const useTenants = () => {
     setError(null);
     try {
       const response = await getTenants(page, 10, search);
-      
+
       console.log(response.data);
       setTenants(
         (response.data || []).map((tenant) => ({
@@ -54,7 +54,7 @@ export const useTenants = () => {
         email: data.email || null,
         is_active: data.isActive ?? true,
       };
-      
+
       const response = await createTenant(tenantData);
       if (response.error) {
         throw new Error(response.error);
@@ -76,7 +76,7 @@ export const useTenants = () => {
         email: data.email || null,
         is_active: data.isActive,
       };
-      
+
       const response = await updateTenant(id, tenantData);
       if (response.error) {
         throw new Error(response.error);

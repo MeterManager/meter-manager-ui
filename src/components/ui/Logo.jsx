@@ -24,8 +24,8 @@ const Logo = ({ collapsed }) => {
         },
       }}
     >
-      <Typography 
-        variant={collapsed ? "body2" : "body1"}
+      <Typography
+        variant={collapsed ? 'body2' : 'body1'}
         sx={{
           fontWeight: 'bold',
           color: theme.palette.primary.contrastText, // Використовуємо contrastText з теми

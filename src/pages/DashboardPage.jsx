@@ -11,7 +11,7 @@ const DashboardPage = () => {
       <Typography variant="h4" gutterBottom>
         Панель керування
       </Typography>
-      
+
       <Box sx={{ mb: 4 }}>
         <LocationsSection initialExpanded={true} />
         <TenantsSection locations={locations} initialExpanded={true} />

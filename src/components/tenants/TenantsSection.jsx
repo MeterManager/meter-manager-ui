@@ -6,35 +6,64 @@ import TenantForm from '../tenants/TenantForm';
 import { useTenants } from '../../hooks/useTenants';
 
 const TenantsSection = ({ locations, initialExpanded = true }) => {
-  const { tenants, search, setSearch, addTenant, editTenant, removeTenant, updateTenantStatus, error, setError } = useTenants();
+  const { tenants, search, setSearch, addTenant, editTenant, removeTenant, updateTenantStatus, error, setError } =
+    useTenants();
 
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState(null);
 
   const handleToggle = () => setExpanded(!expanded);
-  const handleAdd = () => { setEditingTenant(null); setFormOpen(true); };
-  const handleEdit = (t) => { setEditingTenant(t); setFormOpen(true); };
+  const handleAdd = () => {
+    setEditingTenant(null);
+    setFormOpen(true);
+  };
+  const handleEdit = (t) => {
+    setEditingTenant(t);
+    setFormOpen(true);
+  };
 
   const handleSubmit = async (data) => {
     try {
       if (editingTenant) await editTenant(editingTenant.id, data);
       else await addTenant(data);
-      setFormOpen(false); setEditingTenant(null);
+      setFormOpen(false);
+      setEditingTenant(null);
     } catch (err) {
       setError(err.message || 'Помилка при збереженні орендаря');
     }
   };
 
-  const handleRemove = async (id) => { try { await removeTenant(id); } catch (err) { setError(err.message); } };
+  const handleRemove = async (id) => {
+    try {
+      await removeTenant(id);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
-  const handleStatusUpdate = async (id, statusData) => { try { await updateTenantStatus(id, statusData); } catch (err) { setError(err.message); } };
+  const handleStatusUpdate = async (id, statusData) => {
+    try {
+      await updateTenantStatus(id, statusData);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   return (
     <>
       <Paper sx={{ borderRadius: 2 }} elevation={1}>
-        <Box display="flex" alignItems="center" justifyContent="space-between" p={2} sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' }}} onClick={handleToggle}>
-          <Typography variant="h5" fontWeight={600}>Орендарі ({tenants.length})</Typography>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          p={2}
+          sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' } }}
+          onClick={handleToggle}
+        >
+          <Typography variant="h5" fontWeight={600}>
+            Орендарі ({tenants.length})
+          </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
         <Divider />
@@ -57,7 +86,10 @@ const TenantsSection = ({ locations, initialExpanded = true }) => {
 
       <TenantForm
         open={formOpen}
-        onClose={() => { setFormOpen(false); setEditingTenant(null); }}
+        onClose={() => {
+          setFormOpen(false);
+          setEditingTenant(null);
+        }}
         onSubmit={handleSubmit}
         initialData={editingTenant || {}}
         error={error}

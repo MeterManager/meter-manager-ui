@@ -1,6 +1,14 @@
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, Collapse, IconButton, Box } from '@mui/material';
 import { useState } from 'react';
-import { Dashboard, Settings, Description, ExpandLess, ExpandMore, ChevronLeft, ChevronRight } from '@mui/icons-material';
+import {
+  Dashboard,
+  Settings,
+  Description,
+  ExpandLess,
+  ExpandMore,
+  ChevronLeft,
+  ChevronRight,
+} from '@mui/icons-material';
 import Logo from './ui/Logo';
 
 const Sidebar = ({ collapsed, onCollapse, selectedMenuItem, onMenuSelect }) => {
@@ -20,21 +28,17 @@ const Sidebar = ({ collapsed, onCollapse, selectedMenuItem, onMenuSelect }) => {
       anchor="left"
       open={true}
       sx={{
-        width: (theme) => collapsed ? theme.custom.collapsedDrawerWidth : theme.custom.drawerWidth,
+        width: (theme) => (collapsed ? theme.custom.collapsedDrawerWidth : theme.custom.drawerWidth),
         flexShrink: 0,
         '& .MuiDrawer-paper': {
-          width: (theme) => collapsed ? theme.custom.collapsedDrawerWidth : theme.custom.drawerWidth,
+          width: (theme) => (collapsed ? theme.custom.collapsedDrawerWidth : theme.custom.drawerWidth),
           boxSizing: 'border-box',
         },
       }}
     >
       <Logo collapsed={collapsed} />
       <List sx={{ flexGrow: 1 }}>
-        <ListItem
-          button
-          selected={selectedMenuItem === '1'}
-          onClick={() => handleItemClick('1')}
-        >
+        <ListItem button selected={selectedMenuItem === '1'} onClick={() => handleItemClick('1')}>
           <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
             <Dashboard />
           </ListItemIcon>
@@ -69,22 +73,14 @@ const Sidebar = ({ collapsed, onCollapse, selectedMenuItem, onMenuSelect }) => {
           </List>
         </Collapse>
 
-        <ListItem
-          button
-          selected={selectedMenuItem === '3'}
-          onClick={() => handleItemClick('3')}
-        >
+        <ListItem button selected={selectedMenuItem === '3'} onClick={() => handleItemClick('3')}>
           <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
             <Description />
           </ListItemIcon>
           {!collapsed && <ListItemText primary="Звіти" />}
         </ListItem>
 
-        <ListItem
-          button
-          selected={selectedMenuItem === '4'}
-          onClick={() => handleItemClick('4')}
-        >
+        <ListItem button selected={selectedMenuItem === '4'} onClick={() => handleItemClick('4')}>
           <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
             <Settings />
           </ListItemIcon>

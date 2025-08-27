@@ -1,25 +1,17 @@
 import { useState, useEffect } from 'react';
-import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  TextField, 
-  Button, 
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
   Alert,
   MenuItem,
-  useTheme
+  useTheme,
 } from '@mui/material';
 
-const TenantForm = ({ 
-  open, 
-  onClose, 
-  onSubmit, 
-  initialData = {}, 
-  error, 
-  tenants, 
-  locations = [] 
-}) => {
+const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants, locations = [] }) => {
   const [formData, setFormData] = useState(initialData);
   const [formErrors, setFormErrors] = useState({});
 
@@ -49,7 +41,7 @@ const TenantForm = ({
     if (!formData.name) errors.name = "Назва орендаря обов'язкова";
     if (!formData.locationId) errors.locationId = 'Локація обов’язкова';
 
-    if (tenants.some(t => t.name === formData.name && t.id !== initialData.id)) {
+    if (tenants.some((t) => t.name === formData.name && t.id !== initialData.id)) {
       errors.name = 'Орендар з такою назвою вже існує';
     }
 
@@ -90,8 +82,12 @@ const TenantForm = ({
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>{initialData.id ? 'Редагувати орендаря' : 'Додати орендаря'}</DialogTitle>
-      <DialogContent sx={{mt: 1, pb: 0}}>
-        {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
+      <DialogContent sx={{ mt: 1, pb: 0 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 1 }}>
+            {error}
+          </Alert>
+        )}
 
         <TextField
           name="name"
@@ -114,8 +110,10 @@ const TenantForm = ({
           error={!!formErrors.locationId}
           helperText={formErrors.locationId || ' '}
         >
-          {locations.map(loc => (
-            <MenuItem key={loc.id} value={loc.id}>{loc.name}</MenuItem>
+          {locations.map((loc) => (
+            <MenuItem key={loc.id} value={loc.id}>
+              {loc.name}
+            </MenuItem>
           ))}
         </TextField>
 
@@ -162,8 +160,12 @@ const TenantForm = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, mb: 1 }}>
-        <Button variant="outlined" size="small" onClick={handleClose}>Скасувати</Button>
-        <Button variant="contained" size="small" onClick={handleSubmit}>Зберегти</Button>
+        <Button variant="outlined" size="small" onClick={handleClose}>
+          Скасувати
+        </Button>
+        <Button variant="contained" size="small" onClick={handleSubmit}>
+          Зберегти
+        </Button>
       </DialogActions>
     </Dialog>
   );

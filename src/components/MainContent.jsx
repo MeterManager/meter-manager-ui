@@ -13,9 +13,7 @@ const MainContent = ({ selectedMenuItem }) => {
             <Typography variant="h4" gutterBottom>
               Всі лічильники
             </Typography>
-            <Typography variant="body1">
-              Тут буде список всіх лічильників.
-            </Typography>
+            <Typography variant="body1">Тут буде список всіх лічильників.</Typography>
           </div>
         );
       case '2-2':
@@ -24,9 +22,7 @@ const MainContent = ({ selectedMenuItem }) => {
             <Typography variant="h4" gutterBottom>
               Лічильники електрики
             </Typography>
-            <Typography variant="body1">
-              Тут будуть лічильники електроенергії.
-            </Typography>
+            <Typography variant="body1">Тут будуть лічильники електроенергії.</Typography>
           </div>
         );
       case '2-3':
@@ -35,9 +31,7 @@ const MainContent = ({ selectedMenuItem }) => {
             <Typography variant="h4" gutterBottom>
               Лічильники води
             </Typography>
-            <Typography variant="body1">
-              Тут будуть лічильники води.
-            </Typography>
+            <Typography variant="body1">Тут будуть лічильники води.</Typography>
           </div>
         );
       case '2-4':
@@ -46,9 +40,7 @@ const MainContent = ({ selectedMenuItem }) => {
             <Typography variant="h4" gutterBottom>
               Лічильники газу
             </Typography>
-            <Typography variant="body1">
-              Тут будуть лічильники газу.
-            </Typography>
+            <Typography variant="body1">Тут будуть лічильники газу.</Typography>
           </div>
         );
       case '3':
@@ -57,9 +49,7 @@ const MainContent = ({ selectedMenuItem }) => {
             <Typography variant="h4" gutterBottom>
               Звіти
             </Typography>
-            <Typography variant="body1">
-              Тут будуть звіти по споживанню.
-            </Typography>
+            <Typography variant="body1">Тут будуть звіти по споживанню.</Typography>
           </div>
         );
       case '4':
@@ -68,9 +58,7 @@ const MainContent = ({ selectedMenuItem }) => {
             <Typography variant="h4" gutterBottom>
               Налаштування
             </Typography>
-            <Typography variant="body1">
-              Тут будуть налаштування системи.
-            </Typography>
+            <Typography variant="body1">Тут будуть налаштування системи.</Typography>
           </div>
         );
       default:
@@ -80,11 +68,11 @@ const MainContent = ({ selectedMenuItem }) => {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Paper 
-        sx={{ 
-          margin: 3, 
-          padding: 3, 
-          borderRadius: 2 
+      <Paper
+        sx={{
+          margin: 3,
+          padding: 3,
+          borderRadius: 2,
         }}
         elevation={1}
       >
