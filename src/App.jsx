@@ -1,17 +1,17 @@
-import '@ant-design/v5-patch-for-react-19';
 import './App.css';
 import { useState } from 'react';
-import { Layout } from 'antd';
+import { Box, CssBaseline, ThemeProvider } from '@mui/material';
 
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
+import theme from './theme';
 
 const App = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [selectedMenuItem, setSelectedMenuItem] = useState('1');
 
-  const handleCollapse = (collapsed) => {
-    setCollapsed(collapsed);
+  const handleCollapse = () => {
+    setCollapsed(!collapsed);
   };
 
   const handleMenuSelect = (key) => {
@@ -19,15 +19,21 @@ const App = () => {
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sidebar
-        collapsed={collapsed}
-        onCollapse={handleCollapse}
-        selectedMenuItem={selectedMenuItem}
-        onMenuSelect={handleMenuSelect}
-      />
-      <MainContent selectedMenuItem={selectedMenuItem} />
-    </Layout>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+        <Sidebar
+          collapsed={collapsed}
+          onCollapse={handleCollapse}
+          selectedMenuItem={selectedMenuItem}
+          onMenuSelect={handleMenuSelect}
+        />
+        <MainContent 
+          selectedMenuItem={selectedMenuItem} 
+          collapsed={collapsed}
+        />
+      </Box>
+    </ThemeProvider>
   );
 };
 

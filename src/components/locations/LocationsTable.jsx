@@ -11,7 +11,7 @@ import {
   Switch,
 } from '@mui/material';
 import SearchField from '../ui/SearchField';
-
+import { useTheme } from '@mui/material/styles';
 const LocationsTable = ({
   locations,
   search,
@@ -22,6 +22,7 @@ const LocationsTable = ({
   updateLocationStatus,
   setLocalError,
 }) => {
+  const theme = useTheme();
   const handleStatusChange = async (location) => {
     try {
       await updateLocationStatus(location.id, {
@@ -39,24 +40,14 @@ const LocationsTable = ({
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 2,
-          flexWrap: 'wrap',
-          gap: 1,
-        }}
-      >
+      <Box sx={theme.custom.headerBoxStyles}>
         <Button variant="contained" size="small" onClick={onAdd} sx={{ whiteSpace: 'nowrap' }}>
           Додати локацію
         </Button>
-        <Box sx={{ flexGrow: 1, minWidth: 200, maxWidth: 400 }}>
+        <Box sx={theme.custom.searchBoxStyles}>
           <SearchField value={search} onChange={(e) => setSearch(e.target.value)} />
         </Box>
       </Box>
-
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
