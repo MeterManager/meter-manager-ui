@@ -1,4 +1,14 @@
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, Collapse, IconButton, Box } from '@mui/material';
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Collapse,
+  IconButton,
+  Box,
+  ListItemButton,
+} from '@mui/material';
 import { useState } from 'react';
 import {
   Dashboard,
@@ -38,53 +48,62 @@ const Sidebar = ({ collapsed, onCollapse, selectedMenuItem, onMenuSelect }) => {
     >
       <Logo collapsed={collapsed} />
       <List sx={{ flexGrow: 1 }}>
-        <ListItem button selected={selectedMenuItem === '1'} onClick={() => handleItemClick('1')}>
-          <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
-            <Dashboard />
-          </ListItemIcon>
-          {!collapsed && <ListItemText primary="Панель керування" />}
+        {/* Панель керування */}
+        <ListItem disablePadding>
+          <ListItemButton selected={selectedMenuItem === '1'} onClick={() => handleItemClick('1')}>
+            <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
+              <Dashboard />
+            </ListItemIcon>
+            {!collapsed && <ListItemText primary="Панель керування" />}
+          </ListItemButton>
         </ListItem>
 
-        <ListItem button onClick={handleSubMenuToggle}>
-          <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
-            <Settings />
-          </ListItemIcon>
-          {!collapsed && (
-            <>
-              <ListItemText primary="Лічильники" />
-              {openSubMenu ? <ExpandLess /> : <ExpandMore />}
-            </>
-          )}
+        <ListItem disablePadding>
+          <ListItemButton onClick={handleSubMenuToggle}>
+            <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
+              <Settings />
+            </ListItemIcon>
+            {!collapsed && (
+              <>
+                <ListItemText primary="Лічильники" />
+                {openSubMenu ? <ExpandLess /> : <ExpandMore />}
+              </>
+            )}
+          </ListItemButton>
         </ListItem>
 
         <Collapse in={openSubMenu && !collapsed} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
             {['Всі лічильники', 'Електрика', 'Вода', 'Газ'].map((text, index) => (
-              <ListItem
-                key={`2-${index + 1}`}
-                button
-                sx={{ pl: 4 }}
-                selected={selectedMenuItem === `2-${index + 1}`}
-                onClick={() => handleItemClick(`2-${index + 1}`)}
-              >
-                <ListItemText primary={text} />
+              <ListItem key={`2-${index + 1}`} disablePadding>
+                <ListItemButton
+                  sx={{ pl: 4 }}
+                  selected={selectedMenuItem === `2-${index + 1}`}
+                  onClick={() => handleItemClick(`2-${index + 1}`)}
+                >
+                  <ListItemText primary={text} />
+                </ListItemButton>
               </ListItem>
             ))}
           </List>
         </Collapse>
 
-        <ListItem button selected={selectedMenuItem === '3'} onClick={() => handleItemClick('3')}>
-          <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
-            <Description />
-          </ListItemIcon>
-          {!collapsed && <ListItemText primary="Звіти" />}
+        <ListItem disablePadding>
+          <ListItemButton selected={selectedMenuItem === '3'} onClick={() => handleItemClick('3')}>
+            <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
+              <Description />
+            </ListItemIcon>
+            {!collapsed && <ListItemText primary="Звіти" />}
+          </ListItemButton>
         </ListItem>
 
-        <ListItem button selected={selectedMenuItem === '4'} onClick={() => handleItemClick('4')}>
-          <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
-            <Settings />
-          </ListItemIcon>
-          {!collapsed && <ListItemText primary="Налаштування" />}
+        <ListItem disablePadding>
+          <ListItemButton selected={selectedMenuItem === '4'} onClick={() => handleItemClick('4')}>
+            <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
+              <Settings />
+            </ListItemIcon>
+            {!collapsed && <ListItemText primary="Налаштування" />}
+          </ListItemButton>
         </ListItem>
       </List>
 

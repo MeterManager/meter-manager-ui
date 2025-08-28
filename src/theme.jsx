@@ -3,9 +3,9 @@ import { createTheme } from '@mui/material/styles';
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#003153', // Темно-синій колір
+      main: '#003153',
       light: '#004266',
-      dark: '#002040', // Ще темніший
+      dark: '#002040',
       contrastText: '#ffffff',
     },
     background: {
@@ -59,7 +59,7 @@ const theme = createTheme({
     MuiDrawer: {
       styleOverrides: {
         paper: {
-          backgroundColor: '#003153', // Використовуємо темно-синій колір
+          backgroundColor: '#003153',
           color: '#ffffff',
           transition: 'width 0.3s',
           overflowX: 'hidden',

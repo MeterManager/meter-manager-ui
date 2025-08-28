@@ -8,13 +8,13 @@ const DashboardPage = () => {
 
   return (
     <Container maxWidth="lg">
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h3" align="center" sx={{ my: 4 }}>
         Панель керування
       </Typography>
 
-      <Box sx={{ mb: 4 }}>
-        <LocationsSection initialExpanded={true} />
-        <TenantsSection locations={locations} initialExpanded={true} />
+      <Box sx={{ mb: 2 }}>
+        <LocationsSection initialExpanded={false} />
+        <TenantsSection locations={locations} initialExpanded={false} />
       </Box>
     </Container>
   );
