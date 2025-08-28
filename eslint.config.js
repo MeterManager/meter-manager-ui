@@ -31,7 +31,12 @@ export default defineConfig([
           argsIgnorePattern: '^_',
         },
       ],
-      'prettier/prettier': 'error',
+      'prettier/prettier': [
+        'error',
+        {
+          endOfLine: 'warn',
+        },
+      ],
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       'no-console': 'warn',
       'no-debugger': 'error',

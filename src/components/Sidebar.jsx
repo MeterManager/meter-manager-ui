@@ -1,70 +1,125 @@
-import { Layout, Menu } from 'antd';
-import { DashboardOutlined, ThunderboltOutlined, BarChartOutlined, SettingOutlined } from '@ant-design/icons';
-
-const { Sider } = Layout;
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Collapse,
+  IconButton,
+  Box,
+  ListItemButton,
+} from '@mui/material';
+import { useState } from 'react';
+import {
+  Dashboard,
+  Settings,
+  Description,
+  ExpandLess,
+  ExpandMore,
+  ChevronLeft,
+  ChevronRight,
+} from '@mui/icons-material';
+import Logo from './ui/Logo';
 
 const Sidebar = ({ collapsed, onCollapse, selectedMenuItem, onMenuSelect }) => {
-  const menuItems = [
-    {
-      key: '1',
-      icon: <DashboardOutlined />,
-      label: 'Панель керування',
-    },
-    {
-      key: '2',
-      icon: <ThunderboltOutlined />,
-      label: 'Лічильники',
-      children: [
-        { key: '2-1', label: 'Всі лічильники' },
-        { key: '2-2', label: 'Електрика' },
-        { key: '2-3', label: 'Вода' },
-        { key: '2-4', label: 'Газ' },
-      ],
-    },
-    {
-      key: '3',
-      icon: <BarChartOutlined />,
-      label: 'Звіти',
-    },
-    {
-      key: '4',
-      icon: <SettingOutlined />,
-      label: 'Налаштування',
-    },
-  ];
+  const [openSubMenu, setOpenSubMenu] = useState(false);
+
+  const handleSubMenuToggle = () => {
+    setOpenSubMenu(!openSubMenu);
+  };
+
+  const handleItemClick = (key) => {
+    onMenuSelect(key);
+  };
 
   return (
-    <Sider
-      collapsible
-      collapsed={collapsed}
-      onCollapse={onCollapse}
-      style={{
-        background: '#001529',
+    <Drawer
+      variant="persistent"
+      anchor="left"
+      open={true}
+      sx={{
+        width: (theme) => (collapsed ? theme.custom.collapsedDrawerWidth : theme.custom.drawerWidth),
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: (theme) => (collapsed ? theme.custom.collapsedDrawerWidth : theme.custom.drawerWidth),
+          boxSizing: 'border-box',
+        },
       }}
     >
-      <div
-        style={{
-          height: 64,
-          margin: 16,
-          background: 'rgba(255, 255, 255, 0.3)',
-          borderRadius: 8,
+      <Logo collapsed={collapsed} />
+      <List sx={{ flexGrow: 1 }}>
+        {/* Панель керування */}
+        <ListItem disablePadding>
+          <ListItemButton selected={selectedMenuItem === '1'} onClick={() => handleItemClick('1')}>
+            <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
+              <Dashboard />
+            </ListItemIcon>
+            {!collapsed && <ListItemText primary="Панель керування" />}
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton onClick={handleSubMenuToggle}>
+            <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
+              <Settings />
+            </ListItemIcon>
+            {!collapsed && (
+              <>
+                <ListItemText primary="Лічильники" />
+                {openSubMenu ? <ExpandLess /> : <ExpandMore />}
+              </>
+            )}
+          </ListItemButton>
+        </ListItem>
+
+        <Collapse in={openSubMenu && !collapsed} timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            {['Всі лічильники', 'Електрика', 'Вода', 'Газ'].map((text, index) => (
+              <ListItem key={`2-${index + 1}`} disablePadding>
+                <ListItemButton
+                  sx={{ pl: 4 }}
+                  selected={selectedMenuItem === `2-${index + 1}`}
+                  onClick={() => handleItemClick(`2-${index + 1}`)}
+                >
+                  <ListItemText primary={text} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </Collapse>
+
+        <ListItem disablePadding>
+          <ListItemButton selected={selectedMenuItem === '3'} onClick={() => handleItemClick('3')}>
+            <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
+              <Description />
+            </ListItemIcon>
+            {!collapsed && <ListItemText primary="Звіти" />}
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton selected={selectedMenuItem === '4'} onClick={() => handleItemClick('4')}>
+            <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
+              <Settings />
+            </ListItemIcon>
+            {!collapsed && <ListItemText primary="Налаштування" />}
+          </ListItemButton>
+        </ListItem>
+      </List>
+
+      <Box
+        sx={{
+          mt: 'auto',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontWeight: 'bold',
+          justifyContent: 'right',
+          p: (theme) => theme.custom.iconButtonPadding,
         }}
       >
-        {collapsed ? 'MM' : 'MeterManager'}
-      </div>
-      <Menu
-        theme="dark"
-        selectedKeys={[selectedMenuItem]}
-        mode="inline"
-        items={menuItems}
-        onSelect={({ key }) => onMenuSelect(key)}
-      />
-    </Sider>
+        <IconButton onClick={onCollapse} sx={{ color: 'inherit' }}>
+          {collapsed ? <ChevronRight /> : <ChevronLeft />}
+        </IconButton>
+      </Box>
+    </Drawer>
   );
 };
 

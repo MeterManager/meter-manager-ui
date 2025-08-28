@@ -1,78 +1,72 @@
-import { Layout, Typography } from 'antd';
-
-const { Content } = Layout;
-const { Title } = Typography;
+import { Box, Typography } from '@mui/material';
+import DashboardPage from '../pages/DashboardPage';
 
 const MainContent = ({ selectedMenuItem }) => {
   const getContentByMenuItem = (key) => {
     switch (key) {
       case '1':
-        return (
-          <div>
-            <Title level={2}>Панель керування</Title>
-            <p>Тут буде основна панель керування з статистикою та основними функціями.</p>
-          </div>
-        );
+        return <DashboardPage />;
       case '2':
       case '2-1':
         return (
-          <div>
-            <Title level={2}>Всі лічильники</Title>
-            <p>Тут буде список всіх лічильників.</p>
-          </div>
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Всі лічильники
+            </Typography>
+            <Typography variant="body1">Тут буде список всіх лічильників.</Typography>
+          </Box>
         );
       case '2-2':
         return (
-          <div>
-            <Title level={2}>Лічильники електрики</Title>
-            <p>Тут будуть лічильники електроенергії.</p>
-          </div>
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Лічильники електрики
+            </Typography>
+            <Typography variant="body1">Тут будуть лічильники електроенергії.</Typography>
+          </Box>
         );
       case '2-3':
         return (
-          <div>
-            <Title level={2}>Лічильники води</Title>
-            <p>Тут будуть лічильники води.</p>
-          </div>
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Лічильники води
+            </Typography>
+            <Typography variant="body1">Тут будуть лічильники води.</Typography>
+          </Box>
         );
       case '2-4':
         return (
-          <div>
-            <Title level={2}>Лічильники газу</Title>
-            <p>Тут будуть лічильники газу.</p>
-          </div>
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Лічильники газу
+            </Typography>
+            <Typography variant="body1">Тут будуть лічильники газу.</Typography>
+          </Box>
         );
       case '3':
         return (
-          <div>
-            <Title level={2}>Звіти</Title>
-            <p>Тут будуть звіти по споживанню.</p>
-          </div>
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Звіти
+            </Typography>
+            <Typography variant="body1">Тут будуть звіти по споживанню.</Typography>
+          </Box>
         );
       case '4':
         return (
-          <div>
-            <Title level={2}>Налаштування</Title>
-            <p>Тут будуть налаштування системи.</p>
-          </div>
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Налаштування
+            </Typography>
+            <Typography variant="body1">Тут будуть налаштування системи.</Typography>
+          </Box>
         );
       default:
-        return (
-          <div>
-            <Title level={2}>Панель керування</Title>
-            <p>Оберіть пункт меню для відображення контенту.</p>
-          </div>
-        );
+        return <DashboardPage />;
     }
   };
 
-  return (
-    <Layout>
-      <Content style={{ margin: '24px', padding: '24px', background: '#fff', borderRadius: '8px' }}>
-        {getContentByMenuItem(selectedMenuItem)}
-      </Content>
-    </Layout>
-  );
+  return <Box sx={{ flexGrow: 1, p: 3 }}>{getContentByMenuItem(selectedMenuItem)}</Box>;
 };
 
 export default MainContent;
