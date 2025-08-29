@@ -1,10 +1,14 @@
 import { Container, Typography, Box } from '@mui/material';
 import LocationsSection from '../components/locations/LocationsSection';
 import TenantsSection from '../components/tenants/TenantsSection';
+import ResourceTypesSection from '../components/resourceTypes/ResourceTypesSection';
+import TariffsSection from '../components/tariffs/TariffsSection';
 import { useLocations } from '../hooks/useLocations';
+import { useResourceTypes } from '../hooks/useResourceTypes';
 
 const DashboardPage = () => {
   const { locations } = useLocations();
+  const { resourceTypes } = useResourceTypes();
 
   return (
     <Container maxWidth="lg">
@@ -14,7 +18,9 @@ const DashboardPage = () => {
 
       <Box sx={{ mb: 2 }}>
         <LocationsSection initialExpanded={false} />
+        <ResourceTypesSection initialExpanded={false} />
         <TenantsSection locations={locations} initialExpanded={false} />
+        <TariffsSection initialExpanded={false}  locations={locations} resourceTypes={resourceTypes}  />
       </Box>
     </Container>
   );
