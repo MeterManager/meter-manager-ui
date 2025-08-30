@@ -69,7 +69,7 @@ export const useResourceTypes = () => {
       throw new Error(err.response?.data?.message || 'Помилка при зміні статусу');
     }
   };
-
+  
   return {
     resourceTypes,
     loading,
