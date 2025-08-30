@@ -1,7 +1,17 @@
 import api from './baseApi';
 
-export const getResourceTypes = async (page = 1, limit = 10, search = '') => {
-  const response = await api.get('/resource-types', { params: { page, limit, search } });
+export const getResourceTypes = async (page = 1, limit = 10, search = '', is_active) => {
+  const params = { page, limit };
+
+  if (search) params.name = search;
+  if (is_active !== undefined) params.is_active = is_active;
+
+  const response = await api.get('/resource-types', { params });
+  return response.data;
+};
+
+export const getResourceTypeById = async (id) => {
+  const response = await api.get(`/resource-types/${id}`);
   return response.data;
 };
 

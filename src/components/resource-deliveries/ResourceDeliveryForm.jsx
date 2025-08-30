@@ -8,12 +8,12 @@ const ResourceDeliveryForm = ({
   initialData = {},
   error,
   locations = [],
-  resourceTypes = {},
+  resourceTypes = [],
 }) => {
   const [formData, setFormData] = useState(initialData);
   const [formErrors, setFormErrors] = useState({});
 
-  const resourceTypesArray = resourceTypes?.data || [];
+  const resourceTypesArray = Array.isArray(resourceTypes) ? resourceTypes : [];
   const locationsArray = Array.isArray(locations) ? locations : [];
 
   useEffect(() => {

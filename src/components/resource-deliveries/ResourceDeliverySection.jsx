@@ -27,21 +27,29 @@ const ResourceDeliverySection = ({ locations, resourceTypes, initialExpanded = t
     try {
       setError(null);
 
-      const resourceTypeName =
-        resourceTypes.data?.find((type) => type.id === data.resourceType)?.name || data.resourceType;
-
-      const modifiedData = {
-        ...data,
-        resourceType: resourceTypeName,
-      };
-
-      console.log('Form submit data:', modifiedData);
-
       if (editingDelivery?.id) {
         console.log('Editing delivery with ID:', editingDelivery.id);
+
+        const resourceTypeName =
+          resourceTypes?.find((type) => type.id === data.resourceType)?.name || data.resourceType;
+
+        const modifiedData = {
+          ...data,
+          resourceType: resourceTypeName,
+        };
+
         await editDelivery(editingDelivery.id, modifiedData);
       } else {
         console.log('Adding new delivery');
+
+        const resourceTypeName =
+          resourceTypes?.find((type) => type.id === data.resourceType)?.name || data.resourceType;
+
+        const modifiedData = {
+          ...data,
+          resourceType: resourceTypeName,
+        };
+
         await addDelivery(modifiedData);
       }
 
