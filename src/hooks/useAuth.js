@@ -3,14 +3,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { verifyUser as verifyUserApi } from '../api/authApi';
 
 const useAuth = () => {
-  const {
-    isAuthenticated,
-    isLoading,
-    getAccessTokenSilently,
-    user,
-    loginWithRedirect,
-    logout,
-  } = useAuth0();
+  const { isAuthenticated, isLoading, getAccessTokenSilently, user, loginWithRedirect, logout } = useAuth0();
 
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +30,6 @@ const useAuth = () => {
         const response = await verifyUserApi(token);
         setUserData(response.user);
         setError(null);
-
       } catch (err) {
         console.error('Error verifying user:', err);
         setError(err.message);

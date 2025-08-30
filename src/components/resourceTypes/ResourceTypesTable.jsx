@@ -27,34 +27,24 @@ const ResourceTypesTable = ({
 
   const handleStatusChange = async (type) => {
     try {
-      await  updateResourceTypeStatus(type.id, { is_active: !type.is_active });
+      await updateResourceTypeStatus(type.id, { is_active: !type.is_active });
     } catch (err) {
       setLocalError(err.message || 'Помилка при зміні статусу типу ресурсу');
     }
   };
 
   const filteredTypes = (resourceTypes || []).filter(
-    (t) =>
-      t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.unit.toLowerCase().includes(search.toLowerCase())
+    (t) => t.name.toLowerCase().includes(search.toLowerCase()) || t.unit.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <Box>
       <Box sx={theme.custom.headerBoxStyles}>
-        <Button
-          variant="contained"
-          size="small"
-          onClick={onAdd}
-          sx={{ whiteSpace: 'nowrap' }}
-        >
+        <Button variant="contained" size="small" onClick={onAdd} sx={{ whiteSpace: 'nowrap' }}>
           Додати тип ресурсу
         </Button>
         <Box sx={theme.custom.searchBoxStyles}>
-          <SearchField
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <SearchField value={search} onChange={(e) => setSearch(e.target.value)} />
         </Box>
       </Box>
 
@@ -75,11 +65,7 @@ const ResourceTypesTable = ({
                   <TableCell>{type.name}</TableCell>
                   <TableCell>{type.unit}</TableCell>
                   <TableCell>
-                    <Switch
-                      checked={type.is_active}
-                      onChange={() => handleStatusChange(type)}
-                      color="primary"
-                    />
+                    <Switch checked={type.is_active} onChange={() => handleStatusChange(type)} color="primary" />
                     {type.is_active ? 'Активний' : 'Неактивний'}
                   </TableCell>
                   <TableCell>
@@ -112,4 +98,3 @@ const ResourceTypesTable = ({
 };
 
 export default ResourceTypesTable;
-

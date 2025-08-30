@@ -93,15 +93,11 @@ const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
 
   const UserSection = ({ isCollapsed }) => (
     <Box sx={{ mt: 'auto', p: 1, borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
-      {(!isCollapsed || isMobile) ? (
+      {!isCollapsed || isMobile ? (
         <Box sx={{ px: 1 }}>
           {isAuthenticated ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography
-                variant="body2"
-                sx={{ flexGrow: 1, fontSize: '0.875rem', fontWeight: 500 }}
-                noWrap
-              >
+              <Typography variant="body2" sx={{ flexGrow: 1, fontSize: '0.875rem', fontWeight: 500 }} noWrap>
                 {user?.full_name || user?.name || 'Користувач'}
               </Typography>
               <IconButton onClick={handleLogout} sx={{ color: 'inherit' }}>
@@ -145,9 +141,7 @@ const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
     </Box>
   );
 
-  const drawerWidth = collapsed
-    ? theme.custom.collapsedDrawerWidth
-    : theme.custom.drawerWidth;
+  const drawerWidth = collapsed ? theme.custom.collapsedDrawerWidth : theme.custom.drawerWidth;
 
   const DrawerContent = ({ isCollapsed }) => (
     <>

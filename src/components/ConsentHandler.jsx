@@ -29,12 +29,7 @@ const ConsentHandler = () => {
     <Alert
       severity="info"
       action={
-        <Button
-          color="inherit"
-          size="small"
-          onClick={handleGetConsent}
-          disabled={isGettingConsent}
-        >
+        <Button color="inherit" size="small" onClick={handleGetConsent} disabled={isGettingConsent}>
           {isGettingConsent ? 'Переходимо...' : 'Продовжити'}
         </Button>
       }
