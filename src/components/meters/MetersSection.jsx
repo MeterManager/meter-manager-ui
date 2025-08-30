@@ -88,7 +88,7 @@ const MetersSection = ({
           }}
           onClick={handleToggle}
         >
-          <Typography variant="h5">Лічільники ({meters.length})</Typography>
+          <Typography variant="h5">Лічильники ({meters.length})</Typography>
           <IconButton size="small">
             {expanded ? <ExpandLess /> : <ExpandMore />}
           </IconButton>
