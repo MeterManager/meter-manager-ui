@@ -1,8 +1,15 @@
 import axios from 'axios';
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  headers: { 'Content-Type': 'application/json' },
-});
+const createApi = (token) => {
+  const api = axios.create({
+    baseURL: import.meta.env.VITE_API_URL,
+    headers: { 
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
 
-export default api;
+  return api;
+};
+
+export default createApi;

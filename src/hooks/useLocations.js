@@ -14,7 +14,6 @@ export const useLocations = () => {
     setError(null);
     try {
       const response = await getLocations(page, 10, search);
-      console.log('Дані з бекенду:', response.data);
       setLocations(
         (response.data || []).map((loc) => ({
           ...loc,

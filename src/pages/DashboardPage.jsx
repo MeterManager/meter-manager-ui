@@ -1,4 +1,4 @@
-import { Container, Typography, Box } from '@mui/material';
+import { Container, Typography, Box, CircularProgress } from '@mui/material';
 import LocationsSection from '../components/locations/LocationsSection';
 import TenantsSection from '../components/tenants/TenantsSection';
 import ResourceTypesSection from '../components/resourceTypes/ResourceTypesSection';
@@ -7,8 +7,10 @@ import { useLocations } from '../hooks/useLocations';
 import { useResourceTypes } from '../hooks/useResourceTypes';
 
 const DashboardPage = () => {
-  const { locations } = useLocations();
-  const { resourceTypes } = useResourceTypes();
+  const locationsHook = useLocations();
+  const resourceTypesHook = useResourceTypes();
+
+  const loading = locationsHook.loading || resourceTypesHook.loading;
 
   return (
     <Container maxWidth="lg">
@@ -16,12 +18,22 @@ const DashboardPage = () => {
         Панель керування
       </Typography>
 
-      <Box sx={{ mb: 2 }}>
-        <LocationsSection initialExpanded={false} />
-        <ResourceTypesSection initialExpanded={false} />
-        <TenantsSection locations={locations} initialExpanded={false} />
-        <TariffsSection initialExpanded={false}  locations={locations} resourceTypes={resourceTypes}  />
-      </Box>
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Box sx={{ mb: 2 }}>
+          <LocationsSection initialExpanded={false} />
+          <ResourceTypesSection initialExpanded={false} />
+          <TenantsSection locations={locationsHook.locations} initialExpanded={false} />
+          <TariffsSection
+            initialExpanded={false}
+            locations={locationsHook.locations}
+            resourceTypes={resourceTypesHook.resourceTypes}
+          />
+        </Box>
+      )}
     </Container>
   );
 };

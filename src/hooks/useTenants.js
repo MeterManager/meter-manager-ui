@@ -15,7 +15,6 @@ export const useTenants = () => {
     try {
       const response = await getTenants(page, 10, search);
 
-      console.log(response.data);
       setTenants(
         (response.data || []).map((tenant) => ({
           id: tenant.id,
