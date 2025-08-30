@@ -3,16 +3,30 @@ import {
   getResourceDeliveries,
   createResourceDelivery,
   updateResourceDelivery,
-  deleteResourceDelivery,
+  deleteResourceDelivery
 } from '../api/resourceDeliveriesApi';
 
-export const useResourceDeliveries = () => {
+export const useResourceDeliveries = (resourceTypes = {}) => {
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [total, setTotal] = useState(0);
   const [error, setError] = useState(null);
+
+  const resourceTypesArray = resourceTypes?.data || [];
+
+  const getResourceTypeName = (id) => {
+    const resourceType = resourceTypesArray.find(type => type.id === Number(id));
+    return resourceType ? resourceType.name : id;
+  };
+
+  const getResourceTypeId = (name) => {
+    const resourceType = resourceTypesArray.find(type => 
+      type.name.toLowerCase() === name.toLowerCase()
+    );
+    return resourceType ? resourceType.id : name;
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -22,11 +36,11 @@ export const useResourceDeliveries = () => {
       console.log('Дані з бекенду:', response.data);
       setDeliveries(
         (response.data || []).map((delivery) => {
-          console.log('Delivery data:', delivery);
+          console.log('Delivery data:', delivery); 
           return {
             id: delivery.id,
             locationId: delivery.location_id,
-            resourceType: delivery.resource_type,
+            resourceType: getResourceTypeId(delivery.resource_type),
             deliveryDate: delivery.delivery_date,
             quantity: delivery.quantity,
             unit: delivery.unit,
@@ -55,7 +69,7 @@ export const useResourceDeliveries = () => {
     try {
       const deliveryData = {
         location_id: data.locationId,
-        resource_type: data.resourceType,
+        resource_type: getResourceTypeName(data.resourceType),
         delivery_date: data.deliveryDate,
         quantity: data.quantity,
         unit: data.unit,
@@ -71,7 +85,7 @@ export const useResourceDeliveries = () => {
       throw new Error(err.response?.data?.message || 'Помилка при додаванні поставки');
     }
   };
-
+  
   const editDelivery = async (id, data) => {
     try {
       const deliveryData = {
@@ -84,10 +98,17 @@ export const useResourceDeliveries = () => {
         total_cost: data.totalCost,
         supplier: data.supplier,
       };
-      await updateResourceDelivery(id, deliveryData);
+      console.log('Editing delivery with ID:', id);
+      console.log('Sending edit data:', deliveryData);
+      console.log('Original form data:', data);
+      
+      const response = await updateResourceDelivery(id, deliveryData);
+      console.log('Edit response:', response);
       await fetchData();
     } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при редагуванні поставки');
+      console.error('Edit delivery error:', err);
+      console.error('Error response:', err.response?.data);
+      throw new Error(err.response?.data?.message || err.response?.data?.error || 'Помилка при редагуванні поставки');
     }
   };
 

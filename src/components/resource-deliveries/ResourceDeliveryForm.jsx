@@ -75,15 +75,30 @@ const ResourceDeliveryForm = ({
       return;
     }
 
-    onSubmit({
+    const submitData = {
       ...formData,
       locationId: parseInt(formData.locationId),
       resourceType: parseInt(formData.resourceType),
       quantity: parseFloat(formData.quantity),
       pricePerUnit: parseFloat(formData.pricePerUnit),
       totalCost: parseFloat(formData.quantity) * parseFloat(formData.pricePerUnit),
-    });
+    };
 
+    console.log('Form submit data:', submitData);
+
+    if (isNaN(submitData.locationId) || submitData.locationId <= 0) {
+      console.error('Invalid locationId:', submitData.locationId);
+      setFormErrors({ ...formErrors, locationId: 'Неправильний ID локації' });
+      return;
+    }
+
+    if (isNaN(submitData.resourceType) || submitData.resourceType <= 0) {
+      console.error('Invalid resourceType:', submitData.resourceType);
+      setFormErrors({ ...formErrors, resourceType: 'Неправильний тип ресурсу' });
+      return;
+    }
+
+    onSubmit(submitData);
     setFormData({});
   };
 

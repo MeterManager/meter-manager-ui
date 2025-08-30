@@ -6,7 +6,7 @@ import ResourceDeliveryForm from '../resource-deliveries/ResourceDeliveryForm';
 import { useResourceDeliveries } from '../../hooks/useResourceDeliveries';
 
 const ResourceDeliverySection = ({ locations, resourceTypes, initialExpanded = true }) => {
-  console.log('PROPS:', { locations, resourceTypes }); 
+  console.log('PROPS:', { locations, resourceTypes });
   const { deliveries, search, setSearch, addDelivery, editDelivery, removeDelivery, error, setError } =
     useResourceDeliveries();
 
@@ -23,17 +23,33 @@ const ResourceDeliverySection = ({ locations, resourceTypes, initialExpanded = t
     setEditingDelivery(delivery);
     setFormOpen(true);
   };
-  const handleFormSubmit = async (formData) => {
+  const handleFormSubmit = async (data) => {
     try {
+      setError(null);
+
+      const resourceTypeName =
+        resourceTypes.data?.find((type) => type.id === data.resourceType)?.name || data.resourceType;
+
+      const modifiedData = {
+        ...data,
+        resourceType: resourceTypeName,
+      };
+
+      console.log('Form submit data:', modifiedData);
+
       if (editingDelivery?.id) {
-        await editDelivery(editingDelivery.id, formData);
+        console.log('Editing delivery with ID:', editingDelivery.id);
+        await editDelivery(editingDelivery.id, modifiedData);
       } else {
-        await addDelivery(formData);
+        console.log('Adding new delivery');
+        await addDelivery(modifiedData);
       }
+
       setFormOpen(false);
       setEditingDelivery(null);
-    } catch (err) {
-      setError(err.message || 'Помилка при збереженні поставки');
+    } catch (error) {
+      console.error('Error in handleFormSubmit:', error);
+      setError(error.message || 'Помилка при збереженні поставки');
     }
   };
   const handleFormClose = () => {
