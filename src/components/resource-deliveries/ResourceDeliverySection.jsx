@@ -6,6 +6,7 @@ import ResourceDeliveryForm from '../resource-deliveries/ResourceDeliveryForm';
 import { useResourceDeliveries } from '../../hooks/useResourceDeliveries';
 
 const ResourceDeliverySection = ({ locations, resourceTypes, initialExpanded = true }) => {
+  console.log('PROPS:', { locations, resourceTypes }); 
   const { deliveries, search, setSearch, addDelivery, editDelivery, removeDelivery, error, setError } =
     useResourceDeliveries();
 

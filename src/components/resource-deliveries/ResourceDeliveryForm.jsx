@@ -8,17 +8,36 @@ const ResourceDeliveryForm = ({
   initialData = {},
   error,
   locations = [],
-  resourceTypes = [],
+  resourceTypes = {},
 }) => {
   const [formData, setFormData] = useState(initialData);
   const [formErrors, setFormErrors] = useState({});
 
+  const resourceTypesArray = resourceTypes?.data || [];
+  const locationsArray = Array.isArray(locations) ? locations : [];
+
   useEffect(() => {
     if (open) {
+      console.log('ResourceDeliveryForm initialData:', initialData);
+      console.log('ResourceTypes array:', resourceTypesArray);
+
+      let resourceTypeValue = '';
+      if (initialData.resourceType) {
+        if (typeof initialData.resourceType === 'number') {
+          resourceTypeValue = initialData.resourceType;
+        } else {
+          const foundType = resourceTypesArray.find(
+            (type) => type.name.toLowerCase() === initialData.resourceType.toLowerCase()
+          );
+          resourceTypeValue = foundType ? foundType.id : '';
+          console.log('Found resource type:', foundType);
+        }
+      }
+
       setFormData({
-        id: initialData.id || '',
-        resourceType: initialData.resourceType || '',
+        ...initialData,
         locationId: initialData.locationId || '',
+        resourceType: resourceTypeValue,
         quantity: initialData.quantity || '',
         unit: initialData.unit || '',
         pricePerUnit: initialData.pricePerUnit || '',
@@ -27,17 +46,21 @@ const ResourceDeliveryForm = ({
       });
       setFormErrors({});
     }
-  }, [open, initialData]);
+  }, [open, initialData, resourceTypesArray]);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setFormErrors({ ...formErrors, [e.target.name]: '' });
+    const { name, value } = e.target;
+
+    const processedValue = (name === 'locationId' || name === 'resourceType') && value !== '' ? Number(value) : value;
+
+    setFormData({ ...formData, [name]: processedValue });
+    setFormErrors({ ...formErrors, [name]: '' });
   };
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.resourceType) errors.resourceType = 'Виберіть тип ресурсу';
     if (!formData.locationId) errors.locationId = 'Виберіть локацію';
+    if (!formData.resourceType) errors.resourceType = 'Виберіть тип ресурсу';
     if (!formData.quantity || isNaN(formData.quantity)) errors.quantity = 'Вкажіть кількість';
     if (!formData.unit) errors.unit = 'Вкажіть одиницю виміру';
     if (!formData.pricePerUnit || isNaN(formData.pricePerUnit)) errors.pricePerUnit = 'Вкажіть ціну за одиницю';
@@ -55,6 +78,7 @@ const ResourceDeliveryForm = ({
     onSubmit({
       ...formData,
       locationId: parseInt(formData.locationId),
+      resourceType: parseInt(formData.resourceType),
       quantity: parseFloat(formData.quantity),
       pricePerUnit: parseFloat(formData.pricePerUnit),
       totalCost: parseFloat(formData.quantity) * parseFloat(formData.pricePerUnit),
@@ -78,29 +102,6 @@ const ResourceDeliveryForm = ({
             {error}
           </Alert>
         )}
-
-        <TextField
-          select
-          name="resourceType"
-          label="Тип ресурсу"
-          value={formData.resourceType || ''}
-          onChange={handleChange}
-          fullWidth
-          sx={{ mt: 1 }}
-          error={!!formErrors.resourceType}
-          helperText={formErrors.resourceType || ' '}
-        >
-          {resourceTypes.length === 0 ? (
-            <MenuItem disabled>Немає доступних типів ресурсів</MenuItem>
-          ) : (
-            resourceTypes.map((res) => (
-              <MenuItem key={res.id} value={res.id}>
-                {res.name}
-              </MenuItem>
-            ))
-          )}
-        </TextField>
-
         <TextField
           select
           name="locationId"
@@ -110,14 +111,35 @@ const ResourceDeliveryForm = ({
           fullWidth
           error={!!formErrors.locationId}
           helperText={formErrors.locationId}
-          sx={{ mb: 3 }}
+          sx={{ mt: 1, mb: 3 }}
         >
-          {locations.length === 0 ? (
+          {locationsArray.length === 0 ? (
             <MenuItem disabled>Немає доступних локацій</MenuItem>
           ) : (
-            locations.map((loc) => (
+            locationsArray.map((loc) => (
               <MenuItem key={loc.id} value={loc.id}>
                 {loc.name}
+              </MenuItem>
+            ))
+          )}
+        </TextField>
+
+        <TextField
+          select
+          name="resourceType"
+          label="Тип ресурсу"
+          value={formData.resourceType || ''}
+          onChange={handleChange}
+          fullWidth
+          error={!!formErrors.resourceType}
+          helperText={formErrors.resourceType || ' '}
+        >
+          {resourceTypesArray.length === 0 ? (
+            <MenuItem disabled>Немає доступних типів ресурсів</MenuItem>
+          ) : (
+            resourceTypesArray.map((res) => (
+              <MenuItem key={res.id} value={res.id}>
+                {res.name}
               </MenuItem>
             ))
           )}

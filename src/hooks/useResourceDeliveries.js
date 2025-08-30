@@ -3,7 +3,7 @@ import {
   getResourceDeliveries,
   createResourceDelivery,
   updateResourceDelivery,
-  deleteResourceDelivery
+  deleteResourceDelivery,
 } from '../api/resourceDeliveriesApi';
 
 export const useResourceDeliveries = () => {
@@ -21,19 +21,22 @@ export const useResourceDeliveries = () => {
       const response = await getResourceDeliveries(page, 10, search);
       console.log('Дані з бекенду:', response.data);
       setDeliveries(
-        (response.data || []).map((delivery) => ({
-          id: delivery.id,
-          locationId: delivery.location_id,
-          resourceType: delivery.resource_type,
-          deliveryDate: delivery.delivery_date,
-          quantity: delivery.quantity,
-          unit: delivery.unit,
-          pricePerUnit: delivery.price_per_unit,
-          totalCost: delivery.total_cost,
-          supplier: delivery.supplier,
-          createdAt: delivery.created_at,
-          updatedAt: delivery.updated_at,
-        }))
+        (response.data || []).map((delivery) => {
+          console.log('Delivery data:', delivery);
+          return {
+            id: delivery.id,
+            locationId: delivery.location_id,
+            resourceType: delivery.resource_type,
+            deliveryDate: delivery.delivery_date,
+            quantity: delivery.quantity,
+            unit: delivery.unit,
+            pricePerUnit: delivery.price_per_unit,
+            totalCost: delivery.total_cost,
+            supplier: delivery.supplier,
+            createdAt: delivery.created_at,
+            updatedAt: delivery.updated_at,
+          };
+        })
       );
 
       setTotal(response.count || response.total || 0);
@@ -60,6 +63,7 @@ export const useResourceDeliveries = () => {
         total_cost: data.totalCost,
         supplier: data.supplier,
       };
+      console.log('Sending delivery data:', deliveryData);
       const response = await createResourceDelivery(deliveryData);
       if (response.error) throw new Error(response.error);
       await fetchData();
