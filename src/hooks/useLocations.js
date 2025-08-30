@@ -1,95 +1,73 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getLocations, createLocation, updateLocation, deleteLocation } from '../api/locationsApi';
+import * as locationApi from '../api/locationsApi';
+import useAuth from './useAuth';
 
 export const useLocations = () => {
+  const { isAuthenticated, isLoading } = useAuth();
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [total, setTotal] = useState(0);
   const [error, setError] = useState(null);
 
   const fetchData = useCallback(async () => {
+    if (!isAuthenticated || isLoading) return;
     setLoading(true);
     setError(null);
     try {
-      const response = await getLocations(page, 10, search);
-      console.log('Дані з бекенду:', response.data);
+      const token = localStorage.getItem('token');
+      const response = await locationApi.getLocations(token, search);
       setLocations(
         (response.data || []).map((loc) => ({
           ...loc,
           isActive: loc.is_active === true,
         }))
       );
-      setTotal(response.count || 0);
     } catch (err) {
       setError('Помилка при завантаженні локацій');
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [search, isAuthenticated, isLoading]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   const addLocation = async (data) => {
-    try {
-      const response = await createLocation(data);
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      await fetchData();
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при додаванні локації');
-    }
+    const token = localStorage.getItem('token');
+    const response = await locationApi.createLocation(token, data);
+    await fetchData();
+    return response;
   };
 
   const editLocation = async (id, data) => {
-    try {
-      const response = await updateLocation(id, {
-        name: data.name,
-        address: data.address,
-        is_active: data.isActive,
-      });
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      await fetchData();
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при редагуванні локації');
-    }
+    const token = localStorage.getItem('token');
+    const response = await locationApi.updateLocation(token, id, data);
+    await fetchData();
+    return response;
   };
 
   const removeLocation = async (id) => {
-    try {
-      await deleteLocation(id);
-      await fetchData();
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при видаленні локації');
-    }
+    const token = localStorage.getItem('token');
+    await locationApi.deleteLocation(token, id);
+    await fetchData();
   };
 
-  const updateLocationStatus = async (id, data) => {
-    try {
-      const response = await updateLocation(id, data);
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      await fetchData();
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при зміні статусу локації');
-    }
+  const updateLocationStatus = async (id, is_active) => {
+    const token = localStorage.getItem('token');
+    const loc = locations.find((l) => l.id === id);
+    if (!loc) throw new Error('Локацію не знайдено');
+    const payload = { ...loc, is_active };
+    const response = await locationApi.updateLocation(token, id, payload);
+    await fetchData();
+    return response;
   };
 
   return {
     locations,
     loading,
-    page,
-    setPage,
     search,
     setSearch,
-    total,
     addLocation,
     editLocation,
     removeLocation,

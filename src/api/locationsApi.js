@@ -1,20 +1,26 @@
-import api from './baseApi';
+import createApi from './baseApi';
 
-export const getLocations = async (page = 1, limit = 10, search = '') => {
-  const response = await api.get('/locations', { params: { page, limit, search } });
+export const getLocations = async (token, search = '') => {
+  const api = createApi(token);
+  const params = {};
+  if (search) params.search = search;
+  const response = await api.get('/locations', { params });
   return response.data;
 };
 
-export const createLocation = async (data) => {
+export const createLocation = async (token, data) => {
+  const api = createApi(token);
   const response = await api.post('/locations', data);
   return response.data;
 };
 
-export const updateLocation = async (id, data) => {
+export const updateLocation = async (token, id, data) => {
+  const api = createApi(token);
   const response = await api.put(`/locations/${id}`, data);
   return response.data;
 };
 
-export const deleteLocation = async (id) => {
+export const deleteLocation = async (token, id) => {
+  const api = createApi(token);
   await api.delete(`/locations/${id}`);
 };

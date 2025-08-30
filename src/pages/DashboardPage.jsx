@@ -1,4 +1,4 @@
-import { Container, Typography, Box } from '@mui/material';
+import { Container, Typography, Box, CircularProgress, Stack } from '@mui/material';
 import LocationsSection from '../components/locations/LocationsSection';
 import TenantsSection from '../components/tenants/TenantsSection';
 import ResourceDeliverySection from '../components/resource-deliveries/ResourceDeliverySection';
@@ -6,6 +6,7 @@ import ResourceTypesSection from '../components/resourceTypes/ResourceTypesSecti
 import TariffsSection from '../components/tariffs/TariffsSection';
 import MetersSection from '../components/meters/MetersSection';
 import MeterTenantsSection from '../components/meter-tenants/MeterTenantsSection';
+import UsersSection from '../components/users/UsersSection';
 import { useLocations } from '../hooks/useLocations';
 import { useTenants } from '../hooks/useTenants';
 import { useMeters } from '../hooks/useMeters';
@@ -16,6 +17,9 @@ const DashboardPage = () => {
   const { resourceTypes } = useResourceTypes();
   const { tenants } = useTenants();
   const { meters } = useMeters();
+  const locationsHook = useLocations();
+  const resourceTypesHook = useResourceTypes();
+  const loading = locationsHook.loading || resourceTypesHook.loading;
 
   return (
     <Container maxWidth="lg">
@@ -41,6 +45,23 @@ const DashboardPage = () => {
           initialExpanded={false} 
         />
       </Box>
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Stack spacing={3}>
+          <LocationsSection initialExpanded={false} />
+          <ResourceTypesSection initialExpanded={false} />
+          <TenantsSection locations={locationsHook.locations} initialExpanded={false} />
+          <TariffsSection
+            initialExpanded={false}
+            locations={locationsHook.locations}
+            resourceTypes={resourceTypesHook.resourceTypes}
+          />
+          <UsersSection initialExpanded={false} />
+        </Stack>
+      )}
     </Container>
   );
 };

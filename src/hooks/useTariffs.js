@@ -1,88 +1,73 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as tariffApi from '../api/tariffApi';
+import useAuth from './useAuth';
 
 export const useTariffs = () => {
+  const { isAuthenticated, isLoading } = useAuth();
   const [tariffs, setTariffs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
   const [error, setError] = useState(null);
 
   const fetchData = useCallback(async () => {
+    if (!isAuthenticated || isLoading) return;
     setLoading(true);
     setError(null);
     try {
-      const response = await tariffApi.getTariffs(page, 10, search);
+      const token = localStorage.getItem('token');
+      const response = await tariffApi.getTariffs(token, search);
       setTariffs(
         (response.data || []).map((t) => ({
           ...t,
           isActive: t.is_active === true,
         }))
       );
-      setTotal(response.count || 0);
     } catch (err) {
       setError('Помилка при завантаженні тарифів');
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [search, isAuthenticated, isLoading]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   const addTariff = async (payload) => {
-    try {
-      const newTariff = await tariffApi.createTariff(payload);
-      await fetchData();
-      return newTariff.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при додаванні тарифу');
-    }
+    const token = localStorage.getItem('token');
+    const response = await tariffApi.createTariff(token, payload);
+    await fetchData();
+    return response;
   };
 
   const editTariff = async (id, payload) => {
-    try {
-      const updatedTariff = await tariffApi.updateTariff(id, payload);
-      await fetchData();
-      return updatedTariff.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при редагуванні тарифу');
-    }
+    const token = localStorage.getItem('token');
+    const response = await tariffApi.updateTariff(token, id, payload);
+    await fetchData();
+    return response;
   };
 
   const removeTariff = async (id) => {
-    try {
-      await tariffApi.deleteTariff(id);
-      await fetchData();
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при видаленні тарифу');
-    }
+    const token = localStorage.getItem('token');
+    await tariffApi.deleteTariff(token, id);
+    await fetchData();
   };
 
   const updateTariffStatus = async (id, is_active) => {
-    try {
-      const currentTariff = tariffs.find((t) => t.id === id);
-      if (!currentTariff) throw new Error('Тариф не знайдено');
-
-      const payload = { ...currentTariff, is_active };
-      const updatedTariff = await tariffApi.updateTariff(id, payload);
-      await fetchData();
-      return updatedTariff.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при зміні статусу');
-    }
+    const token = localStorage.getItem('token');
+    const tariff = tariffs.find((t) => t.id === id);
+    if (!tariff) throw new Error('Тариф не знайдено');
+    const payload = { ...tariff, is_active };
+    const response = await tariffApi.updateTariff(token, id, payload);
+    await fetchData();
+    return response;
   };
 
   return {
     tariffs,
     loading,
-    page,
-    setPage,
     search,
     setSearch,
-    total,
     addTariff,
     editTariff,
     removeTariff,
