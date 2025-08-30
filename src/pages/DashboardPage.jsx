@@ -1,8 +1,9 @@
-import { Container, Typography, Box, CircularProgress } from '@mui/material';
+import { Container, Typography, Box, CircularProgress, Stack } from '@mui/material';
 import LocationsSection from '../components/locations/LocationsSection';
 import TenantsSection from '../components/tenants/TenantsSection';
 import ResourceTypesSection from '../components/resourceTypes/ResourceTypesSection';
 import TariffsSection from '../components/tariffs/TariffsSection';
+import UsersSection from '../components/users/UsersSection';
 import { useLocations } from '../hooks/useLocations';
 import { useResourceTypes } from '../hooks/useResourceTypes';
 
@@ -23,7 +24,7 @@ const DashboardPage = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <Box sx={{ mb: 2 }}>
+        <Stack spacing={3}>
           <LocationsSection initialExpanded={false} />
           <ResourceTypesSection initialExpanded={false} />
           <TenantsSection locations={locationsHook.locations} initialExpanded={false} />
@@ -32,7 +33,8 @@ const DashboardPage = () => {
             locations={locationsHook.locations}
             resourceTypes={resourceTypesHook.resourceTypes}
           />
-        </Box>
+          <UsersSection initialExpanded={false} />
+        </Stack>
       )}
     </Container>
   );
