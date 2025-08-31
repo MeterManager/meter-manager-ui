@@ -10,11 +10,14 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
     return location ? location.name : 'Невідома локація';
   };
 
-  const filteredDeliveries = deliveries.filter(
-    (d) =>
-      (d.resourceType || '').toLowerCase().includes(search.toLowerCase()) ||
-      (d.supplier || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredDeliveries = deliveries.filter((d) => {
+    const resourceName = (d.resourceTypeName || '').toLowerCase();
+    const locationName = (d.locationName || '').toLowerCase();
+    const supplier = (d.supplier || '').toLowerCase();
+    const searchLower = search.toLowerCase();
+
+    return resourceName.includes(searchLower) || locationName.includes(searchLower) || supplier.includes(searchLower);
+  });
 
   return (
     <Box>
@@ -46,7 +49,7 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
               filteredDeliveries.map((delivery) => (
                 <TableRow key={delivery.id}>
                   <TableCell>{getLocationName(delivery.locationId)}</TableCell>
-                  <TableCell>{delivery.resourceType}</TableCell>
+                  <TableCell>{delivery.resourceTypeName}</TableCell>
                   <TableCell>{delivery.quantity}</TableCell>
                   <TableCell>{delivery.unit}</TableCell>
                   <TableCell>{new Date(delivery.deliveryDate).toLocaleDateString('uk-UA')}</TableCell>

@@ -15,42 +15,53 @@ const ResourceDeliverySection = ({ locations, resourceTypes, initialExpanded = t
   const [editingDelivery, setEditingDelivery] = useState(null);
 
   const handleToggle = () => setExpanded(!expanded);
+
   const handleAdd = () => {
     setEditingDelivery(null);
     setFormOpen(true);
   };
+
   const handleEdit = (delivery) => {
+    console.log('Editing delivery:', delivery);
     setEditingDelivery(delivery);
     setFormOpen(true);
   };
+
   const handleFormSubmit = async (data) => {
     try {
       setError(null);
+      console.log('Form submission data:', data);
 
       if (editingDelivery?.id) {
         console.log('Editing delivery with ID:', editingDelivery.id);
 
-        const resourceTypeName =
-          resourceTypes?.find((type) => type.id === data.resourceType)?.name || data.resourceType;
-
-        const modifiedData = {
-          ...data,
-          resourceType: resourceTypeName,
+        const editData = {
+          locationId: data.locationId,
+          energy_resource_type_id: data.energy_resource_type_id,
+          deliveryDate: data.deliveryDate,
+          quantity: data.quantity,
+          unit: data.unit,
+          pricePerUnit: data.pricePerUnit,
+          totalCost: data.totalCost,
+          supplier: data.supplier,
         };
 
-        await editDelivery(editingDelivery.id, modifiedData);
+        await editDelivery(editingDelivery.id, editData);
       } else {
         console.log('Adding new delivery');
 
-        const resourceTypeName =
-          resourceTypes?.find((type) => type.id === data.resourceType)?.name || data.resourceType;
-
-        const modifiedData = {
-          ...data,
-          resourceType: resourceTypeName,
+        const addData = {
+          locationId: data.locationId,
+          resourceTypeId: data.energy_resource_type_id,
+          quantity: data.quantity,
+          unit: data.unit,
+          pricePerUnit: data.pricePerUnit,
+          totalCost: data.totalCost,
+          deliveryDate: data.deliveryDate,
+          supplier: data.supplier,
         };
 
-        await addDelivery(modifiedData);
+        await addDelivery(addData);
       }
 
       setFormOpen(false);
@@ -60,10 +71,12 @@ const ResourceDeliverySection = ({ locations, resourceTypes, initialExpanded = t
       setError(error.message || 'Помилка при збереженні поставки');
     }
   };
+
   const handleFormClose = () => {
     setFormOpen(false);
     setEditingDelivery(null);
   };
+
   const handleRemove = async (id) => {
     try {
       await removeDelivery(id);

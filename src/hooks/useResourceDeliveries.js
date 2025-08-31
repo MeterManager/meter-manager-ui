@@ -26,7 +26,9 @@ export const useResourceDeliveries = () => {
           return {
             id: delivery.id,
             locationId: delivery.location_id,
-            resourceType: delivery.resource_type,
+            locationName: delivery.location?.name,
+            energy_resource_type_id: delivery.energy_resource_type_id,
+            resourceTypeName: delivery.energyResourceType?.name,
             deliveryDate: delivery.delivery_date,
             quantity: delivery.quantity,
             unit: delivery.unit,
@@ -55,7 +57,8 @@ export const useResourceDeliveries = () => {
     try {
       const deliveryData = {
         location_id: data.locationId,
-        resource_type: data.resourceType,
+        energy_resource_type_id: data.resourceTypeId,
+        delivery_date: data.deliveryDate,
         quantity: data.quantity,
         unit: data.unit,
         price_per_unit: data.pricePerUnit,
@@ -75,7 +78,7 @@ export const useResourceDeliveries = () => {
     try {
       const deliveryData = {
         location_id: data.locationId,
-        resource_type: data.resourceType,
+        energy_resource_type_id: data.energy_resource_type_id,
         delivery_date: data.deliveryDate,
         quantity: data.quantity,
         unit: data.unit,

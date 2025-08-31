@@ -10,7 +10,7 @@ const ResourceDeliveryForm = ({
   locations = [],
   resourceTypes = [],
 }) => {
-  const [formData, setFormData] = useState(initialData);
+  const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
 
   const resourceTypesArray = Array.isArray(resourceTypes) ? resourceTypes : [];
@@ -21,29 +21,18 @@ const ResourceDeliveryForm = ({
       console.log('ResourceDeliveryForm initialData:', initialData);
       console.log('ResourceTypes array:', resourceTypesArray);
 
-      let resourceTypeValue = '';
-      if (initialData.resourceType) {
-        if (typeof initialData.resourceType === 'number') {
-          resourceTypeValue = initialData.resourceType;
-        } else {
-          const foundType = resourceTypesArray.find(
-            (type) => type.name.toLowerCase() === initialData.resourceType.toLowerCase()
-          );
-          resourceTypeValue = foundType ? foundType.id : '';
-          console.log('Found resource type:', foundType);
-        }
-      }
-
-      setFormData({
-        ...initialData,
+      const mappedData = {
         locationId: initialData.locationId || '',
-        resourceType: resourceTypeValue,
+        resourceTypeId: initialData.energy_resource_type_id || '',
         quantity: initialData.quantity || '',
         unit: initialData.unit || '',
         pricePerUnit: initialData.pricePerUnit || '',
         deliveryDate: initialData.deliveryDate || '',
         supplier: initialData.supplier || '',
-      });
+      };
+
+      console.log('Mapped form data:', mappedData);
+      setFormData(mappedData);
       setFormErrors({});
     }
   }, [open, initialData, resourceTypesArray]);
@@ -51,7 +40,7 @@ const ResourceDeliveryForm = ({
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    const processedValue = (name === 'locationId' || name === 'resourceType') && value !== '' ? Number(value) : value;
+    const processedValue = (name === 'locationId' || name === 'resourceTypeId') && value !== '' ? Number(value) : value;
 
     setFormData({ ...formData, [name]: processedValue });
     setFormErrors({ ...formErrors, [name]: '' });
@@ -60,7 +49,7 @@ const ResourceDeliveryForm = ({
   const validateForm = () => {
     const errors = {};
     if (!formData.locationId) errors.locationId = 'Виберіть локацію';
-    if (!formData.resourceType) errors.resourceType = 'Виберіть тип ресурсу';
+    if (!formData.resourceTypeId) errors.resourceTypeId = 'Виберіть тип ресурсу';
     if (!formData.quantity || isNaN(formData.quantity)) errors.quantity = 'Вкажіть кількість';
     if (!formData.unit) errors.unit = 'Вкажіть одиницю виміру';
     if (!formData.pricePerUnit || isNaN(formData.pricePerUnit)) errors.pricePerUnit = 'Вкажіть ціну за одиницю';
@@ -78,7 +67,7 @@ const ResourceDeliveryForm = ({
     const submitData = {
       ...formData,
       locationId: parseInt(formData.locationId),
-      resourceType: parseInt(formData.resourceType),
+      energy_resource_type_id: parseInt(formData.resourceTypeId),
       quantity: parseFloat(formData.quantity),
       pricePerUnit: parseFloat(formData.pricePerUnit),
       totalCost: parseFloat(formData.quantity) * parseFloat(formData.pricePerUnit),
@@ -92,9 +81,9 @@ const ResourceDeliveryForm = ({
       return;
     }
 
-    if (isNaN(submitData.resourceType) || submitData.resourceType <= 0) {
-      console.error('Invalid resourceType:', submitData.resourceType);
-      setFormErrors({ ...formErrors, resourceType: 'Неправильний тип ресурсу' });
+    if (isNaN(submitData.energy_resource_type_id) || submitData.energy_resource_type_id <= 0) {
+      console.error('Invalid resourceTypeId:', submitData.energy_resource_type_id);
+      setFormErrors({ ...formErrors, resourceTypeId: 'Неправильний тип ресурсу' });
       return;
     }
 
@@ -141,13 +130,13 @@ const ResourceDeliveryForm = ({
 
         <TextField
           select
-          name="resourceType"
+          name="resourceTypeId"
           label="Тип ресурсу"
-          value={formData.resourceType || ''}
+          value={formData.resourceTypeId || ''}
           onChange={handleChange}
           fullWidth
-          error={!!formErrors.resourceType}
-          helperText={formErrors.resourceType || ' '}
+          error={!!formErrors.resourceTypeId}
+          helperText={formErrors.resourceTypeId || ' '}
         >
           {resourceTypesArray.length === 0 ? (
             <MenuItem disabled>Немає доступних типів ресурсів</MenuItem>
