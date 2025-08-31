@@ -48,7 +48,7 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
             {filteredDeliveries.length > 0 ? (
               filteredDeliveries.map((delivery) => (
                 <TableRow key={delivery.id}>
-                  <TableCell>{getLocationName(delivery.locationId)}</TableCell>
+                  <TableCell>{delivery.locationName}</TableCell>
                   <TableCell>{delivery.resourceTypeName}</TableCell>
                   <TableCell>{delivery.quantity}</TableCell>
                   <TableCell>{delivery.unit}</TableCell>

@@ -1,16 +1,11 @@
 import createApi from './baseApi';
 
-export const getResourceTypes = async (token, search = '') => {
+export const getResourceTypes = async (token, search = '', is_active) => {
   const api = createApi(token);
   const params = {};
-  if (search) params.search = search;
+  if (search) params.name = search;
+  if (is_active !== undefined) params.is_active = is_active;
   const response = await api.get('/resource-types', { params });
-  return response.data;
-};
-
-export const getResourceTypeById = async (token, id) => {
-  const api = createApi(token);
-  const response = await api.get(`/resource-types/${id}`);
   return response.data;
 };
 

@@ -52,7 +52,7 @@ const TenantsSection = ({ locations, initialExpanded = true }) => {
 
   return (
     <>
-      <Paper sx={{mb: 3, borderRadius: 2 }} elevation={1} >
+      <Paper sx={{ mb: 3, borderRadius: 2 }} elevation={1}>
         <Box
           display="flex"
           alignItems="center"

@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, MenuItem } from '@mui/material';
 
-const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locations }) => {
+const roles = ['admin', 'manager', 'user'];
+
+const UserForm = ({ open, onClose, onSubmit, initialData = {}, error }) => {
   const [formData, setFormData] = useState(initialData);
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     if (open) {
       setFormData({
-        name: initialData.name || '',
-        address: initialData.address || '',
-        isActive: initialData.isActive ?? true,
+        full_name: initialData.full_name,
+        role: initialData.role,
+        auth0_user_id: initialData.auth0_user_id,
+        isActive: initialData.isActive,
         id: initialData.id,
       });
       setFormErrors({});
@@ -24,11 +27,8 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.name) errors.name = "Назва обов'язкова";
-    if (!formData.address) errors.address = "Адреса обов'язкова";
-    if (formData.name && locations.some((loc) => loc.name === formData.name && loc.id !== initialData.id)) {
-      errors.name = 'Локація з такою назвою вже існує';
-    }
+    if (!formData.full_name) errors.full_name = 'Ім’я обов’язкове';
+    if (!formData.auth0_user_id) errors.auth0_user_id = 'Auth0 ID обов’язкове';
     return errors;
   };
 
@@ -38,12 +38,10 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
       setFormErrors(errors);
       return;
     }
-
     onSubmit({
       ...formData,
       isActive: formData.isActive,
     });
-
     setFormData({});
   };
 
@@ -55,7 +53,7 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
 
   return (
     <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>{initialData.id ? 'Редагувати локацію' : 'Додати локацію'}</DialogTitle>
+      <DialogTitle>Редагувати користувача</DialogTitle>
       <DialogContent sx={{ pb: 0 }}>
         {error && (
           <Alert severity="error" sx={{ mb: 1 }}>
@@ -63,24 +61,32 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           </Alert>
         )}
         <TextField
-          name="name"
-          label="Назва"
-          value={formData.name || ''}
+          name="full_name"
+          label="ПІБ"
+          value={formData.full_name || ''}
           onChange={handleChange}
           fullWidth
           sx={{ mb: 1, mt: 1 }}
-          error={!!formErrors.name}
-          helperText={formErrors.name || ' '}
+          error={!!formErrors.full_name}
+          helperText={formErrors.full_name || ' '}
         />
         <TextField
-          name="address"
-          label="Адреса"
-          value={formData.address || ''}
+          name="auth0_user_id"
+          label="Auth0 ID"
+          value={formData.auth0_user_id || ''}
           onChange={handleChange}
           fullWidth
-          error={!!formErrors.address}
-          helperText={formErrors.address || ' '}
+          sx={{ mb: 1 }}
+          error={!!formErrors.auth0_user_id}
+          helperText={formErrors.auth0_user_id || ' '}
         />
+        <TextField select name="role" label="Роль" value={formData.role || 'user'} onChange={handleChange} fullWidth>
+          {roles.map((r) => (
+            <MenuItem key={r} value={r}>
+              {r}
+            </MenuItem>
+          ))}
+        </TextField>
       </DialogContent>
       <DialogActions sx={{ px: 3, mb: 1 }}>
         <Button variant="outlined" size="small" onClick={handleClose}>
@@ -94,4 +100,4 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
   );
 };
 
-export default LocationForm;
+export default UserForm;

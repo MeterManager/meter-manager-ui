@@ -1,83 +1,107 @@
-import { useState, useEffect,useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import * as resourceTypeApi from '../api/resourceTypesApi';
+import useAuth from './useAuth';
 
 export const useResourceTypes = () => {
+  const { isAuthenticated, isLoading } = useAuth();
   const [resourceTypes, setResourceTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
   const [error, setError] = useState(null);
 
   const fetchData = useCallback(async () => {
+    if (!isAuthenticated || isLoading) return;
     setLoading(true);
     setError(null);
-    try { 
-      const response = await resourceTypeApi.getResourceTypes(page, 10, search); 
+    try {
+      const token = localStorage.getItem('token');
+      const response = await resourceTypeApi.getResourceTypes(token, search);
       setResourceTypes(
         (response.data || []).map((type) => ({
           ...type,
           isActive: type.is_active === true,
         }))
       );
-    setTotal(response.count || 0);
     } catch (err) {
       setError('Помилка при завантаженні типів ресурсів');
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [search, isAuthenticated, isLoading]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const addResourceType = async (payload) => {
+  const addResourceType = async (data) => {
     try {
-      const newType = await resourceTypeApi.createResourceType(payload);
-      await fetchData(); return newType.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при додаванні типу ресурсу');
+      const token = localStorage.getItem('token');
+      const transformedData = {
+        name: data.name,
+        unit: data.unit,
+        is_active: data.isActive !== undefined ? data.isActive : true,
+      };
+
+      const response = await resourceTypeApi.createResourceType(token, transformedData);
+      await fetchData();
+      return response;
+    } catch (error) {
+      console.error('Create resource type error:', error.response?.data);
+      throw error;
     }
   };
 
-  const editResourceType = async (id, payload) => {
+  const editResourceType = async (id, data) => {
     try {
-      const updatedType = await resourceTypeApi.updateResourceType(id, payload);
+      const token = localStorage.getItem('token');
+      const transformedData = {
+        name: data.name,
+        unit: data.unit,
+        is_active: data.isActive,
+      };
+
+      const response = await resourceTypeApi.updateResourceType(token, id, transformedData);
       await fetchData();
-      return updatedType.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при редагуванні типу ресурсу');
+      return response;
+    } catch (error) {
+      console.error('Update resource type error:', error.response?.data);
+      throw error;
     }
   };
 
   const removeResourceType = async (id) => {
-    try {
-      await resourceTypeApi.deleteResourceType(id);
-      await fetchData();
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при видаленні типу ресурсу');
-    }
+    const token = localStorage.getItem('token');
+    await resourceTypeApi.deleteResourceType(token, id);
+    await fetchData();
   };
 
-  const updateResourceTypeStatus = async (id, payload) => {
+  const updateResourceTypeStatus = async (id, is_active) => {
     try {
-      const updatedType = await resourceTypeApi.updateResourceType(id, payload);
+      const token = localStorage.getItem('token');
+      const type = resourceTypes.find((t) => t.id === id);
+
+      if (!type) throw new Error('Тип ресурсу не знайдено');
+
+      const payload = {
+        name: type.name,
+        unit: type.unit,
+        is_active,
+      };
+
+      const response = await resourceTypeApi.updateResourceType(token, id, payload);
       await fetchData();
-      return updatedType.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при зміні статусу');
+      return response;
+    } catch (error) {
+      console.error('Update resource type status error:', error.response?.data);
+      throw error;
     }
   };
 
   return {
     resourceTypes,
     loading,
-    page,
-    setPage,
     search,
     setSearch,
-    total,
     addResourceType,
     editResourceType,
     removeResourceType,

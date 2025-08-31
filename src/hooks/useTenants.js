@@ -1,21 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getTenants, createTenant, updateTenant, deleteTenant } from '../api/tenantsApi';
+import * as tenantApi from '../api/tenantsApi';
+import useAuth from './useAuth';
 
 export const useTenants = () => {
+  const { isAuthenticated, isLoading } = useAuth();
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [total, setTotal] = useState(0);
   const [error, setError] = useState(null);
 
   const fetchData = useCallback(async () => {
+    if (!isAuthenticated || isLoading) return;
     setLoading(true);
     setError(null);
     try {
-      const response = await getTenants(page, 10, search);
-
-      console.log(response.data);
+      const token = localStorage.getItem('token');
+      const response = await tenantApi.getTenants(token, search);
       setTenants(
         (response.data || []).map((tenant) => ({
           id: tenant.id,
@@ -30,92 +30,86 @@ export const useTenants = () => {
           updatedAt: tenant.updated_at,
         }))
       );
-      setTotal(response.count || 0);
     } catch (err) {
       setError('Помилка при завантаженні орендарів');
-      console.error('Помилка завантаження орендарів:', err);
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [search, isAuthenticated, isLoading]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   const addTenant = async (data) => {
-    try {
-      const tenantData = {
-        name: data.name,
-        location_id: data.locationId,
-        occupied_area: data.occupiedArea || null,
-        contact_person: data.contactPerson || null,
-        phone: data.phone || null,
-        email: data.email || null,
-        is_active: data.isActive ?? true,
-      };
-
-      const response = await createTenant(tenantData);
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      await fetchData();
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при додаванні орендаря');
-    }
+    const token = localStorage.getItem('token');
+    const tenantData = {
+      name: data.name,
+      location_id: data.locationId,
+      occupied_area: data.occupiedArea || null,
+      contact_person: data.contactPerson || null,
+      phone: data.phone || null,
+      email: data.email || null,
+      is_active: data.isActive ?? true,
+    };
+    const response = await tenantApi.createTenant(token, tenantData);
+    await fetchData();
+    return response;
   };
 
   const editTenant = async (id, data) => {
-    try {
-      const tenantData = {
-        name: data.name,
-        location_id: data.locationId,
-        occupied_area: data.occupiedArea || null,
-        contact_person: data.contactPerson || null,
-        phone: data.phone || null,
-        email: data.email || null,
-        is_active: data.isActive,
-      };
-
-      const response = await updateTenant(id, tenantData);
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      await fetchData();
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при редагуванні орендаря');
-    }
+    const token = localStorage.getItem('token');
+    const tenantData = {
+      name: data.name,
+      location_id: data.locationId,
+      occupied_area: data.occupiedArea || null,
+      contact_person: data.contactPerson || null,
+      phone: data.phone || null,
+      email: data.email || null,
+      is_active: data.isActive,
+    };
+    const response = await tenantApi.updateTenant(token, id, tenantData);
+    await fetchData();
+    return response;
   };
 
   const removeTenant = async (id) => {
-    try {
-      await deleteTenant(id);
-      await fetchData();
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при видаленні орендаря');
-    }
+    const token = localStorage.getItem('token');
+    await tenantApi.deleteTenant(token, id);
+    await fetchData();
   };
 
-  const updateTenantStatus = async (id, data) => {
+  const updateTenantStatus = async (id, is_active) => {
     try {
-      const response = await updateTenant(id, data);
-      if (response.error) {
-        throw new Error(response.error);
-      }
+      const token = localStorage.getItem('token');
+      const tenant = tenants.find((t) => t.id === id);
+
+      if (!tenant) throw new Error('Орендар не знайдений');
+
+      const payload = {
+        name: tenant.name,
+        location_id: tenant.locationId,
+        occupied_area: tenant.occupiedArea || null,
+        contact_person: tenant.contactPerson || null,
+        phone: tenant.phone || null,
+        email: tenant.email || null,
+        is_active,
+      };
+
+      const response = await tenantApi.updateTenant(token, id, payload);
       await fetchData();
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при зміні статусу');
+      return response;
+    } catch (error) {
+      console.error('Update tenant status error:', error.response?.data);
+      throw error;
     }
   };
 
   return {
     tenants,
     loading,
-    page,
-    setPage,
     search,
     setSearch,
-    total,
     addTenant,
     editTenant,
     removeTenant,

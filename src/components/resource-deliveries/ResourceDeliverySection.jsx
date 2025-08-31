@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Paper, Box, Typography, Collapse, IconButton, Divider } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
-import ResourceDeliveryTable from '../resource-deliveries/ResourceDeliveryTable';
-import ResourceDeliveryForm from '../resource-deliveries/ResourceDeliveryForm';
+import ResourceDeliveryTable from './ResourceDeliveryTable';
+import ResourceDeliveryForm from './ResourceDeliveryForm';
 import { useResourceDeliveries } from '../../hooks/useResourceDeliveries';
 
-const ResourceDeliverySection = ({ locations, resourceTypes, initialExpanded = true }) => {
-  console.log('PROPS:', { locations, resourceTypes });
+const ResourceDeliverySection = ({ locations = [], resourceTypes = [], initialExpanded = true }) => {
+  const memoizedLocations = useMemo(() => locations, [locations]);
+  const memoizedResourceTypes = useMemo(() => resourceTypes, [resourceTypes]);
+
   const { deliveries, search, setSearch, addDelivery, editDelivery, removeDelivery, error, setError } =
     useResourceDeliveries();
 
@@ -14,76 +16,61 @@ const ResourceDeliverySection = ({ locations, resourceTypes, initialExpanded = t
   const [formOpen, setFormOpen] = useState(false);
   const [editingDelivery, setEditingDelivery] = useState(null);
 
-  const handleToggle = () => setExpanded(!expanded);
+  const handleToggle = useCallback(() => setExpanded((prev) => !prev), []);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setEditingDelivery(null);
     setFormOpen(true);
-  };
+  }, []);
 
-  const handleEdit = (delivery) => {
-    console.log('Editing delivery:', delivery);
-    setEditingDelivery(delivery);
-    setFormOpen(true);
-  };
+  const handleEdit = useCallback(
+    (delivery) => {
+      const resourceTypeName =
+        memoizedResourceTypes.find((rt) => rt.id === delivery.energy_resource_type_id)?.name ||
+        delivery.resourceTypeName;
 
-  const handleFormSubmit = async (data) => {
-    try {
-      setError(null);
-      console.log('Form submission data:', data);
+      setEditingDelivery({
+        ...delivery,
+        resourceTypeName,
+      });
+      setFormOpen(true);
+    },
+    [memoizedResourceTypes]
+  );
 
-      if (editingDelivery?.id) {
-        console.log('Editing delivery with ID:', editingDelivery.id);
-
-        const editData = {
-          locationId: data.locationId,
-          energy_resource_type_id: data.energy_resource_type_id,
-          deliveryDate: data.deliveryDate,
-          quantity: data.quantity,
-          unit: data.unit,
-          pricePerUnit: data.pricePerUnit,
-          totalCost: data.totalCost,
-          supplier: data.supplier,
-        };
-
-        await editDelivery(editingDelivery.id, editData);
-      } else {
-        console.log('Adding new delivery');
-
-        const addData = {
-          locationId: data.locationId,
-          resourceTypeId: data.energy_resource_type_id,
-          quantity: data.quantity,
-          unit: data.unit,
-          pricePerUnit: data.pricePerUnit,
-          totalCost: data.totalCost,
-          deliveryDate: data.deliveryDate,
-          supplier: data.supplier,
-        };
-
-        await addDelivery(addData);
+  const handleFormSubmit = useCallback(
+    async (data) => {
+      try {
+        setError(null);
+        if (editingDelivery?.id) {
+          await editDelivery(editingDelivery.id, data);
+        } else {
+          await addDelivery(data);
+        }
+        setFormOpen(false);
+        setEditingDelivery(null);
+      } catch (err) {
+        setError(err.message || 'Помилка при збереженні поставки');
       }
+    },
+    [editingDelivery, addDelivery, editDelivery, setError]
+  );
 
-      setFormOpen(false);
-      setEditingDelivery(null);
-    } catch (error) {
-      console.error('Error in handleFormSubmit:', error);
-      setError(error.message || 'Помилка при збереженні поставки');
-    }
-  };
-
-  const handleFormClose = () => {
+  const handleFormClose = useCallback(() => {
     setFormOpen(false);
     setEditingDelivery(null);
-  };
+  }, []);
 
-  const handleRemove = async (id) => {
-    try {
-      await removeDelivery(id);
-    } catch (err) {
-      setError(err.message || 'Помилка при видаленні поставки');
-    }
-  };
+  const handleRemove = useCallback(
+    async (id) => {
+      try {
+        await removeDelivery(id);
+      } catch (err) {
+        setError(err.message || 'Помилка при видаленні поставки');
+      }
+    },
+    [removeDelivery, setError]
+  );
 
   return (
     <>
@@ -107,7 +94,7 @@ const ResourceDeliverySection = ({ locations, resourceTypes, initialExpanded = t
           <Box sx={{ p: 3 }}>
             <ResourceDeliveryTable
               deliveries={deliveries}
-              locations={locations}
+              locations={memoizedLocations}
               search={search}
               setSearch={setSearch}
               onAdd={handleAdd}
@@ -124,8 +111,8 @@ const ResourceDeliverySection = ({ locations, resourceTypes, initialExpanded = t
         onSubmit={handleFormSubmit}
         initialData={editingDelivery || {}}
         error={error}
-        locations={locations}
-        resourceTypes={resourceTypes}
+        locations={memoizedLocations}
+        resourceTypes={memoizedResourceTypes}
       />
     </>
   );

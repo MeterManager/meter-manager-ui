@@ -13,35 +13,27 @@ const ResourceDeliveryForm = ({
   const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
 
-  const resourceTypesArray = Array.isArray(resourceTypes) ? resourceTypes : [];
-  const locationsArray = Array.isArray(locations) ? locations : [];
-
   useEffect(() => {
     if (open) {
-      console.log('ResourceDeliveryForm initialData:', initialData);
-      console.log('ResourceTypes array:', resourceTypesArray);
-
       const mappedData = {
-        locationId: initialData.locationId || '',
-        resourceTypeId: initialData.energy_resource_type_id || '',
+        locationId: initialData.location_id || initialData.locationId || '',
+        resourceTypeId: initialData.energy_resource_type_id || initialData.resourceTypeId || '',
         quantity: initialData.quantity || '',
         unit: initialData.unit || '',
-        pricePerUnit: initialData.pricePerUnit || '',
-        deliveryDate: initialData.deliveryDate || '',
+        pricePerUnit: initialData.price_per_unit || initialData.pricePerUnit || '',
+        deliveryDate: (initialData.delivery_date || initialData.deliveryDate) 
+          ? new Date(initialData.delivery_date || initialData.deliveryDate).toISOString().split('T')[0] 
+          : '',
         supplier: initialData.supplier || '',
       };
-
-      console.log('Mapped form data:', mappedData);
       setFormData(mappedData);
       setFormErrors({});
     }
-  }, [open, initialData, resourceTypesArray]);
+  }, [open, initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     const processedValue = (name === 'locationId' || name === 'resourceTypeId') && value !== '' ? Number(value) : value;
-
     setFormData({ ...formData, [name]: processedValue });
     setFormErrors({ ...formErrors, [name]: '' });
   };
@@ -57,38 +49,31 @@ const ResourceDeliveryForm = ({
     return errors;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
+    if (Object.keys(errors).length) {
       setFormErrors(errors);
       return;
     }
 
     const submitData = {
-      ...formData,
-      locationId: parseInt(formData.locationId),
-      energy_resource_type_id: parseInt(formData.resourceTypeId),
+      locationId: Number(formData.locationId),
+      resourceTypeId: Number(formData.resourceTypeId),
       quantity: parseFloat(formData.quantity),
+      unit: formData.unit,
       pricePerUnit: parseFloat(formData.pricePerUnit),
       totalCost: parseFloat(formData.quantity) * parseFloat(formData.pricePerUnit),
+      deliveryDate: new Date(formData.deliveryDate).toISOString(),
+      supplier: formData.supplier || '',
     };
 
-    console.log('Form submit data:', submitData);
-
-    if (isNaN(submitData.locationId) || submitData.locationId <= 0) {
-      console.error('Invalid locationId:', submitData.locationId);
-      setFormErrors({ ...formErrors, locationId: 'Неправильний ID локації' });
-      return;
+    try {
+      await onSubmit(submitData);
+      onClose();
+    } catch (err) {
+      console.error('Error submitting form:', err);
     }
-
-    if (isNaN(submitData.energy_resource_type_id) || submitData.energy_resource_type_id <= 0) {
-      console.error('Invalid resourceTypeId:', submitData.energy_resource_type_id);
-      setFormErrors({ ...formErrors, resourceTypeId: 'Неправильний тип ресурсу' });
-      return;
-    }
-
-    onSubmit(submitData);
-    setFormData({});
   };
 
   const handleClose = () => {
@@ -106,6 +91,7 @@ const ResourceDeliveryForm = ({
             {error}
           </Alert>
         )}
+
         <TextField
           select
           name="locationId"
@@ -114,13 +100,13 @@ const ResourceDeliveryForm = ({
           onChange={handleChange}
           fullWidth
           error={!!formErrors.locationId}
-          helperText={formErrors.locationId}
+          helperText={formErrors.locationId || ' '}
           sx={{ mt: 1, mb: 3 }}
         >
-          {locationsArray.length === 0 ? (
+          {locations.length === 0 ? (
             <MenuItem disabled>Немає доступних локацій</MenuItem>
           ) : (
-            locationsArray.map((loc) => (
+            locations.map((loc) => (
               <MenuItem key={loc.id} value={loc.id}>
                 {loc.name}
               </MenuItem>
@@ -138,10 +124,10 @@ const ResourceDeliveryForm = ({
           error={!!formErrors.resourceTypeId}
           helperText={formErrors.resourceTypeId || ' '}
         >
-          {resourceTypesArray.length === 0 ? (
+          {resourceTypes.length === 0 ? (
             <MenuItem disabled>Немає доступних типів ресурсів</MenuItem>
           ) : (
-            resourceTypesArray.map((res) => (
+            resourceTypes.map((res) => (
               <MenuItem key={res.id} value={res.id}>
                 {res.name}
               </MenuItem>
