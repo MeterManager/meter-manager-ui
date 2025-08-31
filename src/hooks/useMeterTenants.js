@@ -16,9 +16,10 @@ export const useMeterTenants = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await meterTenantsApi.getMeterTenants(token);
-      const filtered = response.data.filter(mt =>
-        mt.Tenant?.name.toLowerCase().includes(search.toLowerCase()) ||
-        mt.Meter?.serial_number.toLowerCase().includes(search.toLowerCase())
+      const filtered = response.data.filter(
+        (mt) =>
+          mt.Tenant?.name.toLowerCase().includes(search.toLowerCase()) ||
+          mt.Meter?.serial_number.toLowerCase().includes(search.toLowerCase())
       );
       setMeterTenants(filtered);
     } catch (err) {

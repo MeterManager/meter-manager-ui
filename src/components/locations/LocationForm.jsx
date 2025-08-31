@@ -38,10 +38,10 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
       setFormErrors(errors);
       return;
     }
-    
+
     onSubmit({
       ...formData,
-      isActive: formData.isActive
+      isActive: formData.isActive,
     });
 
     setFormData({});

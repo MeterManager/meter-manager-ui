@@ -8,12 +8,7 @@ import prettierPlugin from 'eslint-plugin-prettier';
 export default {
   ignorePatterns: ['dist', 'node_modules', 'build', '.env'],
   files: ['**/*.{js,jsx}'],
-  extends: [
-    js.configs.recommended,
-    reactHooks.configs['recommended-latest'],
-    reactRefresh.configs.vite,
-    prettier
-  ],
+  extends: [js.configs.recommended, reactHooks.configs['recommended-latest'], reactRefresh.configs.vite, prettier],
   plugins: {
     prettier: prettierPlugin,
   },

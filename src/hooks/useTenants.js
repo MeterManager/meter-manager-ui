@@ -83,9 +83,9 @@ export const useTenants = () => {
     try {
       const token = localStorage.getItem('token');
       const tenant = tenants.find((t) => t.id === id);
-      
+
       if (!tenant) throw new Error('Орендар не знайдений');
-      
+
       const payload = {
         name: tenant.name,
         location_id: tenant.locationId,
@@ -93,9 +93,9 @@ export const useTenants = () => {
         contact_person: tenant.contactPerson || null,
         phone: tenant.phone || null,
         email: tenant.email || null,
-        is_active
+        is_active,
       };
-            
+
       const response = await tenantApi.updateTenant(token, id, payload);
       await fetchData();
       return response;

@@ -80,14 +80,7 @@ const UserForm = ({ open, onClose, onSubmit, initialData = {}, error }) => {
           error={!!formErrors.auth0_user_id}
           helperText={formErrors.auth0_user_id || ' '}
         />
-        <TextField
-          select
-          name="role"
-          label="Роль"
-          value={formData.role || 'user'}
-          onChange={handleChange}
-          fullWidth
-        >
+        <TextField select name="role" label="Роль" value={formData.role || 'user'} onChange={handleChange} fullWidth>
           {roles.map((r) => (
             <MenuItem key={r} value={r}>
               {r}
@@ -108,4 +101,3 @@ const UserForm = ({ open, onClose, onSubmit, initialData = {}, error }) => {
 };
 
 export default UserForm;
-

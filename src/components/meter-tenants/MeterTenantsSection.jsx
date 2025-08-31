@@ -1,19 +1,25 @@
 import { useState } from 'react';
-import { Paper, Box, Typography, Collapse, IconButton, Divider, Button } from '@mui/material';
+import { Paper, Box, Typography, Collapse, IconButton, Divider } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import MeterTenantsTable from './MeterTenantsTable';
 import MeterTenantForm from './MeterTenantForm';
 import { useMeterTenants } from '../../hooks/useMeterTenants';
 
-const MeterTenantsSection = ({ tenants, meters, initialExpanded = true }) => {
+const MeterTenantsSection = ({ tenants = [], meters = [], initialExpanded = true }) => {
   const { meterTenants, addMeterTenant, editMeterTenant, removeMeterTenant, error, setError } = useMeterTenants();
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
   const handleToggle = () => setExpanded(!expanded);
-  const handleAdd = () => { setEditing(null); setFormOpen(true); };
-  const handleEdit = (mt) => { setEditing(mt); setFormOpen(true); };
+  const handleAdd = () => {
+    setEditing(null);
+    setFormOpen(true);
+  };
+  const handleEdit = (mt) => {
+    setEditing(mt);
+    setFormOpen(true);
+  };
 
   const handleSubmit = async (data) => {
     try {
@@ -27,13 +33,16 @@ const MeterTenantsSection = ({ tenants, meters, initialExpanded = true }) => {
   };
 
   const handleDelete = async (id) => {
-    try { await removeMeterTenant(id); } 
-    catch (err) { setError(err.message); }
+    try {
+      await removeMeterTenant(id);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
     <>
-      <Paper sx={{ borderRadius: 2, mb:3 }} elevation={1}>
+      <Paper sx={{ borderRadius: 2, mb: 3 }} elevation={1}>
         <Box
           display="flex"
           alignItems="center"
@@ -52,24 +61,37 @@ const MeterTenantsSection = ({ tenants, meters, initialExpanded = true }) => {
           <Box p={3}>
             <MeterTenantsTable
               meterTenants={meterTenants}
+              tenants={tenants.filter((t) => t.isActive)}
+              meters={meters.filter((m) => m.isActive)}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onAdd={handleAdd} // кнопка всередині таблиці
             />
-            <Box mt={2}>
-              <Button variant="contained" onClick={handleAdd}>Додати зв’язок</Button>
-            </Box>
           </Box>
         </Collapse>
       </Paper>
 
       <MeterTenantForm
         open={formOpen}
-        onClose={() => { setFormOpen(false); setEditing(null); }}
+        onClose={() => {
+          setFormOpen(false);
+          setEditing(null);
+        }}
         onSubmit={handleSubmit}
-        initialData={editing || {}}
+        initialData={
+          editing
+            ? {
+                tenantId: editing.tenant_id?.toString(),
+                meterId: editing.meter_id?.toString(),
+                startDate: editing.assigned_from || '',
+                endDate: editing.assigned_to || '',
+                id: editing.id,
+              }
+            : {}
+        }
         error={error}
-        tenants={tenants}
-        meters={meters}
+        tenants={tenants.filter((t) => t.isActive)}
+        meters={meters.filter((m) => m.isActive)}
       />
     </>
   );

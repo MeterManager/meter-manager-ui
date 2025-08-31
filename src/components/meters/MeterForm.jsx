@@ -7,21 +7,21 @@ import {
   TextField,
   Button,
   Alert,
-  FormControl,
-  InputLabel,
-  Select,
   MenuItem,
+  CircularProgress,
+  Box,
 } from '@mui/material';
 
-const MeterForm = ({ 
-  open, 
-  onClose, 
-  onSubmit, 
-  initialData = {}, 
-  error, 
-  meters,
+const MeterForm = ({
+  open,
+  onClose,
+  onSubmit,
+  initialData = {},
+  error,
+  meters = [],
   locations = [],
-  energyResourceTypes = []
+  energyResourceTypes = [],
+  loading = false,
 }) => {
   const [formData, setFormData] = useState(initialData);
   const [formErrors, setFormErrors] = useState({});
@@ -46,24 +46,16 @@ const MeterForm = ({
 
   const validateForm = () => {
     const errors = {};
-    
-    if (!formData.serial_number) {
-      errors.serial_number = "Серійний номер обов'язковий";
-    }
-    
-    if (!formData.location_id) {
-      errors.location_id = "Локація обов'язкова";
-    }
-    
-    if (!formData.energy_resource_type_id) {
-      errors.energy_resource_type_id = "Тип енергоресурсу обов'язковий";
-    }
 
-    // Перевірка унікальності серійного номера
-    if (formData.serial_number && meters.some((meter) => 
-      meter.serial_number === formData.serial_number && meter.id !== initialData.id
-    )) {
-      errors.serial_number = 'Лічільник з таким серійним номером вже існує';
+    if (!formData.serial_number) errors.serial_number = "Серійний номер обов'язковий";
+    if (!formData.location_id) errors.location_id = "Локація обов'язкова";
+    if (!formData.energy_resource_type_id) errors.energy_resource_type_id = "Тип енергоресурсу обов'язковий";
+
+    // Перевірка унікальності серійного номера, лише якщо meters вже підвантажились
+    if (formData.serial_number && Array.isArray(meters) && !loading) {
+      if (meters.some((m) => m.serial_number === formData.serial_number && m.id !== initialData.id)) {
+        errors.serial_number = 'Лічільник з таким серійним номером вже існує';
+      }
     }
 
     return errors;
@@ -75,7 +67,7 @@ const MeterForm = ({
       setFormErrors(errors);
       return;
     }
-    
+
     onSubmit({
       ...formData,
       isActive: formData.isActive ?? initialData.isActive ?? false,
@@ -91,74 +83,80 @@ const MeterForm = ({
   };
 
   return (
-    <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>
-        {initialData.id ? 'Редагувати лічільник' : 'Додати лічільник'}
-      </DialogTitle>
+    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+      <DialogTitle>{initialData.id ? 'Редагувати лічільник' : 'Додати лічільник'}</DialogTitle>
       <DialogContent sx={{ pb: 0 }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 1 }}>
-            {error}
-          </Alert>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            {error && (
+              <Alert severity="error" sx={{ mb: 1 }}>
+                {error}
+              </Alert>
+            )}
+
+            <TextField
+              name="serial_number"
+              label="Серійний номер"
+              value={formData.serial_number || ''}
+              onChange={handleChange}
+              fullWidth
+              sx={{ mb: 1, mt: 1 }}
+              error={!!formErrors.serial_number}
+              helperText={formErrors.serial_number || ' '}
+            />
+
+            <TextField
+              select
+              name="location_id"
+              label="Локація"
+              value={formData.location_id || ''}
+              onChange={handleChange}
+              fullWidth
+              sx={{ mb: 1, mt: 1 }}
+              error={!!formErrors.location_id}
+              helperText={formErrors.location_id || ' '}
+            >
+              {locations
+                .filter((l) => l.isActive)
+                .map((loc) => (
+                  <MenuItem key={loc.id} value={loc.id}>
+                    {loc.name}
+                  </MenuItem>
+                ))}
+            </TextField>
+
+            <TextField
+              select
+              name="energy_resource_type_id"
+              label="Тип енергоресурсу"
+              value={formData.energy_resource_type_id || ''}
+              onChange={handleChange}
+              fullWidth
+              sx={{ mb: 1 }}
+              error={!!formErrors.energy_resource_type_id}
+              helperText={formErrors.energy_resource_type_id || ' '}
+            >
+              {energyResourceTypes
+                .filter((rt) => rt.isActive)
+                .map((rt) => (
+                  <MenuItem key={rt.id} value={rt.id}>
+                    {rt.name}
+                  </MenuItem>
+                ))}
+            </TextField>
+          </>
         )}
-        
-        <TextField
-          name="serial_number"
-          label="Серійний номер"
-          value={formData.serial_number || ''}
-          onChange={handleChange}
-          fullWidth
-          sx={{ mb: 1, mt: 1 }}
-          error={!!formErrors.serial_number}
-          helperText={formErrors.serial_number || ' '}
-        />
-
-        <FormControl 
-          fullWidth 
-          sx={{ mb: 1 }}
-          error={!!formErrors.location_id}
-        >
-          <InputLabel>Локація</InputLabel>
-          <Select
-            name="location_id"
-            value={formData.location_id || ''}
-            onChange={handleChange}
-            label="Локація"
-          >
-            {locations
-              .filter(location => location.isActive)
-              .map((location) => (
-                <MenuItem key={location.id} value={location.id}>
-                  {location.name}
-                </MenuItem>
-              ))
-            }
-          </Select>
-          {formErrors.location_id && (
-            <Alert severity="error" sx={{ mt: 0.5 }}>
-              {formErrors.location_id}
-            </Alert>
-          )}
-        </FormControl>
-
-        <TextField
-          name="energy_resource_type_id"
-          label="ID типу енергоресурсу (тимчасово)"
-          value={formData.energy_resource_type_id || ''}
-          onChange={handleChange}
-          fullWidth
-          type="number"
-          sx={{ mb: 1 }}
-          error={!!formErrors.energy_resource_type_id}
-          helperText={formErrors.energy_resource_type_id || 'Введіть ID типу енергоресурсу'}
-        />
       </DialogContent>
-      
+
       <DialogActions sx={{ px: 3, mb: 1 }}>
         <Button variant="outlined" size="small" onClick={handleClose}>
           Скасувати
         </Button>
-        <Button variant="contained" size="small" onClick={handleSubmit}>
+        <Button variant="contained" size="small" onClick={handleSubmit} disabled={loading}>
           Зберегти
         </Button>
       </DialogActions>

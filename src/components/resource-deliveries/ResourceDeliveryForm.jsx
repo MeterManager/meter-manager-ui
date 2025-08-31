@@ -24,9 +24,7 @@ const ResourceDeliveryForm = ({
         quantity: initialData.quantity || '',
         unit: initialData.unit || '',
         pricePerUnit: initialData.pricePerUnit || '',
-        deliveryDate: initialData.deliveryDate
-          ? new Date(initialData.deliveryDate).toISOString().split('T')[0]
-          : '',
+        deliveryDate: initialData.deliveryDate ? new Date(initialData.deliveryDate).toISOString().split('T')[0] : '',
         supplier: initialData.supplier || '',
       });
       setFormErrors({});
@@ -89,7 +87,11 @@ const ResourceDeliveryForm = ({
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>{initialData.id ? 'Редагувати поставку ресурсу' : 'Додати поставку ресурсу'}</DialogTitle>
       <DialogContent sx={{ pb: 0, mt: 1 }}>
-        {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
+        {error && (
+          <Alert severity="error" sx={{ mb: 1 }}>
+            {error}
+          </Alert>
+        )}
 
         <TextField
           select
@@ -105,7 +107,11 @@ const ResourceDeliveryForm = ({
           {locationsArray.length === 0 ? (
             <MenuItem disabled>Немає доступних локацій</MenuItem>
           ) : (
-            locationsArray.map((loc) => <MenuItem key={loc.id} value={loc.id}>{loc.name}</MenuItem>)
+            locationsArray.map((loc) => (
+              <MenuItem key={loc.id} value={loc.id}>
+                {loc.name}
+              </MenuItem>
+            ))
           )}
         </TextField>
 
@@ -122,7 +128,11 @@ const ResourceDeliveryForm = ({
           {resourceTypesArray.length === 0 ? (
             <MenuItem disabled>Немає доступних типів ресурсів</MenuItem>
           ) : (
-            resourceTypesArray.map((res) => <MenuItem key={res.id} value={res.name}>{res.name}</MenuItem>)
+            resourceTypesArray.map((res) => (
+              <MenuItem key={res.id} value={res.name}>
+                {res.name}
+              </MenuItem>
+            ))
           )}
         </TextField>
 
@@ -183,8 +193,12 @@ const ResourceDeliveryForm = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, mb: 1 }}>
-        <Button variant="outlined" size="small" onClick={handleClose}>Скасувати</Button>
-        <Button variant="contained" size="small" onClick={handleSubmit}>Зберегти</Button>
+        <Button variant="outlined" size="small" onClick={handleClose}>
+          Скасувати
+        </Button>
+        <Button variant="contained" size="small" onClick={handleSubmit}>
+          Зберегти
+        </Button>
       </DialogActions>
     </Dialog>
   );

@@ -39,9 +39,9 @@ export const useResourceTypes = () => {
       const transformedData = {
         name: data.name,
         unit: data.unit,
-        is_active: data.isActive !== undefined ? data.isActive : true
+        is_active: data.isActive !== undefined ? data.isActive : true,
       };
-            
+
       const response = await resourceTypeApi.createResourceType(token, transformedData);
       await fetchData();
       return response;
@@ -57,9 +57,9 @@ export const useResourceTypes = () => {
       const transformedData = {
         name: data.name,
         unit: data.unit,
-        is_active: data.isActive
+        is_active: data.isActive,
       };
-            
+
       const response = await resourceTypeApi.updateResourceType(token, id, transformedData);
       await fetchData();
       return response;
@@ -79,15 +79,15 @@ export const useResourceTypes = () => {
     try {
       const token = localStorage.getItem('token');
       const type = resourceTypes.find((t) => t.id === id);
-      
+
       if (!type) throw new Error('Тип ресурсу не знайдено');
-      
-      const payload = { 
+
+      const payload = {
         name: type.name,
         unit: type.unit,
-        is_active
+        is_active,
       };
-            
+
       const response = await resourceTypeApi.updateResourceType(token, id, payload);
       await fetchData();
       return response;

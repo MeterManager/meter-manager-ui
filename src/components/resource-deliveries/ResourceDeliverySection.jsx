@@ -9,16 +9,8 @@ const ResourceDeliverySection = ({ locations = [], resourceTypes = [], initialEx
   const memoizedLocations = useMemo(() => locations, [locations]);
   const memoizedResourceTypes = useMemo(() => resourceTypes, [resourceTypes]);
 
-  const {
-    deliveries,
-    search,
-    setSearch,
-    addDelivery,
-    editDelivery,
-    removeDelivery,
-    error,
-    setError
-  } = useResourceDeliveries();
+  const { deliveries, search, setSearch, addDelivery, editDelivery, removeDelivery, error, setError } =
+    useResourceDeliveries();
 
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
@@ -31,43 +23,53 @@ const ResourceDeliverySection = ({ locations = [], resourceTypes = [], initialEx
     setFormOpen(true);
   }, []);
 
-  const handleEdit = useCallback((delivery) => {
-    const resourceTypeName = memoizedResourceTypes.find(rt => rt.id === delivery.resourceType)?.name || delivery.resourceType;
+  const handleEdit = useCallback(
+    (delivery) => {
+      const resourceTypeName =
+        memoizedResourceTypes.find((rt) => rt.id === delivery.resourceType)?.name || delivery.resourceType;
 
-    setEditingDelivery({
-      ...delivery,
-      resourceType: resourceTypeName
-    });
-    setFormOpen(true);
-  }, [memoizedResourceTypes]);
+      setEditingDelivery({
+        ...delivery,
+        resourceType: resourceTypeName,
+      });
+      setFormOpen(true);
+    },
+    [memoizedResourceTypes]
+  );
 
-  const handleFormSubmit = useCallback(async (data) => {
-    try {
-      setError(null);
-      if (editingDelivery?.id) {
-        await editDelivery(editingDelivery.id, data);
-      } else {
-        await addDelivery(data);
+  const handleFormSubmit = useCallback(
+    async (data) => {
+      try {
+        setError(null);
+        if (editingDelivery?.id) {
+          await editDelivery(editingDelivery.id, data);
+        } else {
+          await addDelivery(data);
+        }
+        setFormOpen(false);
+        setEditingDelivery(null);
+      } catch (err) {
+        setError(err.message || 'Помилка при збереженні поставки');
       }
-      setFormOpen(false);
-      setEditingDelivery(null);
-    } catch (err) {
-      setError(err.message || 'Помилка при збереженні поставки');
-    }
-  }, [editingDelivery, addDelivery, editDelivery, setError]);
+    },
+    [editingDelivery, addDelivery, editDelivery, setError]
+  );
 
   const handleFormClose = useCallback(() => {
     setFormOpen(false);
     setEditingDelivery(null);
   }, []);
 
-  const handleRemove = useCallback(async (id) => {
-    try {
-      await removeDelivery(id);
-    } catch (err) {
-      setError(err.message || 'Помилка при видаленні поставки');
-    }
-  }, [removeDelivery, setError]);
+  const handleRemove = useCallback(
+    async (id) => {
+      try {
+        await removeDelivery(id);
+      } catch (err) {
+        setError(err.message || 'Помилка при видаленні поставки');
+      }
+    },
+    [removeDelivery, setError]
+  );
 
   return (
     <>

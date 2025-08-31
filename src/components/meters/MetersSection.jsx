@@ -1,74 +1,48 @@
 import { useState } from 'react';
-import { Paper, Box, Typography, Collapse, IconButton, Divider } from '@mui/material';
+import { Paper, Box, Typography, Collapse, IconButton, Divider, CircularProgress } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import MetersTable from './MetersTable';
 import MeterForm from './MeterForm';
 import { useMeters } from '../../hooks/useMeters';
 
-const MetersSection = ({ 
-  initialExpanded = true, 
-  locations = [], 
-  energyResourceTypes = [] 
-}) => {
-  const {
-    meters,
-    search,
-    setSearch,
-    addMeter,
-    editMeter,
-    removeMeter,
-    updateMeterStatus,
-    error,
-    setError,
-  } = useMeters();
-
+const MetersSection = ({ initialExpanded = true, locations = [], energyResourceTypes = [] }) => {
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [editingMeter, setEditingMeter] = useState(null);
 
-  const handleToggle = () => {
-    setExpanded(!expanded);
-  };
+  const { meters, loading, error, addMeter, editMeter, removeMeter, updateMeterStatus } = useMeters();
 
+  const handleToggle = () => setExpanded(!expanded);
   const handleAdd = () => {
     setEditingMeter(null);
     setFormOpen(true);
   };
-
   const handleEdit = (meter) => {
-    console.log('MetersSection handleEdit:', meter);
     setEditingMeter(meter);
     setFormOpen(true);
   };
-
-  const handleFormSubmit = async (formData) => {
-    console.log('MetersSection handleFormSubmit:', formData);
-    try {
-      if (editingMeter?.id) {
-        console.log('Updating meter:', editingMeter.id, formData);
-        await editMeter(editingMeter.id, formData);
-      } else {
-        console.log('Adding new meter:', formData);
-        await addMeter(formData);
-      }
-      setFormOpen(false);
-      setEditingMeter(null);
-    } catch (err) {
-      console.error('Error in handleFormSubmit:', err);
-      setError(err.message || 'Помилка при збереженні лічільника');
-    }
-  };
-
   const handleFormClose = () => {
     setFormOpen(false);
     setEditingMeter(null);
+  };
+
+  const handleFormSubmit = async (formData) => {
+    try {
+      if (editingMeter?.id) await editMeter(editingMeter.id, formData);
+      else await addMeter(formData);
+      setFormOpen(false);
+      setEditingMeter(null);
+      setExpanded(true);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleRemove = async (id) => {
     try {
       await removeMeter(id);
     } catch (err) {
-      setError(err.message || 'Помилка при видаленні лічільника');
+      console.error(err);
     }
   };
 
@@ -82,32 +56,29 @@ const MetersSection = ({
             justifyContent: 'space-between',
             p: 2,
             cursor: 'pointer',
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.02)',
-            },
+            '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' },
           }}
           onClick={handleToggle}
         >
           <Typography variant="h5">Лічільники ({meters.length})</Typography>
-          <IconButton size="small">
-            {expanded ? <ExpandLess /> : <ExpandMore />}
-          </IconButton>
+          <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
-
         <Divider />
-
         <Collapse in={expanded} timeout="auto">
           <Box sx={{ p: 3 }}>
-            <MetersTable
-              meters={meters}
-              search={search}
-              setSearch={setSearch}
-              onAdd={handleAdd}
-              onEdit={handleEdit}
-              removeMeter={handleRemove}
-              updateMeterStatus={updateMeterStatus}
-              setLocalError={setError}
-            />
+            {loading ? (
+              <CircularProgress />
+            ) : (
+              <MetersTable
+                meters={meters}
+                onAdd={handleAdd}
+                onEdit={handleEdit}
+                removeMeter={handleRemove}
+                updateMeterStatus={updateMeterStatus}
+                locations={locations}
+                energyResourceTypes={energyResourceTypes}
+              />
+            )}
           </Box>
         </Collapse>
       </Paper>
@@ -119,8 +90,9 @@ const MetersSection = ({
         initialData={editingMeter || {}}
         error={error}
         meters={meters}
-        locations={locations}
-        energyResourceTypes={energyResourceTypes}
+        locations={locations.filter((l) => l.isActive)}
+        energyResourceTypes={energyResourceTypes.filter((rt) => rt.isActive)}
+        loading={loading}
       />
     </>
   );

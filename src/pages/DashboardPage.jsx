@@ -18,9 +18,9 @@ const DashboardPage = () => {
   const locationsHook = useLocations();
   const resourceTypesHook = useResourceTypes();
   const tenantsHook = useTenants();
-  const metersHook = useMeters();
+  const metersHook = useMeters(); // Тут завантажуємо дані
 
-  const loading = authLoading || locationsHook.loading || resourceTypesHook.loading;
+  const loading = authLoading || locationsHook.loading || resourceTypesHook.loading || metersHook.loading; // включаємо meters
 
   if (!isAdmin && !authLoading) {
     return (
@@ -57,16 +57,13 @@ const DashboardPage = () => {
             locations={locationsHook.locations}
             resourceTypes={resourceTypesHook.resourceTypes}
           />
+
           <MetersSection
             initialExpanded={false}
             locations={locationsHook.locations}
-            energyResourceTypes={resourceTypesHook.resourceTypes.filter((rt) => rt.category === 'energy')}
+            energyResourceTypes={resourceTypesHook.resourceTypes}
           />
-          <MeterTenantsSection
-            tenants={tenantsHook.tenants}
-            meters={metersHook.meters}
-            initialExpanded={false}
-          />
+          <MeterTenantsSection tenants={tenantsHook.tenants} meters={metersHook.meters} initialExpanded={false} />
           <UsersSection initialExpanded={false} />
         </Stack>
       )}

@@ -3,11 +3,11 @@ import createApi from './baseApi';
 export const getMeters = async (token, search = '') => {
   const api = createApi(token);
   const params = {};
-  
+
   if (search && search.trim()) {
     params.search = search.trim();
   }
-  
+
   const response = await api.get('/meters', { params });
   return response.data;
 };

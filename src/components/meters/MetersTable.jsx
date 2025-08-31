@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -15,32 +16,33 @@ import { useTheme } from '@mui/material/styles';
 
 const MetersTable = ({
   meters,
-  search,
-  setSearch,
   onEdit,
   onAdd,
   removeMeter,
   updateMeterStatus,
   setLocalError,
+  locations = [],
+  energyResourceTypes = [],
 }) => {
   const theme = useTheme();
+  const [search, setSearch] = useState(''); // Локальний стан пошуку
 
   const handleStatusChange = async (meter) => {
     try {
-      await updateMeterStatus(meter.id, {
-        is_active: !meter.isActive,
-      });
+      await updateMeterStatus(meter.id, !meter.isActive);
     } catch (err) {
-      setLocalError(err.message || 'Помилка при зміні статусу лічільника');
+      setLocalError?.(err.message || 'Помилка при зміні статусу лічільника');
     }
   };
 
-  const filteredMeters = meters.filter(
-    (meter) =>
-      meter.serial_number.toLowerCase().includes(search.toLowerCase()) ||
-      meter.locationName.toLowerCase().includes(search.toLowerCase()) ||
-      meter.energyResourceType.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredMeters = meters.filter((meter) => {
+    const serial = (meter.serial_number || '').toLowerCase();
+    const locationName = locations.find((l) => l.id === meter.location_id)?.name?.toLowerCase() || '';
+    const resourceName =
+      energyResourceTypes.find((rt) => rt.id === meter.energy_resource_type_id)?.name?.toLowerCase() || '';
+    const query = search.toLowerCase();
+    return serial.includes(query) || locationName.includes(query) || resourceName.includes(query);
+  });
 
   return (
     <Box>
@@ -52,6 +54,7 @@ const MetersTable = ({
           <SearchField value={search} onChange={(e) => setSearch(e.target.value)} />
         </Box>
       </Box>
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -65,34 +68,36 @@ const MetersTable = ({
           </TableHead>
           <TableBody>
             {filteredMeters.length > 0 ? (
-              filteredMeters.map((meter) => (
-                <TableRow key={meter.id}>
-                  <TableCell>{meter.serial_number}</TableCell>
-                  <TableCell>{meter.locationName}</TableCell>
-                  <TableCell>{meter.energyResourceType}</TableCell>
-                  <TableCell>
-                    <Switch
-                      checked={meter.isActive}
-                      onChange={() => handleStatusChange(meter)}
-                      color="primary"
-                    />
-                    {meter.isActive ? 'Активний' : 'Неактивний'}
-                  </TableCell>
-                  <TableCell>
-                    <Button size="small" onClick={() => onEdit(meter)}>
-                      Редагувати
-                    </Button>
-                    <Button
-                      size="small"
-                      onClick={() => removeMeter(meter.id)}
-                      color="error"
-                      disabled={meter.isActive}
-                    >
-                      Видалити
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+              filteredMeters.map((meter) => {
+                const locationName = locations.find((l) => l.id === meter.location_id)?.name || '-';
+                const resourceName =
+                  energyResourceTypes.find((rt) => rt.id === meter.energy_resource_type_id)?.name || '-';
+
+                return (
+                  <TableRow key={meter.id}>
+                    <TableCell>{meter.serial_number}</TableCell>
+                    <TableCell>{locationName}</TableCell>
+                    <TableCell>{resourceName}</TableCell>
+                    <TableCell>
+                      <Switch checked={meter.isActive} onChange={() => handleStatusChange(meter)} color="primary" />
+                      {meter.isActive ? 'Активний' : 'Неактивний'}
+                    </TableCell>
+                    <TableCell>
+                      <Button size="small" onClick={() => onEdit(meter)}>
+                        Редагувати
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={() => removeMeter(meter.id)}
+                        color="error"
+                        disabled={meter.isActive}
+                      >
+                        Видалити
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell colSpan={5} align="center">

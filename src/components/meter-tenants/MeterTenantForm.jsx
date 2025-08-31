@@ -1,17 +1,14 @@
 import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Alert,
-  MenuItem,
-} from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, MenuItem } from '@mui/material';
 
 const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants = [], meters = [] }) => {
-  const [formData, setFormData] = useState(initialData);
+  const [formData, setFormData] = useState({
+    tenantId: '',
+    meterId: '',
+    startDate: '',
+    endDate: '',
+    id: undefined,
+  });
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
@@ -37,7 +34,6 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
     if (!formData.tenantId) errors.tenantId = "Орендар обов'язковий";
     if (!formData.meterId) errors.meterId = "Лічильник обов'язковий";
     if (!formData.startDate) errors.startDate = "Дата початку обов'язкова";
-
     return errors;
   };
 
@@ -49,24 +45,40 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
     }
 
     onSubmit({
-      ...formData,
-      tenantId: parseInt(formData.tenantId),
-      meterId: parseInt(formData.meterId),
+      tenant_id: parseInt(formData.tenantId),
+      meter_id: parseInt(formData.meterId),
+      assigned_from: formData.startDate || null,
+      assigned_to: formData.endDate || null,
+      id: formData.id,
     });
-    setFormData({});
+
+    if (!formData.id) {
+      setFormData({
+        tenantId: '',
+        meterId: '',
+        startDate: '',
+        endDate: '',
+        id: undefined,
+      });
+    }
   };
 
   const handleClose = () => {
-    setFormData({});
     setFormErrors({});
     onClose();
   };
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{initialData.id ? 'Редагувати зв’язок лічильник-орендар' : 'Додати зв’язок лічильник-орендар'}</DialogTitle>
+      <DialogTitle>
+        {formData.id ? 'Редагувати зв’язок лічильник-орендар' : 'Додати зв’язок лічильник-орендар'}
+      </DialogTitle>
       <DialogContent sx={{ mt: 1, pb: 0 }}>
-        {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
+        {error && (
+          <Alert severity="error" sx={{ mb: 1 }}>
+            {error}
+          </Alert>
+        )}
 
         <TextField
           select
@@ -80,7 +92,7 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
           helperText={formErrors.tenantId || ' '}
         >
           {tenants.map((t) => (
-            <MenuItem key={t.id} value={t.id}>
+            <MenuItem key={t.id} value={t.id.toString()}>
               {t.name}
             </MenuItem>
           ))}
@@ -98,8 +110,8 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
           helperText={formErrors.meterId || ' '}
         >
           {meters.map((m) => (
-            <MenuItem key={m.id} value={m.id}>
-              {m.serialNumber || m.id}
+            <MenuItem key={m.id} value={m.id.toString()}>
+              {m.serial_number || `ID:${m.id}`}
             </MenuItem>
           ))}
         </TextField>
@@ -121,7 +133,7 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
           name="endDate"
           label="Дата завершення"
           type="date"
-          value={formData.endDate || ''}
+          value={formData.endDate}
           onChange={handleChange}
           fullWidth
           sx={{ mt: 1 }}
@@ -130,8 +142,12 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
       </DialogContent>
 
       <DialogActions sx={{ px: 3, mb: 1 }}>
-        <Button variant="outlined" size="small" onClick={handleClose}>Скасувати</Button>
-        <Button variant="contained" size="small" onClick={handleSubmit}>Зберегти</Button>
+        <Button variant="outlined" size="small" onClick={handleClose}>
+          Скасувати
+        </Button>
+        <Button variant="contained" size="small" onClick={handleSubmit}>
+          Зберегти
+        </Button>
       </DialogActions>
     </Dialog>
   );

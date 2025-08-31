@@ -1,3 +1,4 @@
+// useMeters.js
 import { useState, useEffect, useCallback } from 'react';
 import * as metersApi from '../api/metersApi';
 import useAuth from './useAuth';
@@ -7,7 +8,6 @@ export const useMeters = () => {
   const [meters, setMeters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState({});
   const [error, setError] = useState(null);
 
   const fetchData = useCallback(async () => {
@@ -16,14 +16,14 @@ export const useMeters = () => {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const response = await metersApi.getMeters(token, { ...filters, serial_number: search });
-      setMeters(response.data.map(m => ({ ...m, isActive: m.is_active === true })));
+      const response = await metersApi.getMeters(token, search);
+      setMeters(response.data.map((m) => ({ ...m, isActive: m.is_active })));
     } catch (err) {
       setError('Помилка при завантаженні лічильників');
     } finally {
       setLoading(false);
     }
-  }, [filters, search, isAuthenticated, isLoading]);
+  }, [search, isAuthenticated, isLoading]);
 
   useEffect(() => {
     fetchData();
@@ -47,13 +47,24 @@ export const useMeters = () => {
     await fetchData();
   };
 
-  const updateMeterStatus = async (id, is_active) => {
+  const updateMeterStatus = async (id, isActive) => {
     const token = localStorage.getItem('token');
-    const meter = meters.find(m => m.id === id);
+    const meter = meters.find((m) => m.id === id);
     if (!meter) throw new Error('Лічильник не знайдено');
-    await metersApi.updateMeter(token, id, { ...meter, is_active });
+    await metersApi.updateMeter(token, id, { ...meter, is_active: isActive });
     await fetchData();
   };
 
-  return { meters, loading, search, setSearch, filters, setFilters, addMeter, editMeter, removeMeter, updateMeterStatus, error, setError };
+  return {
+    meters,
+    loading,
+    search,
+    setSearch,
+    addMeter,
+    editMeter,
+    removeMeter,
+    updateMeterStatus,
+    error,
+    setError,
+  };
 };

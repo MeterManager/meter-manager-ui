@@ -17,7 +17,7 @@ export const useResourceDeliveries = () => {
       const token = localStorage.getItem('token');
       const response = await resourceDeliveriesApi.getResourceDeliveries(token, { search });
       setDeliveries(
-        (response.data || []).map(delivery => ({
+        (response.data || []).map((delivery) => ({
           id: delivery.id,
           locationId: delivery.location_id,
           resourceType: delivery.resource_type,
@@ -45,7 +45,7 @@ export const useResourceDeliveries = () => {
   const addDelivery = async (data) => {
     try {
       const token = localStorage.getItem('token');
-            
+
       const deliveryData = {
         location_id: data.locationId,
         resource_type: data.resourceType,
@@ -56,7 +56,7 @@ export const useResourceDeliveries = () => {
         total_cost: data.totalCost,
         supplier: data.supplier,
       };
-            
+
       const response = await resourceDeliveriesApi.createResourceDelivery(token, deliveryData);
       await fetchData();
       return response;
@@ -69,7 +69,7 @@ export const useResourceDeliveries = () => {
   const editDelivery = async (id, data) => {
     try {
       const token = localStorage.getItem('token');
-            
+
       const deliveryData = {
         location_id: data.locationId,
         resource_type: data.resourceType, // Передаємо ID типу ресурсу
@@ -80,7 +80,7 @@ export const useResourceDeliveries = () => {
         total_cost: data.totalCost,
         supplier: data.supplier,
       };
-            
+
       const response = await resourceDeliveriesApi.updateResourceDelivery(token, id, deliveryData);
       await fetchData();
       return response;
