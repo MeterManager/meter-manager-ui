@@ -1,31 +1,36 @@
-import api from './baseApi';
+import createApi from './baseApi';
 
-export const getMeters = async (filters = {}) => {
+export const getMeters = async (token, search = '') => {
+  const api = createApi(token);
   const params = {};
-  if (filters.is_active !== undefined) params.is_active = filters.is_active;
-  if (filters.serial_number) params.serial_number = filters.serial_number;
-  if (filters.location_id) params.location_id = filters.location_id;
-  if (filters.energy_resource_type_id) params.energy_resource_type_id = filters.energy_resource_type_id;
+  
+  if (search && search.trim()) {
+    params.search = search.trim();
+  }
   
   const response = await api.get('/meters', { params });
   return response.data;
 };
 
-export const getMeterById = async (id) => {
+export const getMeterById = async (token, id) => {
+  const api = createApi(token);
   const response = await api.get(`/meters/${id}`);
   return response.data;
 };
 
-export const createMeter = async (data) => {
+export const createMeter = async (token, data) => {
+  const api = createApi(token);
   const response = await api.post('/meters', data);
   return response.data;
 };
 
-export const updateMeter = async (id, data) => {
+export const updateMeter = async (token, id, data) => {
+  const api = createApi(token);
   const response = await api.put(`/meters/${id}`, data);
   return response.data;
 };
 
-export const deleteMeter = async (id) => {
+export const deleteMeter = async (token, id) => {
+  const api = createApi(token);
   await api.delete(`/meters/${id}`);
 };

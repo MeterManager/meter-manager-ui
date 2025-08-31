@@ -1,25 +1,26 @@
-import api from './baseApi';
+import createApi from './baseApi';
 
-export const getUsers = async (page = 1, limit = 10, search = '', is_active) => {
-  const params = { page, limit };
-  if (search) params.name = search; 
-  if (is_active !== undefined) params.is_active = is_active;
-
+export const getUsers = async (token, search = '') => {
+  const api = createApi(token);
+  const params = {};
+  if (search) params.search = search;
   const response = await api.get('/users', { params });
-  return response.data; 
+  return response.data;
 };
 
-export const getUserById = async (id) => {
+export const getUserById = async (token, id) => {
+  const api = createApi(token);
   const response = await api.get(`/users/${id}`);
-  return response.data; 
+  return response.data;
 };
 
-export const updateUser = async (id, data) => {
+export const updateUser = async (token, id, data) => {
+  const api = createApi(token);
   const response = await api.put(`/users/${id}`, data);
-  return response.data; 
+  return response.data;
 };
 
-export const deleteUser = async (id) => {
-  const response = await api.delete(`/users/${id}`);
-  return response.data; 
+export const deleteUser = async (token, id) => {
+  const api = createApi(token);
+  await api.delete(`/users/${id}`);
 };

@@ -1,30 +1,32 @@
-import api from './baseApi';
+import createApi from './baseApi';
 
-export const getResourceTypes = async (page = 1, limit = 10, search = '', is_active) => {
-  const params = { page, limit };
-
-  if (search) params.name = search;
-  if (is_active !== undefined) params.is_active = is_active;
-
+export const getResourceTypes = async (token, search = '') => {
+  const api = createApi(token);
+  const params = {};
+  if (search) params.search = search;
   const response = await api.get('/resource-types', { params });
   return response.data;
 };
 
-export const getResourceTypeById = async (id) => {
+export const getResourceTypeById = async (token, id) => {
+  const api = createApi(token);
   const response = await api.get(`/resource-types/${id}`);
   return response.data;
 };
 
-export const createResourceType = async (data) => {
+export const createResourceType = async (token, data) => {
+  const api = createApi(token);
   const response = await api.post('/resource-types', data);
   return response.data;
 };
 
-export const updateResourceType = async (id, data) => {
+export const updateResourceType = async (token, id, data) => {
+  const api = createApi(token);
   const response = await api.put(`/resource-types/${id}`, data);
   return response.data;
 };
 
-export const deleteResourceType = async (id) => {
+export const deleteResourceType = async (token, id) => {
+  const api = createApi(token);
   await api.delete(`/resource-types/${id}`);
 };

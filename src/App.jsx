@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Box, CssBaseline, ThemeProvider, CircularProgress, Fade } from '@mui/material';
-import useAuth from '../hooks/useAuth';
-import ConsentHandler from '../components/ConsentHandler';
-import Sidebar from '../components/Sidebar';
-import MainContent from '../components/MainContent';
-import theme from '../theme';
+import useAuth from './hooks/useAuth';
+import ConsentHandler from './components/ConsentHandler';
+import Sidebar from './components/Sidebar';
+import MainContent from './components/MainContent';
+import theme from './theme';
 
 const App = () => {
   const [collapsed, setCollapsed] = useState(false);

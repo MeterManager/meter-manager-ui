@@ -24,6 +24,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import useAuth from '../hooks/useAuth';
 import useMediaQuery from '../hooks/useMediaQuery';
+import { useAuthContext } from '../contexts/AuthContext';
 
 const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
   const theme = useTheme();
@@ -48,8 +49,10 @@ const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
     if (isMobile) setMobileOpen(false);
   }, [selectedMenuItem, isMobile]);
 
+  const { isAdmin } = useAuthContext();
+
   const menuItems = [
-    { key: '1', label: 'Панель керування', icon: <Dashboard /> },
+    ...(isAdmin ? [{ key: '1', label: 'Панель керування', icon: <Dashboard /> }] : []),
     { key: '2', label: 'Подача показників', icon: <Assignment /> },
     { key: '3', label: 'Звіти', icon: <Description /> },
     { key: '4', label: 'Налаштування', icon: <Settings /> },

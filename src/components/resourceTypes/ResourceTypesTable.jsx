@@ -27,7 +27,7 @@ const ResourceTypesTable = ({
 
   const handleStatusChange = async (type) => {
     try {
-      await updateResourceTypeStatus(type.id, { is_active: !type.is_active });
+      await updateResourceTypeStatus(type.id, !type.isActive);
     } catch (err) {
       setLocalError(err.message || 'Помилка при зміні статусу типу ресурсу');
     }

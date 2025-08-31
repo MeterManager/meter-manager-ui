@@ -79,14 +79,30 @@ export const useTenants = () => {
     await fetchData();
   };
 
-  const updateTenantStatus = async (id, isActive) => {
-    const token = localStorage.getItem('token');
-    const tenant = tenants.find((t) => t.id === id);
-    if (!tenant) throw new Error('Орендар не знайдений');
-    const payload = { ...tenant, is_active: isActive };
-    const response = await tenantApi.updateTenant(token, id, payload);
-    await fetchData();
-    return response;
+  const updateTenantStatus = async (id, is_active) => {
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = tenants.find((t) => t.id === id);
+      
+      if (!tenant) throw new Error('Орендар не знайдений');
+      
+      const payload = {
+        name: tenant.name,
+        location_id: tenant.locationId,
+        occupied_area: tenant.occupiedArea || null,
+        contact_person: tenant.contactPerson || null,
+        phone: tenant.phone || null,
+        email: tenant.email || null,
+        is_active
+      };
+            
+      const response = await tenantApi.updateTenant(token, id, payload);
+      await fetchData();
+      return response;
+    } catch (error) {
+      console.error('Update tenant status error:', error.response?.data);
+      throw error;
+    }
   };
 
   return {

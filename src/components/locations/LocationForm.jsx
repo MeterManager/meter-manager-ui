@@ -10,7 +10,7 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
       setFormData({
         name: initialData.name || '',
         address: initialData.address || '',
-        isActive: initialData.isActive ?? false,
+        isActive: initialData.isActive ?? true,
         id: initialData.id,
       });
       setFormErrors({});
@@ -24,8 +24,8 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.name) errors.name = 'Назва обов’язкова';
-    if (!formData.address) errors.address = 'Адреса обов’язкова';
+    if (!formData.name) errors.name = "Назва обов'язкова";
+    if (!formData.address) errors.address = "Адреса обов'язкова";
     if (formData.name && locations.some((loc) => loc.name === formData.name && loc.id !== initialData.id)) {
       errors.name = 'Локація з такою назвою вже існує';
     }
@@ -38,9 +38,10 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
       setFormErrors(errors);
       return;
     }
+    
     onSubmit({
       ...formData,
-      isActive: formData.isActive ?? initialData.isActive ?? false,
+      isActive: formData.isActive
     });
 
     setFormData({});

@@ -25,9 +25,7 @@ const LocationsTable = ({
   const theme = useTheme();
   const handleStatusChange = async (location) => {
     try {
-      await updateLocationStatus(location.id, {
-        is_active: !location.isActive,
-      });
+      await updateLocationStatus(location.id, !location.isActive);
     } catch (err) {
       setLocalError(err.message || 'Помилка при зміні статусу локації');
     }

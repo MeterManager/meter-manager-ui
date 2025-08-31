@@ -1,7 +1,9 @@
+// src/main.jsx
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Auth0Provider } from '@auth0/auth0-react';
-import App from './pages/App.jsx';
+import App from './App';
+import { AuthProvider } from './contexts/AuthContext';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -16,7 +18,9 @@ createRoot(document.getElementById('root')).render(
       cacheLocation="localstorage"
       useRefreshTokens={true}
     >
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </Auth0Provider>
   </StrictMode>
 );

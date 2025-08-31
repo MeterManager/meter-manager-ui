@@ -29,9 +29,7 @@ const TenantsTable = ({
 
   const handleStatusChange = async (tenant) => {
     try {
-      await updateTenantStatus(tenant.id, {
-        is_active: !tenant.isActive,
-      });
+      await updateTenantStatus(tenant.id, !tenant.isActive);
     } catch (err) {
       setLocalError(err.message || 'Помилка при зміні статусу орендаря');
     }

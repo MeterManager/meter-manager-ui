@@ -11,15 +11,26 @@ import { useLocations } from '../hooks/useLocations';
 import { useTenants } from '../hooks/useTenants';
 import { useMeters } from '../hooks/useMeters';
 import { useResourceTypes } from '../hooks/useResourceTypes';
+import { useAuthContext } from '../contexts/AuthContext';
 
 const DashboardPage = () => {
-  const { locations } = useLocations();
-  const { resourceTypes } = useResourceTypes();
-  const { tenants } = useTenants();
-  const { meters } = useMeters();
+  const { isAdmin, loading: authLoading } = useAuthContext();
   const locationsHook = useLocations();
   const resourceTypesHook = useResourceTypes();
-  const loading = locationsHook.loading || resourceTypesHook.loading;
+  const tenantsHook = useTenants();
+  const metersHook = useMeters();
+
+  const loading = authLoading || locationsHook.loading || resourceTypesHook.loading;
+
+  if (!isAdmin && !authLoading) {
+    return (
+      <Container maxWidth="lg">
+        <Typography variant="h5" align="center" sx={{ my: 4 }}>
+          У вас немає доступу до дашборду
+        </Typography>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg">
@@ -27,24 +38,6 @@ const DashboardPage = () => {
         Панель керування
       </Typography>
 
-      <Box sx={{ mb: 2 }}>
-        <LocationsSection initialExpanded={false} />
-        <ResourceTypesSection initialExpanded={false} />
-        <TenantsSection locations={locations} initialExpanded={false} />
-        <ResourceDeliverySection locations={locations} resourceTypes={resourceTypes} initialExpanded={false} />
-        <TariffsSection initialExpanded={false}  locations={locations} resourceTypes={resourceTypes}  />
-        <MetersSection 
-          initialExpanded={false} 
-          locations={locations}
-          energyResourceTypes={[]}
-        />
-        <TenantsSection locations={locations} initialExpanded={false} />
-        <MeterTenantsSection 
-          tenants={tenants} 
-          meters={meters} 
-          initialExpanded={false} 
-        />
-      </Box>
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />
@@ -54,10 +47,25 @@ const DashboardPage = () => {
           <LocationsSection initialExpanded={false} />
           <ResourceTypesSection initialExpanded={false} />
           <TenantsSection locations={locationsHook.locations} initialExpanded={false} />
+          <ResourceDeliverySection
+            locations={locationsHook.locations}
+            resourceTypes={resourceTypesHook.resourceTypes}
+            initialExpanded={false}
+          />
           <TariffsSection
             initialExpanded={false}
             locations={locationsHook.locations}
             resourceTypes={resourceTypesHook.resourceTypes}
+          />
+          <MetersSection
+            initialExpanded={false}
+            locations={locationsHook.locations}
+            energyResourceTypes={resourceTypesHook.resourceTypes.filter((rt) => rt.category === 'energy')}
+          />
+          <MeterTenantsSection
+            tenants={tenantsHook.tenants}
+            meters={metersHook.meters}
+            initialExpanded={false}
           />
           <UsersSection initialExpanded={false} />
         </Stack>

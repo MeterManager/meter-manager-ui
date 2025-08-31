@@ -1,77 +1,70 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as userApi from '../api/userApi';
+import useAuth from './useAuth';
 
 export const useUsers = () => {
+  const { isAuthenticated, isLoading } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
   const [error, setError] = useState(null);
 
   const fetchData = useCallback(async () => {
+    if (!isAuthenticated || isLoading) return;
     setLoading(true);
     setError(null);
     try {
-      const response = await userApi.getUsers(page, 10, search);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Токен не знайдено');
+      }
+      const response = await userApi.getUsers(token, search);
       setUsers(
         (response.data || []).map((u) => ({
           ...u,
           isActive: u.is_active === true,
         }))
       );
-      setTotal(response.count || 0);
     } catch (err) {
+      console.error('Error fetching users:', err);
       setError('Помилка при завантаженні користувачів');
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [search, isAuthenticated, isLoading]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-
   const editUser = async (id, payload) => {
-    try {
-      const updatedUser = await userApi.updateUser(id, payload);
-      await fetchData();
-      return updatedUser.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при редагуванні користувача');
-    }
+    const token = localStorage.getItem('token');
+    const response = await userApi.updateUser(token, id, payload);
+    await fetchData();
+    return response;
   };
 
   const removeUser = async (id) => {
-    try {
-      await userApi.deleteUser(id);
-      await fetchData();
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при видаленні користувача');
-    }
+    const token = localStorage.getItem('token');
+    await userApi.deleteUser(token, id);
+    await fetchData();
   };
 
-  const updateUserStatus = async (id, newStatus) => {
-    try {
-      const payload = { is_active: newStatus };
-      const updatedUser = await userApi.updateUser(id, payload);
-      await fetchData();
-      return updatedUser.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Помилка при зміні статусу');
-    }
+  const updateUserStatus = async (id, is_active) => {
+    const token = localStorage.getItem('token');
+    const user = users.find((u) => u.id === id);
+    if (!user) throw new Error('Користувача не знайдено');
+    const payload = { ...user, is_active };
+    const response = await userApi.updateUser(token, id, payload);
+    await fetchData();
+    return response;
   };
-
 
   return {
     users,
     loading,
-    page,
-    setPage,
     search,
     setSearch,
-    total,
     editUser,
     removeUser,
     updateUserStatus,

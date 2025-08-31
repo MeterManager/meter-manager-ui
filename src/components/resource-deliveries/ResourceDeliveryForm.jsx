@@ -10,50 +10,32 @@ const ResourceDeliveryForm = ({
   locations = [],
   resourceTypes = [],
 }) => {
-  const [formData, setFormData] = useState(initialData);
+  const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
 
-  const resourceTypesArray = Array.isArray(resourceTypes) ? resourceTypes : [];
   const locationsArray = Array.isArray(locations) ? locations : [];
+  const resourceTypesArray = Array.isArray(resourceTypes) ? resourceTypes : [];
 
   useEffect(() => {
     if (open) {
-      console.log('ResourceDeliveryForm initialData:', initialData);
-      console.log('ResourceTypes array:', resourceTypesArray);
-
-      let resourceTypeValue = '';
-      if (initialData.resourceType) {
-        if (typeof initialData.resourceType === 'number') {
-          resourceTypeValue = initialData.resourceType;
-        } else {
-          const foundType = resourceTypesArray.find(
-            (type) => type.name.toLowerCase() === initialData.resourceType.toLowerCase()
-          );
-          resourceTypeValue = foundType ? foundType.id : '';
-          console.log('Found resource type:', foundType);
-        }
-      }
-
       setFormData({
-        ...initialData,
         locationId: initialData.locationId || '',
-        resourceType: resourceTypeValue,
+        resourceType: initialData.resourceType || '',
         quantity: initialData.quantity || '',
         unit: initialData.unit || '',
         pricePerUnit: initialData.pricePerUnit || '',
-        deliveryDate: initialData.deliveryDate || '',
+        deliveryDate: initialData.deliveryDate
+          ? new Date(initialData.deliveryDate).toISOString().split('T')[0]
+          : '',
         supplier: initialData.supplier || '',
       });
       setFormErrors({});
     }
-  }, [open, initialData, resourceTypesArray]);
+  }, [open, initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    const processedValue = (name === 'locationId' || name === 'resourceType') && value !== '' ? Number(value) : value;
-
-    setFormData({ ...formData, [name]: processedValue });
+    setFormData({ ...formData, [name]: value });
     setFormErrors({ ...formErrors, [name]: '' });
   };
 
@@ -68,38 +50,33 @@ const ResourceDeliveryForm = ({
     return errors;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
+    if (Object.keys(errors).length) {
       setFormErrors(errors);
       return;
     }
 
-    const submitData = {
-      ...formData,
-      locationId: parseInt(formData.locationId),
-      resourceType: parseInt(formData.resourceType),
-      quantity: parseFloat(formData.quantity),
-      pricePerUnit: parseFloat(formData.pricePerUnit),
-      totalCost: parseFloat(formData.quantity) * parseFloat(formData.pricePerUnit),
-    };
+    try {
+      const deliveryDateIso = new Date(formData.deliveryDate).toISOString();
 
-    console.log('Form submit data:', submitData);
+      const submitData = {
+        location_id: Number(formData.locationId),
+        resource_type: formData.resourceType,
+        quantity: parseFloat(formData.quantity),
+        unit: formData.unit,
+        price_per_unit: parseFloat(formData.pricePerUnit),
+        total_cost: parseFloat(formData.quantity) * parseFloat(formData.pricePerUnit),
+        delivery_date: deliveryDateIso,
+        supplier: formData.supplier || '',
+      };
 
-    if (isNaN(submitData.locationId) || submitData.locationId <= 0) {
-      console.error('Invalid locationId:', submitData.locationId);
-      setFormErrors({ ...formErrors, locationId: 'Неправильний ID локації' });
-      return;
+      await onSubmit(submitData);
+      onClose();
+    } catch (err) {
+      console.error('Error submitting form:', err);
     }
-
-    if (isNaN(submitData.resourceType) || submitData.resourceType <= 0) {
-      console.error('Invalid resourceType:', submitData.resourceType);
-      setFormErrors({ ...formErrors, resourceType: 'Неправильний тип ресурсу' });
-      return;
-    }
-
-    onSubmit(submitData);
-    setFormData({});
   };
 
   const handleClose = () => {
@@ -112,11 +89,8 @@ const ResourceDeliveryForm = ({
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>{initialData.id ? 'Редагувати поставку ресурсу' : 'Додати поставку ресурсу'}</DialogTitle>
       <DialogContent sx={{ pb: 0, mt: 1 }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 1 }}>
-            {error}
-          </Alert>
-        )}
+        {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
+
         <TextField
           select
           name="locationId"
@@ -125,17 +99,13 @@ const ResourceDeliveryForm = ({
           onChange={handleChange}
           fullWidth
           error={!!formErrors.locationId}
-          helperText={formErrors.locationId}
+          helperText={formErrors.locationId || ' '}
           sx={{ mt: 1, mb: 3 }}
         >
           {locationsArray.length === 0 ? (
             <MenuItem disabled>Немає доступних локацій</MenuItem>
           ) : (
-            locationsArray.map((loc) => (
-              <MenuItem key={loc.id} value={loc.id}>
-                {loc.name}
-              </MenuItem>
-            ))
+            locationsArray.map((loc) => <MenuItem key={loc.id} value={loc.id}>{loc.name}</MenuItem>)
           )}
         </TextField>
 
@@ -152,11 +122,7 @@ const ResourceDeliveryForm = ({
           {resourceTypesArray.length === 0 ? (
             <MenuItem disabled>Немає доступних типів ресурсів</MenuItem>
           ) : (
-            resourceTypesArray.map((res) => (
-              <MenuItem key={res.id} value={res.id}>
-                {res.name}
-              </MenuItem>
-            ))
+            resourceTypesArray.map((res) => <MenuItem key={res.id} value={res.name}>{res.name}</MenuItem>)
           )}
         </TextField>
 
@@ -217,12 +183,8 @@ const ResourceDeliveryForm = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, mb: 1 }}>
-        <Button variant="outlined" size="small" onClick={handleClose}>
-          Скасувати
-        </Button>
-        <Button variant="contained" size="small" onClick={handleSubmit}>
-          Зберегти
-        </Button>
+        <Button variant="outlined" size="small" onClick={handleClose}>Скасувати</Button>
+        <Button variant="contained" size="small" onClick={handleSubmit}>Зберегти</Button>
       </DialogActions>
     </Dialog>
   );

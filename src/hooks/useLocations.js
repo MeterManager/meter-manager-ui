@@ -35,14 +35,24 @@ export const useLocations = () => {
 
   const addLocation = async (data) => {
     const token = localStorage.getItem('token');
-    const response = await locationApi.createLocation(token, data);
+    const transformedData = {
+      name: data.name,
+      address: data.address,
+      is_active: data.isActive ?? true
+    };
+    const response = await locationApi.createLocation(token, transformedData);
     await fetchData();
     return response;
   };
 
   const editLocation = async (id, data) => {
     const token = localStorage.getItem('token');
-    const response = await locationApi.updateLocation(token, id, data);
+    const transformedData = {
+      name: data.name,
+      address: data.address,
+      is_active: data.isActive
+    };
+    const response = await locationApi.updateLocation(token, id, transformedData);
     await fetchData();
     return response;
   };
@@ -56,8 +66,15 @@ export const useLocations = () => {
   const updateLocationStatus = async (id, is_active) => {
     const token = localStorage.getItem('token');
     const loc = locations.find((l) => l.id === id);
+    
     if (!loc) throw new Error('Локацію не знайдено');
-    const payload = { ...loc, is_active };
+    
+    const payload = { 
+      name: loc.name,
+      address: loc.address,
+      is_active
+    };
+        
     const response = await locationApi.updateLocation(token, id, payload);
     await fetchData();
     return response;
