@@ -1,7 +1,10 @@
-import { useState, useEffect,useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import * as resourceTypeApi from '../api/resourceTypeApi';
+import { useAuth0 } from '@auth0/auth0-react';
 
 export const useResourceTypes = () => {
+  const { getAccessTokenSilently } = useAuth0();
+
   const [resourceTypes, setResourceTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -13,20 +16,20 @@ export const useResourceTypes = () => {
     setLoading(true);
     setError(null);
     try { 
-      const response = await resourceTypeApi.getResourceTypes(page, 10, search); 
+      const response = await resourceTypeApi.getResourceTypes(getAccessTokenSilently, page, 10, search); 
       setResourceTypes(
         (response.data || []).map((type) => ({
           ...type,
           isActive: type.is_active === true,
         }))
       );
-    setTotal(response.count || 0);
+      setTotal(response.count || 0);
     } catch (err) {
       setError('Помилка при завантаженні типів ресурсів');
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, getAccessTokenSilently]);
     
   useEffect(() => {
     fetchData();
@@ -34,8 +37,9 @@ export const useResourceTypes = () => {
 
   const addResourceType = async (payload) => {
     try {
-      const newType = await resourceTypeApi.createResourceType(payload);
-      await fetchData(); return newType.data;
+      const newType = await resourceTypeApi.createResourceType(getAccessTokenSilently, payload);
+      await fetchData(); 
+      return newType;
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Помилка при додаванні типу ресурсу');
     }
@@ -43,9 +47,9 @@ export const useResourceTypes = () => {
 
   const editResourceType = async (id, payload) => {
     try {
-      const updatedType = await resourceTypeApi.updateResourceType(id, payload);
+      const updatedType = await resourceTypeApi.updateResourceType(getAccessTokenSilently, id, payload);
       await fetchData();
-      return updatedType.data;
+      return updatedType;
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Помилка при редагуванні типу ресурсу');
     }
@@ -53,7 +57,7 @@ export const useResourceTypes = () => {
 
   const removeResourceType = async (id) => {
     try {
-      await resourceTypeApi.deleteResourceType(id);
+      await resourceTypeApi.deleteResourceType(getAccessTokenSilently, id);
       await fetchData();
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Помилка при видаленні типу ресурсу');
@@ -62,9 +66,9 @@ export const useResourceTypes = () => {
 
   const updateResourceTypeStatus = async (id, payload) => {
     try {
-      const updatedType = await resourceTypeApi.updateResourceType(id, payload);
+      const updatedType = await resourceTypeApi.updateResourceType(getAccessTokenSilently, id, payload);
       await fetchData();
-      return updatedType.data;
+      return updatedType;
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Помилка при зміні статусу');
     }

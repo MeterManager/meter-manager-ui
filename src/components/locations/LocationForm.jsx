@@ -10,8 +10,8 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
       setFormData({
         name: initialData.name || '',
         address: initialData.address || '',
-        isActive: initialData.isActive ?? false,
-        id: initialData.id,
+        isActive: initialData.hasOwnProperty('isActive') ? initialData.isActive : true, 
+        ...(initialData.id ? { id: initialData.id } : {}),
       });
       setFormErrors({});
     }
@@ -38,10 +38,15 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
       setFormErrors(errors);
       return;
     }
-    onSubmit({
-      ...formData,
-      isActive: formData.isActive ?? initialData.isActive ?? false,
-    });
+    const dataToSend = {
+      name: formData.name,
+      address: formData.address,
+      isActive: formData.isActive,
+    };
+      
+    if (formData.id) dataToSend.id = formData.id; // лише при редагуванні
+      
+      onSubmit(dataToSend);
 
     setFormData({});
   };

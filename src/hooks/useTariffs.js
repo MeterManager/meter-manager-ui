@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as tariffApi from '../api/tariffApi';
+import { useAuth0 } from '@auth0/auth0-react';
 
 export const useTariffs = () => {
+  const { getAccessTokenSilently } = useAuth0();
   const [tariffs, setTariffs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -13,7 +15,7 @@ export const useTariffs = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await tariffApi.getTariffs(page, 10, search);
+      const response = await tariffApi.getTariffs(getAccessTokenSilently, page, 10, search);
       setTariffs(
         (response.data || []).map((t) => ({
           ...t,
@@ -26,7 +28,7 @@ export const useTariffs = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, getAccessTokenSilently]);
 
   useEffect(() => {
     fetchData();
@@ -34,9 +36,9 @@ export const useTariffs = () => {
 
   const addTariff = async (payload) => {
     try {
-      const newTariff = await tariffApi.createTariff(payload);
+      const newTariff = await tariffApi.createTariff(getAccessTokenSilently, payload);
       await fetchData();
-      return newTariff.data;
+      return newTariff;
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Помилка при додаванні тарифу');
     }
@@ -44,9 +46,9 @@ export const useTariffs = () => {
 
   const editTariff = async (id, payload) => {
     try {
-      const updatedTariff = await tariffApi.updateTariff(id, payload);
+      const updatedTariff = await tariffApi.updateTariff(getAccessTokenSilently, id, payload);
       await fetchData();
-      return updatedTariff.data;
+      return updatedTariff;
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Помилка при редагуванні тарифу');
     }
@@ -54,7 +56,7 @@ export const useTariffs = () => {
 
   const removeTariff = async (id) => {
     try {
-      await tariffApi.deleteTariff(id);
+      await tariffApi.deleteTariff(getAccessTokenSilently, id);
       await fetchData();
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Помилка при видаленні тарифу');
@@ -67,9 +69,9 @@ export const useTariffs = () => {
       if (!currentTariff) throw new Error('Тариф не знайдено');
 
       const payload = { ...currentTariff, is_active };
-      const updatedTariff = await tariffApi.updateTariff(id, payload);
+      const updatedTariff = await tariffApi.updateTariff(getAccessTokenSilently, id, payload);
       await fetchData();
-      return updatedTariff.data;
+      return updatedTariff;
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Помилка при зміні статусу');
     }

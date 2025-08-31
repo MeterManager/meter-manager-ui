@@ -6,7 +6,8 @@ export const getTariffs = async (getAccessTokenSilently, page = 1, limit = 10, s
   if (is_active !== undefined) params.is_active = is_active;
 
   try {
-    const api = createApi(getAccessTokenSilently);
+    const token = await getAccessTokenSilently();
+    const api = createApi(token);
     const response = await api.get('/tariffs', { params });
     return response.data;
   } catch (error) {
@@ -17,7 +18,8 @@ export const getTariffs = async (getAccessTokenSilently, page = 1, limit = 10, s
 
 export const getTariffById = async (getAccessTokenSilently, id) => {
   try {
-    const api = createApi(getAccessTokenSilently);
+    const token = await getAccessTokenSilently();
+    const api = createApi(token);
     const response = await api.get(`/tariffs/${id}`);
     return response.data;
   } catch (error) {
@@ -28,7 +30,8 @@ export const getTariffById = async (getAccessTokenSilently, id) => {
 
 export const createTariff = async (getAccessTokenSilently, data) => {
   try {
-    const api = createApi(getAccessTokenSilently);
+    const token = await getAccessTokenSilently();
+    const api = createApi(token);
     const response = await api.post('/tariffs', data);
     return response.data;
   } catch (error) {
@@ -39,7 +42,8 @@ export const createTariff = async (getAccessTokenSilently, data) => {
 
 export const updateTariff = async (getAccessTokenSilently, id, data) => {
   try {
-    const api = createApi(getAccessTokenSilently);
+    const token = await getAccessTokenSilently();
+    const api = createApi(token);
     const response = await api.put(`/tariffs/${id}`, data);
     return response.data;
   } catch (error) {
@@ -50,7 +54,8 @@ export const updateTariff = async (getAccessTokenSilently, id, data) => {
 
 export const deleteTariff = async (getAccessTokenSilently, id) => {
   try {
-    const api = createApi(getAccessTokenSilently);
+    const token = await getAccessTokenSilently();
+    const api = createApi(token);
     await api.delete(`/tariffs/${id}`);
   } catch (error) {
     console.error('Error deleting tariff:', error.message, error.response?.data);

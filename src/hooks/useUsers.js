@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 import * as userApi from '../api/userApi';
 
 export const useUsers = () => {
+  const { getAccessTokenSilently } = useAuth0();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -13,7 +15,7 @@ export const useUsers = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await userApi.getUsers(page, 10, search);
+      const response = await userApi.getUsers(getAccessTokenSilently, page, 10, search);
       setUsers(
         (response.data || []).map((u) => ({
           ...u,
@@ -26,16 +28,15 @@ export const useUsers = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [getAccessTokenSilently, page, search]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-
   const editUser = async (id, payload) => {
     try {
-      const updatedUser = await userApi.updateUser(id, payload);
+      await userApi.updateUser(getAccessTokenSilently, id, payload);
       await fetchData();
       return updatedUser.data;
     } catch (err) {
@@ -45,7 +46,7 @@ export const useUsers = () => {
 
   const removeUser = async (id) => {
     try {
-      await userApi.deleteUser(id);
+      await userApi.deleteUser(getAccessTokenSilently, id);
       await fetchData();
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Помилка при видаленні користувача');
@@ -55,14 +56,12 @@ export const useUsers = () => {
   const updateUserStatus = async (id, newStatus) => {
     try {
       const payload = { is_active: newStatus };
-      const updatedUser = await userApi.updateUser(id, payload);
+      await userApi.updateUser(getAccessTokenSilently, id, payload);
       await fetchData();
-      return updatedUser.data;
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Помилка при зміні статусу');
     }
   };
-
 
   return {
     users,

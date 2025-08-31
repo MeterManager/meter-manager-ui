@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getLocations, createLocation, updateLocation, deleteLocation } from '../api/locationsApi';
+import *as locationsApi from '../api/locationsApi';
+import { useAuth0 } from '@auth0/auth0-react';
 
 export const useLocations = () => {
+  const { getAccessTokenSilently } = useAuth0();
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -13,7 +15,7 @@ export const useLocations = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getLocations(page, 10, search);
+      const response = await locationsApi.getLocations(getAccessTokenSilently, page, 10, search);
       setLocations(
         (response.data || []).map((loc) => ({
           ...loc,
@@ -26,7 +28,7 @@ export const useLocations = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, getAccessTokenSilently]);
 
   useEffect(() => {
     fetchData();
@@ -34,7 +36,7 @@ export const useLocations = () => {
 
   const addLocation = async (data) => {
     try {
-      const response = await createLocation(data);
+      const response = await locationsApi.createLocation(getAccessTokenSilently, data);
       if (response.error) {
         throw new Error(response.error);
       }
@@ -46,7 +48,7 @@ export const useLocations = () => {
 
   const editLocation = async (id, data) => {
     try {
-      const response = await updateLocation(id, {
+      const response = await locationsApi.updateLocation(getAccessTokenSilently, id, {
         name: data.name,
         address: data.address,
         is_active: data.isActive,
@@ -62,7 +64,7 @@ export const useLocations = () => {
 
   const removeLocation = async (id) => {
     try {
-      await deleteLocation(id);
+      await  locationsApi.deleteLocation(getAccessTokenSilently, id);
       await fetchData();
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Помилка при видаленні локації');
@@ -71,7 +73,7 @@ export const useLocations = () => {
 
   const updateLocationStatus = async (id, data) => {
     try {
-      const response = await updateLocation(id, data);
+      const response = await locationsApi.updateLocation(getAccessTokenSilently, id, data);
       if (response.error) {
         throw new Error(response.error);
       }

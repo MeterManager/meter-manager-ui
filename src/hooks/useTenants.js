@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getTenants, createTenant, updateTenant, deleteTenant } from '../api/tenantsApi';
+import * as tenantsApi from '../api/tenantsApi';
+import { useAuth0 } from '@auth0/auth0-react';
 
 export const useTenants = () => {
+  const { getAccessTokenSilently } = useAuth0();
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -13,7 +15,7 @@ export const useTenants = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getTenants(page, 10, search);
+      const response = await tenantsApi.getTenants(getAccessTokenSilently, page, 10, search);
 
       setTenants(
         (response.data || []).map((tenant) => ({
@@ -36,7 +38,7 @@ export const useTenants = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, getAccessTokenSilently]);
 
   useEffect(() => {
     fetchData();
@@ -54,7 +56,7 @@ export const useTenants = () => {
         is_active: data.isActive ?? true,
       };
 
-      const response = await createTenant(tenantData);
+      const response = await tenantsApi.createTenant(getAccessTokenSilently, tenantData);
       if (response.error) {
         throw new Error(response.error);
       }
@@ -76,7 +78,7 @@ export const useTenants = () => {
         is_active: data.isActive,
       };
 
-      const response = await updateTenant(id, tenantData);
+      const response = await tenantsApi.updateTenant(getAccessTokenSilently, id, tenantData);
       if (response.error) {
         throw new Error(response.error);
       }
@@ -88,7 +90,7 @@ export const useTenants = () => {
 
   const removeTenant = async (id) => {
     try {
-      await deleteTenant(id);
+      await tenantsApi.deleteTenant(getAccessTokenSilently, id);
       await fetchData();
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Помилка при видаленні орендаря');
@@ -97,7 +99,7 @@ export const useTenants = () => {
 
   const updateTenantStatus = async (id, data) => {
     try {
-      const response = await updateTenant(id, data);
+      const response = await tenantsApi.updateTenant(getAccessTokenSilently, id, data);
       if (response.error) {
         throw new Error(response.error);
       }
