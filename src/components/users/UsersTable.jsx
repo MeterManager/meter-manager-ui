@@ -40,7 +40,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, removeUser, se
 
   return (
     <Box>
-      <Box sx={theme.custom.headerBoxStyles}>
+      <Box sx={{ ...theme.custom.headerBoxStyles, display: 'flex', justifyContent: 'flex-end' }}>
         <Box sx={theme.custom.searchBoxStyles}>
           <SearchField value={search} onChange={(e) => setSearch(e.target.value)} />
         </Box>

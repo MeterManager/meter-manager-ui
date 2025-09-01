@@ -20,6 +20,7 @@ import {
   ExitToApp,
   Menu,
   Assignment,
+  AccountCircle 
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useAuth from '../hooks/useAuth';
@@ -104,7 +105,7 @@ const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
                 {user?.full_name || user?.name || 'Користувач'}
               </Typography>
               <IconButton onClick={handleLogout} sx={{ color: 'inherit' }}>
-                <ExitToApp fontSize="small" />
+                <ExitToApp />
               </IconButton>
             </Box>
           ) : (
@@ -137,7 +138,7 @@ const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
               },
             }}
           >
-            {isAuthenticated ? <ExitToApp /> : <Menu />}
+            {isAuthenticated ? <ExitToApp /> : <AccountCircle />}
           </IconButton>
         </Box>
       )}

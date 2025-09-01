@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -10,18 +11,34 @@ import {
   Typography,
   Box,
 } from '@mui/material';
+import SearchField from '../ui/SearchField';
+import { useTheme } from '@mui/material/styles';
 
 const MeterTenantsTable = ({ meterTenants, tenants = [], meters = [], onEdit, onDelete, onAdd }) => {
+  const theme = useTheme();
+  const [search, setSearch] = useState('');
+
   const getTenantName = (tenantId) => tenants.find((t) => t.id === tenantId)?.name || tenantId;
   const getMeterSerial = (meterId) => meters.find((m) => m.id === meterId)?.serial_number || meterId;
 
+  const filteredMeterTenants = meterTenants.filter((mt) => {
+    const tenantName = getTenantName(mt.tenant_id).toLowerCase();
+    const meterSerial = getMeterSerial(mt.meter_id).toLowerCase();
+    const query = search.toLowerCase();
+    return tenantName.includes(query) || meterSerial.includes(query);
+  });
+
   return (
     <Box>
-      <Box mb={2}>
-        <Button variant="contained" size="small" onClick={onAdd}>
+      <Box sx={theme.custom.headerBoxStyles}>
+        <Button variant="contained" size="small" onClick={onAdd} sx={{ whiteSpace: 'nowrap' }}>
           Додати зв’язок
         </Button>
+        <Box sx={theme.custom.searchBoxStyles}>
+          <SearchField value={search} onChange={(e) => setSearch(e.target.value)} />
+        </Box>
       </Box>
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -34,8 +51,8 @@ const MeterTenantsTable = ({ meterTenants, tenants = [], meters = [], onEdit, on
             </TableRow>
           </TableHead>
           <TableBody>
-            {meterTenants.length > 0 ? (
-              meterTenants.map((mt) => (
+            {filteredMeterTenants.length > 0 ? (
+              filteredMeterTenants.map((mt) => (
                 <TableRow key={mt.id}>
                   <TableCell>{getTenantName(mt.tenant_id)}</TableCell>
                   <TableCell>{getMeterSerial(mt.meter_id)}</TableCell>
