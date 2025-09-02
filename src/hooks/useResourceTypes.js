@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import * as resourceTypeApi from '../api/resourceTypesApi';
 import useAuth from './useAuth';
 
@@ -28,6 +28,10 @@ export const useResourceTypes = () => {
       setLoading(false);
     }
   }, [search, isAuthenticated, isLoading]);
+
+  const activeResourceTypes = useMemo(() => {
+    return resourceTypes.filter(type => type.isActive);
+  }, [resourceTypes]);
 
   useEffect(() => {
     fetchData();
@@ -99,6 +103,7 @@ export const useResourceTypes = () => {
 
   return {
     resourceTypes,
+    activeResourceTypes,
     loading,
     search,
     setSearch,

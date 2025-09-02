@@ -1,5 +1,4 @@
-// useMeters.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import * as metersApi from '../api/metersApi';
 import useAuth from './useAuth';
 
@@ -24,6 +23,10 @@ export const useMeters = () => {
       setLoading(false);
     }
   }, [search, isAuthenticated, isLoading]);
+
+  const activeMeters = useMemo(() => {
+    return meters.filter(meter => meter.isActive);
+  }, [meters]);
 
   useEffect(() => {
     fetchData();
@@ -57,6 +60,7 @@ export const useMeters = () => {
 
   return {
     meters,
+    activeMeters,
     loading,
     search,
     setSearch,

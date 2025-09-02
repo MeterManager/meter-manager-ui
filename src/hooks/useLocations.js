@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import * as locationApi from '../api/locationsApi';
 import useAuth from './useAuth';
 
@@ -28,6 +28,10 @@ export const useLocations = () => {
       setLoading(false);
     }
   }, [search, isAuthenticated, isLoading]);
+
+  const activeLocations = useMemo(() => {
+    return locations.filter(loc => loc.isActive);
+  }, [locations]);
 
   useEffect(() => {
     fetchData();
@@ -82,6 +86,7 @@ export const useLocations = () => {
 
   return {
     locations,
+    activeLocations,
     loading,
     search,
     setSearch,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import * as tenantApi from '../api/tenantsApi';
 import useAuth from './useAuth';
 
@@ -36,6 +36,10 @@ export const useTenants = () => {
       setLoading(false);
     }
   }, [search, isAuthenticated, isLoading]);
+
+  const activeTenants = useMemo(() => {
+    return tenants.filter(tenant => tenant.isActive);
+  }, [tenants]);
 
   useEffect(() => {
     fetchData();
@@ -107,6 +111,7 @@ export const useTenants = () => {
 
   return {
     tenants,
+    activeTenants,
     loading,
     search,
     setSearch,

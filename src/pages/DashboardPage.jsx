@@ -46,24 +46,24 @@ const DashboardPage = () => {
         <Stack spacing={3}>
           <LocationsSection initialExpanded={false} />
           <ResourceTypesSection initialExpanded={false} />
-          <TenantsSection locations={locationsHook.locations} initialExpanded={false} />
+          <TenantsSection locations={locationsHook.activeLocations}  initialExpanded={false} />
           <ResourceDeliverySection
-            locations={locationsHook.locations}
-            resourceTypes={resourceTypesHook.resourceTypes}
+            locations={locationsHook.activeLocations} 
+            resourceTypes={resourceTypesHook.activeResourceTypes}
             initialExpanded={false}
           />
           <TariffsSection
             initialExpanded={false}
-            locations={locationsHook.locations}
-            resourceTypes={resourceTypesHook.resourceTypes}
+            locations={locationsHook.activeLocations}
+            resourceTypes={resourceTypesHook.activeResourceTypes}
           />
 
           <MetersSection
             initialExpanded={false}
-            locations={locationsHook.locations}
-            energyResourceTypes={resourceTypesHook.resourceTypes}
+            locations={locationsHook.activeLocations}
+            energyResourceTypes={resourceTypesHook.activeResourceTypes}
           />
-          <MeterTenantsSection tenants={tenantsHook.tenants} meters={metersHook.meters} initialExpanded={false} />
+          <MeterTenantsSection tenants={tenantsHook.activeTenants} meters={metersHook.activeMeters} initialExpanded={false} />
           <UsersSection initialExpanded={false} />
         </Stack>
       )}
