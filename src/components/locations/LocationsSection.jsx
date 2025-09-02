@@ -32,25 +32,20 @@ const LocationsSection = ({ initialExpanded = true }) => {
   };
 
   const handleEdit = (location) => {
-    console.log('LocationsSection handleEdit:', location);
     setEditingLocation(location);
     setFormOpen(true);
   };
 
   const handleFormSubmit = async (formData) => {
-    console.log('LocationsSection handleFormSubmit:', formData);
     try {
       if (editingLocation?.id) {
-        console.log('Updating location:', editingLocation.id, formData);
         await editLocation(editingLocation.id, formData);
       } else {
-        console.log('Adding new location:', formData);
         await addLocation(formData);
       }
       setFormOpen(false);
       setEditingLocation(null);
     } catch (err) {
-      console.error('Error in handleFormSubmit:', err);
       setError(err.message || 'Помилка при збереженні локації');
     }
   };

@@ -105,7 +105,6 @@ const TenantsTable = ({
                         checked={tenant.isActive}
                         onChange={() => handleStatusChange(tenant)}
                         color="primary"
-                        size="small"
                       />
                       <Typography variant="caption">{tenant.isActive ? 'Активний' : 'Неактивний'}</Typography>
                     </Box>

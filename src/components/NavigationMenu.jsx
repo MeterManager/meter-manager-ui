@@ -1,26 +1,21 @@
 import { List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { Dashboard, Assignment, Assessment, Settings } from '@mui/icons-material';
+import { Link, useLocation } from 'react-router-dom';
 
-const NavigationMenu = ({ selectedMenuItem, onMenuSelect }) => {
-  const handleItemClick = (key) => {
-    onMenuSelect(key);
-  };
+const NavigationMenu = () => {
+  const location = useLocation();
 
   const menuItems = [
-    { key: '1', text: 'Панель керування', icon: <Dashboard /> },
-    { key: '2', text: 'Подача показників', icon: <Assignment /> },
-    { key: '3', text: 'Звіти', icon: <Assessment /> },
-    { key: '4', text: 'Налаштування', icon: <Settings /> },
+    { key: '1', text: 'Подача показників', icon: <Assignment />, path: '/' },
+    { key: '2', text: 'Панель керування', icon: <Dashboard />, path: '/dashboard' },
+    { key: '3', text: 'Звіти', icon: <Assessment />, path: '/reports' },
+    { key: '4', text: 'Налаштування', icon: <Settings />, path: '/settings' },
   ];
 
   return (
     <List component="nav">
       {menuItems.map((item) => (
-        <ListItemButton
-          key={item.key}
-          selected={selectedMenuItem === item.key}
-          onClick={() => handleItemClick(item.key)}
-        >
+        <ListItemButton key={item.key} component={Link} to={item.path} selected={location.pathname === item.path}>
           <ListItemIcon>{item.icon}</ListItemIcon>
           <ListItemText primary={item.text} />
         </ListItemButton>

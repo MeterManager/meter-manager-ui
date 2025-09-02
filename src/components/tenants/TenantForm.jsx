@@ -8,7 +8,6 @@ import {
   Button,
   Alert,
   MenuItem,
-  useTheme,
 } from '@mui/material';
 
 const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants, locations = [] }) => {
@@ -31,9 +30,32 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
     }
   }, [open, initialData]);
 
+  const validateField = (name, value) => {
+    let error = '';
+    if (name === 'name') {
+      if (!value) {
+        error = "Назва орендаря обов'язкова.";
+      } else if (tenants.some((t) => t.name.trim() === value.trim() && t.id !== initialData.id)) {
+        error = 'Орендар з такою назвою вже існує.';
+      }
+    }
+    if (name === 'locationId' && !value) {
+      error = "Локація обов'язкова.";
+    }
+    if (name === 'occupiedArea' && value && parseFloat(value) < 0) {
+      error = "Площа не може бути від'ємною.";
+    }
+    if (name === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      error = "Невірний формат email.";
+    }
+
+    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setFormErrors({ ...formErrors, [e.target.name]: '' });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    validateField(name, value);
   };
 
   const validateForm = () => {
@@ -41,7 +63,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
     if (!formData.name) errors.name = "Назва орендаря обов'язкова";
     if (!formData.locationId) errors.locationId = 'Локація обов’язкова';
 
-    if (tenants.some((t) => t.name === formData.name && t.id !== initialData.id)) {
+    if (tenants.some((t) => t.name.trim() === formData.name.trim() && t.id !== initialData.id)) {
       errors.name = 'Орендар з такою назвою вже існує';
     }
 

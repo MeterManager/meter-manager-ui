@@ -18,9 +18,9 @@ const DashboardPage = () => {
   const locationsHook = useLocations();
   const resourceTypesHook = useResourceTypes();
   const tenantsHook = useTenants();
-  const metersHook = useMeters(); // Тут завантажуємо дані
+  const metersHook = useMeters();
 
-  const loading = authLoading || locationsHook.loading || resourceTypesHook.loading || metersHook.loading; // включаємо meters
+  const loading = authLoading || locationsHook.loading || resourceTypesHook.loading || metersHook.loading;
 
   if (!isAdmin && !authLoading) {
     return (
@@ -46,24 +46,24 @@ const DashboardPage = () => {
         <Stack spacing={3}>
           <LocationsSection initialExpanded={false} />
           <ResourceTypesSection initialExpanded={false} />
-          <TenantsSection locations={locationsHook.locations} initialExpanded={false} />
+          <TenantsSection locations={locationsHook.activeLocations}  initialExpanded={false} />
           <ResourceDeliverySection
-            locations={locationsHook.locations}
-            resourceTypes={resourceTypesHook.resourceTypes}
+            locations={locationsHook.activeLocations} 
+            resourceTypes={resourceTypesHook.activeResourceTypes}
             initialExpanded={false}
           />
           <TariffsSection
             initialExpanded={false}
-            locations={locationsHook.locations}
-            resourceTypes={resourceTypesHook.resourceTypes}
+            locations={locationsHook.activeLocations}
+            resourceTypes={resourceTypesHook.activeResourceTypes}
           />
 
           <MetersSection
             initialExpanded={false}
-            locations={locationsHook.locations}
-            energyResourceTypes={resourceTypesHook.resourceTypes}
+            locations={locationsHook.activeLocations}
+            energyResourceTypes={resourceTypesHook.activeResourceTypes}
           />
-          <MeterTenantsSection tenants={tenantsHook.tenants} meters={metersHook.meters} initialExpanded={false} />
+          <MeterTenantsSection tenants={tenantsHook.activeTenants} meters={metersHook.activeMeters} initialExpanded={false} />
           <UsersSection initialExpanded={false} />
         </Stack>
       )}

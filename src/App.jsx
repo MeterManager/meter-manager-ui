@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { Box, CssBaseline, ThemeProvider, CircularProgress, Fade } from '@mui/material';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import useAuth from './hooks/useAuth';
 import ConsentHandler from './components/ConsentHandler';
 import Sidebar from './components/Sidebar';
-import MainContent from './components/MainContent';
 import theme from './theme';
+
+import SubmitMetricsPage from './pages/SubmitMetricsPage';
+import DashboardPage from './pages/DashboardPage';
+// import ReportsPage from './pages/ReportsPage';
+// import SettingsPage from './pages/SettingsPage';
 
 const App = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const [selectedMenuItem, setSelectedMenuItem] = useState('1');
   const { isLoading, error } = useAuth();
 
   if (error && error.includes('Consent required')) {
@@ -39,15 +43,19 @@ const App = () => {
           </Box>
         </Fade>
       ) : (
-        <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-          <Sidebar
-            collapsed={collapsed}
-            onCollapse={() => setCollapsed(!collapsed)}
-            selectedMenuItem={selectedMenuItem}
-            onMenuSelect={setSelectedMenuItem}
-          />
-          <MainContent selectedMenuItem={selectedMenuItem} collapsed={collapsed} />
-        </Box>
+        <Router>
+          <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+            <Sidebar collapsed={collapsed} onCollapse={() => setCollapsed(!collapsed)} />
+            <Box sx={{ flexGrow: 1, p: 3 }}>
+              <Routes>
+                <Route path="/" element={<SubmitMetricsPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                {/* <Route path="/reports" element={<ReportsPage />} /> */}
+                {/* <Route path="/settings" element={<SettingsPage />} /> */}
+              </Routes>
+            </Box>
+          </Box>
+        </Router>
       )}
     </ThemeProvider>
   );
