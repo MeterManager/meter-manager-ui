@@ -38,7 +38,7 @@ export const useUsers = () => {
   }, [fetchData]);
 
   const editUser = async (id, payload) => {
-    const userToEdit = users.find(u => u.id === id);
+    const userToEdit = users.find((u) => u.id === id);
     if (!userToEdit) {
       throw new Error('Користувача не знайдено');
     }
@@ -52,7 +52,7 @@ export const useUsers = () => {
   };
 
   const removeUser = async (id) => {
-    const userToRemove = users.find(u => u.id === id);
+    const userToRemove = users.find((u) => u.id === id);
     if (!userToRemove) {
       throw new Error('Користувача не знайдено');
     }
@@ -74,7 +74,7 @@ export const useUsers = () => {
     }
     const token = localStorage.getItem('token');
     if (!user) throw new Error('Користувача не знайдено');
-    const payload = { ...user, is_active };
+    const payload = { is_active };
     const response = await userApi.updateUser(token, id, payload);
     await fetchData();
     return response;

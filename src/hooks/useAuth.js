@@ -8,6 +8,7 @@ const useAuth = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isBlocked, setIsBlocked] = useState(false); 
 
   const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
 
@@ -28,11 +29,19 @@ const useAuth = () => {
         localStorage.setItem('token', token);
 
         const response = await verifyUserApi(token);
+
         setUserData(response.user);
         setError(null);
+        setIsBlocked(false); 
       } catch (err) {
         console.error('Error verifying user:', err);
-        setError(err.message);
+
+        if (err.response?.status === 403) {
+          setIsBlocked(true);
+          setError(err.response?.data?.message || 'Ваш акаунт деактивовано.');
+        } else {
+          setError(err.message);
+        }
         localStorage.removeItem('token');
         setUserData(null);
       } finally {
@@ -46,6 +55,7 @@ const useAuth = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     setUserData(null);
+    setIsBlocked(false);
     logout({ logoutParams: { returnTo: window.location.origin } });
   };
 
@@ -54,6 +64,7 @@ const useAuth = () => {
     user: userData || user,
     isLoading: loading,
     error,
+    isBlocked, 
     loginWithRedirect,
     handleLogout,
   };

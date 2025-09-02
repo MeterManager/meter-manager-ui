@@ -19,7 +19,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, removeUser, se
   const { user, isAdmin } = useAuthContext();
 
   const handleStatusChange = async (u) => {
-    if (u.id === user?.sub && isAdmin) return;
+    if (u.auth0_user_id === user?.sub && isAdmin) return;
     try {
       await updateUserStatus(u.id, !u.isActive);
     } catch (err) {
@@ -28,7 +28,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, removeUser, se
   };
 
   const handleRemove = async (u) => {
-    if (u.id === user?.sub && isAdmin) return;
+    if (u.auth0_user_id === user?.sub && isAdmin) return;
     try {
       await removeUser(u.id);
     } catch (err) {
@@ -66,7 +66,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, removeUser, se
                       checked={u.isActive}
                       onChange={() => handleStatusChange(u)}
                       color="primary"
-                      disabled={u.id === user?.sub && isAdmin}
+                      disabled={u.auth0_user_id === user?.sub && isAdmin}
                     />
                     {u.isActive ? 'Активний' : 'Неактивний'}
                   </TableCell>
@@ -75,7 +75,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, removeUser, se
                       size="small"
                       onClick={() => handleRemove(u)}
                       color="error"
-                      disabled={u.id === user?.sub && isAdmin}
+                      disabled={u.auth0_user_id === user?.sub && isAdmin}
                     >
                       Видалити
                     </Button>
