@@ -23,19 +23,15 @@ const TariffsSection = ({ initialExpanded = true, locations, resourceTypes }) =>
   };
 
   const handleEdit = (tariff) => {
-    console.log('TariffsSection handleEdit:', tariff);
     setEditingTariff(tariff);
     setFormOpen(true);
   };
 
   const handleFormSubmit = async (formData) => {
-    console.log('TariffsSection handleFormSubmit:', formData);
     try {
       if (editingTariff?.id) {
-        console.log('Updating tariff:', editingTariff.id, formData);
         await editTariff(editingTariff.id, formData);
       } else {
-        console.log('Adding new tariff:', formData);
         await addTariff(formData);
       }
       setFormOpen(false);

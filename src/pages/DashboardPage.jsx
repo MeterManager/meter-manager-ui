@@ -18,9 +18,9 @@ const DashboardPage = () => {
   const locationsHook = useLocations();
   const resourceTypesHook = useResourceTypes();
   const tenantsHook = useTenants();
-  const metersHook = useMeters(); // Тут завантажуємо дані
+  const metersHook = useMeters();
 
-  const loading = authLoading || locationsHook.loading || resourceTypesHook.loading || metersHook.loading; // включаємо meters
+  const loading = authLoading || locationsHook.loading || resourceTypesHook.loading || metersHook.loading;
 
   if (!isAdmin && !authLoading) {
     return (

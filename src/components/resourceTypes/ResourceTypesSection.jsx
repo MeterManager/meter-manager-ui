@@ -32,19 +32,15 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
   };
 
   const handleEdit = (resourceType) => {
-    console.log('ResourceTypesSection handleEdit:', resourceType);
     setEditingResourceType(resourceType);
     setFormOpen(true);
   };
 
   const handleFormSubmit = async (formData) => {
-    console.log('ResourceTypesSection handleFormSubmit:', formData);
     try {
       if (editingResourceType?.id) {
-        console.log('Updating resource type:', editingResourceType.id, formData);
         await editResourceType(editingResourceType.id, formData);
       } else {
-        console.log('Adding new resource type:', formData);
         await addResourceType(formData);
       }
       setFormOpen(false);
