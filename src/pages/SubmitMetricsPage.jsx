@@ -3,7 +3,7 @@ import { Box, Button, Typography, Paper } from '@mui/material';
 import useAuth from '../hooks/useAuth';
 
 const SubmitMetricsPage = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loginWithRedirect } = useAuth();
 
   if (!isAuthenticated) {
     return (
@@ -11,7 +11,7 @@ const SubmitMetricsPage = () => {
         <Typography variant="h5" gutterBottom>
           Щоб подавати показники, потрібно увійти
         </Typography>
-        <Button variant="contained" color="primary" href="/register">
+        <Button onClick={loginWithRedirect} variant="contained" color="primary" href="/register">
           Увійти / Зареєструватися
         </Button>
       </Box>
