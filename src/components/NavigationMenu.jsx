@@ -7,8 +7,8 @@ const NavigationMenu = ({ selectedMenuItem, onMenuSelect }) => {
   };
 
   const menuItems = [
-    { key: '1', text: 'Панель керування', icon: <Dashboard /> },
-    { key: '2', text: 'Подача показників', icon: <Assignment /> },
+    { key: '1', text: 'Подача показників', icon: <Assignment /> },
+    { key: '2', text: 'Панель керування', icon: <Dashboard /> },
     { key: '3', text: 'Звіти', icon: <Assessment /> },
     { key: '4', text: 'Налаштування', icon: <Settings /> },
   ];

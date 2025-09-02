@@ -52,8 +52,8 @@ const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
   const { isAdmin } = useAuthContext();
 
   const menuItems = [
-    ...(isAdmin ? [{ key: '1', label: 'Панель керування', icon: <Dashboard /> }] : []),
-    { key: '2', label: 'Подача показників', icon: <Assignment /> },
+    { key: '1', label: 'Подача показників', icon: <Assignment /> },
+    ...(isAdmin ? [{ key: '2', label: 'Панель керування', icon: <Dashboard /> }] : []),
     { key: '3', label: 'Звіти', icon: <Description /> },
     { key: '4', label: 'Налаштування', icon: <Settings /> },
   ];
@@ -122,7 +122,7 @@ const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
                 },
               }}
             >
-              Увійти
+              Увійти / Зареєструватися
             </Button>
           )}
         </Box>

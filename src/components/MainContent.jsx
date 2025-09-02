@@ -1,20 +1,14 @@
 import { Box, Typography } from '@mui/material';
 import DashboardPage from '../pages/DashboardPage';
+import SubmitMetricsPage from '../pages/SubmitMetricsPage';
 
 const MainContent = ({ selectedMenuItem }) => {
   const getContentByMenuItem = (key) => {
     switch (key) {
       case '1':
-        return <DashboardPage />;
+        return <SubmitMetricsPage />;
       case '2':
-        return (
-          <Box>
-            <Typography variant="h4" gutterBottom>
-              Подача показників
-            </Typography>
-            <Typography variant="body1">Тут ви можете подати показники лічильників.</Typography>
-          </Box>
-        );
+        return <DashboardPage />;
       case '3':
         return (
           <Box>
