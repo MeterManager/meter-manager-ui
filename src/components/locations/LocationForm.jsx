@@ -17,18 +17,34 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
     }
   }, [open, initialData]);
 
+  const validateField = (name, value) => {
+    let error = '';
+    if (name === 'name') {
+      if (!value) {
+        error = "Назва обов'язкова.";
+      } else if (locations.some((loc) => loc.name.trim() === value.trim() && loc.id !== initialData.id)) {
+        error = 'Локація з такою назвою вже існує.';
+      }
+    }
+    if (name === 'address' && !value) {
+      error = "Адреса обов'язкова.";
+    }
+    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setFormErrors({ ...formErrors, [e.target.name]: '' });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    validateField(name, value);
   };
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.name) errors.name = "Назва обов'язкова";
-    if (!formData.address) errors.address = "Адреса обов'язкова";
-    if (formData.name && locations.some((loc) => loc.name === formData.name && loc.id !== initialData.id)) {
-      errors.name = 'Локація з такою назвою вже існує';
+    if (!formData.name) errors.name = "Назва обов'язкова.";
+    else if (locations.some((loc) => loc.name.trim() === formData.name.trim() && loc.id !== initialData.id)) {
+      errors.name = 'Локація з такою назвою вже існує.';
     }
+    if (!formData.address) errors.address = "Адреса обов'язкова.";
     return errors;
   };
 
@@ -68,7 +84,7 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           value={formData.name || ''}
           onChange={handleChange}
           fullWidth
-          sx={{ mb: 1, mt: 1 }}
+          sx={{ mt: 1 }}
           error={!!formErrors.name}
           helperText={formErrors.name || ' '}
         />

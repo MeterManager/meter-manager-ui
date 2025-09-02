@@ -39,25 +39,37 @@ const MeterForm = ({
     }
   }, [open, initialData]);
 
+  const validateField = (name, value) => {
+    let error = '';
+    if (name === 'serial_number' && !value) {
+      error = "Серійний номер обов'язковий.";
+    }
+    if (name === 'location_id' && !value) {
+      error = "Локація обов'язкова.";
+    }
+    if (name === 'energy_resource_type_id' && !value) {
+      error = "Тип ресурсу обов'язковий.";
+    }
+    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setFormErrors({ ...formErrors, [e.target.name]: '' });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    validateField(name, value);
   };
 
   const validateForm = () => {
     const errors = {};
-
-    if (!formData.serial_number) errors.serial_number = "Серійний номер обов'язковий";
-    if (!formData.location_id) errors.location_id = "Локація обов'язкова";
-    if (!formData.energy_resource_type_id) errors.energy_resource_type_id = "Тип енергоресурсу обов'язковий";
-
-    // Перевірка унікальності серійного номера, лише якщо meters вже підвантажились
-    if (formData.serial_number && Array.isArray(meters) && !loading) {
+    if (!formData.serial_number) {
+      errors.serial_number = 'Серійний номер обов’язковий';
+    } else if (Array.isArray(meters) && !loading) {
       if (meters.some((m) => m.serial_number === formData.serial_number && m.id !== initialData.id)) {
         errors.serial_number = 'Лічільник з таким серійним номером вже існує';
       }
     }
-
+    if (!formData.location_id) errors.location_id = 'Локація обов’язкова';
+    if (!formData.energy_resource_type_id) errors.energy_resource_type_id = 'Тип ресурсу обов’язковий';
     return errors;
   };
 
@@ -84,7 +96,7 @@ const MeterForm = ({
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>{initialData.id ? 'Редагувати лічільник' : 'Додати лічільник'}</DialogTitle>
+      <DialogTitle>{initialData.id ? 'Редагувати лічильник' : 'Додати лічильник'}</DialogTitle>
       <DialogContent sx={{ pb: 0 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -104,7 +116,7 @@ const MeterForm = ({
               value={formData.serial_number || ''}
               onChange={handleChange}
               fullWidth
-              sx={{ mb: 1, mt: 1 }}
+              sx={{mt: 1 }}
               error={!!formErrors.serial_number}
               helperText={formErrors.serial_number || ' '}
             />
@@ -116,7 +128,6 @@ const MeterForm = ({
               value={formData.location_id || ''}
               onChange={handleChange}
               fullWidth
-              sx={{ mb: 1, mt: 1 }}
               error={!!formErrors.location_id}
               helperText={formErrors.location_id || ' '}
             >
@@ -136,7 +147,6 @@ const MeterForm = ({
               value={formData.energy_resource_type_id || ''}
               onChange={handleChange}
               fullWidth
-              sx={{ mb: 1 }}
               error={!!formErrors.energy_resource_type_id}
               helperText={formErrors.energy_resource_type_id || ' '}
             >

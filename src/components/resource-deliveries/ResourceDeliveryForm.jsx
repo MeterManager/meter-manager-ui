@@ -31,21 +31,33 @@ const ResourceDeliveryForm = ({
     }
   }, [open, initialData]);
 
+  const validateField = (name, value) => {
+    let error = '';
+    if (name === 'locationId' && !value) error = 'Виберіть локацію.';
+    if (name === 'resourceTypeId' && !value) error = 'Виберіть тип ресурсу.';
+    if (name === 'quantity' && (!value || isNaN(value) || parseFloat(value) < 0)) error = 'Вкажіть кількість (додатнє число).';
+    if (name === 'unit' && !value) error = "Вкажіть одиницю виміру.";
+    if (name === 'pricePerUnit' && (!value || isNaN(value) || parseFloat(value) < 0)) error = 'Вкажіть ціну за одиницю (додатнє число).';
+    if (name === 'deliveryDate' && !value) error = 'Вкажіть дату.';
+
+    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     const processedValue = (name === 'locationId' || name === 'resourceTypeId') && value !== '' ? Number(value) : value;
     setFormData({ ...formData, [name]: processedValue });
-    setFormErrors({ ...formErrors, [name]: '' });
+    validateField(name, processedValue);
   };
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.locationId) errors.locationId = 'Виберіть локацію';
-    if (!formData.resourceTypeId) errors.resourceTypeId = 'Виберіть тип ресурсу';
-    if (!formData.quantity || isNaN(formData.quantity)) errors.quantity = 'Вкажіть кількість';
-    if (!formData.unit) errors.unit = 'Вкажіть одиницю виміру';
-    if (!formData.pricePerUnit || isNaN(formData.pricePerUnit)) errors.pricePerUnit = 'Вкажіть ціну за одиницю';
-    if (!formData.deliveryDate) errors.deliveryDate = 'Вкажіть дату';
+    if (!formData.locationId) errors.locationId = 'Виберіть локацію.';
+    if (!formData.resourceTypeId) errors.resourceTypeId = 'Виберіть тип ресурсу.';
+    if (!formData.quantity || isNaN(formData.quantity) || parseFloat(formData.quantity) < 0) errors.quantity = 'Вкажіть кількість.';
+    if (!formData.unit) errors.unit = 'Вкажіть одиницю виміру.';
+    if (!formData.pricePerUnit || isNaN(formData.pricePerUnit) || parseFloat(formData.pricePerUnit) < 0) errors.pricePerUnit = 'Вкажіть ціну за одиницю.';
+    if (!formData.deliveryDate) errors.deliveryDate = 'Вкажіть дату.';
     return errors;
   };
 
@@ -101,7 +113,7 @@ const ResourceDeliveryForm = ({
           fullWidth
           error={!!formErrors.locationId}
           helperText={formErrors.locationId || ' '}
-          sx={{ mt: 1, mb: 3 }}
+          sx={{ mt: 1 }}
         >
           {locations.length === 0 ? (
             <MenuItem disabled>Немає доступних локацій</MenuItem>
@@ -188,6 +200,7 @@ const ResourceDeliveryForm = ({
           onChange={handleChange}
           fullWidth
           helperText=" "
+          sx={{ mb: 1 }}
         />
       </DialogContent>
 

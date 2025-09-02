@@ -19,18 +19,52 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
     }
   }, [open, initialData]);
 
+  const validateField = (name, value) => {
+    let error = '';
+    if (name === 'location_id' && !value) {
+      error = "Локація обов'язкова.";
+    }
+    if (name === 'energy_resource_type_id' && !value) {
+      error = "Тип ресурсу обов'язковий.";
+    }
+    if (name === 'price') {
+      if (!value) {
+        error = "Ціна обов'язкова.";
+      } else if (Number(value) <= 0) {
+        error = "Ціна має бути більшою за 0.";
+      }
+    }
+    if (name === 'valid_from' && !value) {
+      error = "Дата початку обов'язкова.";
+    }
+    if (name === 'valid_to' && value && formData.valid_from && new Date(value) < new Date(formData.valid_from)) {
+      error = "Дата завершення не може бути раніше дати початку.";
+    } else if (name === 'valid_from' && value && formData.valid_to && new Date(value) > new Date(formData.valid_to)) {
+      error = "Дата початку не може бути пізніше дати завершення.";
+    }
+
+    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setFormErrors({ ...formErrors, [e.target.name]: '' });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    validateField(name, value);
   };
 
   const validateForm = () => {
     const errors = {};
     if (!formData.location_id) errors.location_id = 'Локація обов’язкова';
     if (!formData.energy_resource_type_id) errors.energy_resource_type_id = 'Тип ресурсу обов’язковий';
-    if (!formData.price) errors.price = 'Ціна обов’язкова';
-    if (formData.price && Number(formData.price) <= 0) errors.price = 'Ціна має бути більшою за 0';
+    if (!formData.price) {
+      errors.price = 'Ціна обов’язкова';
+    } else if (Number(formData.price) <= 0) {
+      errors.price = 'Ціна має бути більшою за 0';
+    }
     if (!formData.valid_from) errors.valid_from = 'Дата початку обов’язкова';
+    if (formData.valid_to && new Date(formData.valid_to) < new Date(formData.valid_from)) {
+      errors.valid_to = "Дата завершення не може бути раніше дати початку.";
+    }
     return errors;
   };
 
@@ -67,7 +101,7 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
           value={formData.location_id || ''}
           onChange={handleChange}
           fullWidth
-          sx={{ mb: 2, mt: 1 }}
+          sx={{ mt: 1 }}
           error={!!formErrors.location_id}
           helperText={formErrors.location_id || ' '}
         >
@@ -85,7 +119,6 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
           value={formData.energy_resource_type_id || ''}
           onChange={handleChange}
           fullWidth
-          sx={{ mb: 2 }}
           error={!!formErrors.energy_resource_type_id}
           helperText={formErrors.energy_resource_type_id || ' '}
         >
@@ -103,7 +136,6 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
           value={formData.price || ''}
           onChange={handleChange}
           fullWidth
-          sx={{ mb: 2 }}
           error={!!formErrors.price}
           helperText={formErrors.price || ' '}
         />
@@ -116,7 +148,6 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
           value={formData.valid_from || ''}
           onChange={handleChange}
           fullWidth
-          sx={{ mb: 2 }}
           error={!!formErrors.valid_from}
           helperText={formErrors.valid_from || ' '}
         />
@@ -129,6 +160,9 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
           value={formData.valid_to || ''}
           onChange={handleChange}
           fullWidth
+          error={!!formErrors.valid_to}
+          helperText={formErrors.valid_to}
+          sx={{ mb: 2 }}
         />
       </DialogContent>
       <DialogActions sx={{ px: 3, mb: 1 }}>

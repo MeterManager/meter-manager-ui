@@ -24,16 +24,36 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
     }
   }, [open, initialData]);
 
+  const validateField = (name, value) => {
+    let error = '';
+    if (name === 'tenantId' && !value) error = "Орендар обов'язковий.";
+    if (name === 'meterId' && !value) error = "Лічильник обов'язковий.";
+    if (name === 'startDate' && !value) error = "Дата початку обов'язкова.";
+
+    if (name === 'endDate' && value && formData.startDate && new Date(value) < new Date(formData.startDate)) {
+      error = "Дата завершення не може бути раніше дати початку.";
+    } else if (name === 'startDate' && value && formData.endDate && new Date(value) > new Date(formData.endDate)) {
+        error = "Дата початку не може бути пізніше дати завершення.";
+    }
+
+    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setFormErrors({ ...formErrors, [e.target.name]: '' });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    validateField(name, value);
   };
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.tenantId) errors.tenantId = "Орендар обов'язковий";
-    if (!formData.meterId) errors.meterId = "Лічильник обов'язковий";
-    if (!formData.startDate) errors.startDate = "Дата початку обов'язкова";
+    if (!formData.tenantId) errors.tenantId = "Орендар обов'язковий.";
+    if (!formData.meterId) errors.meterId = "Лічильник обов'язковий.";
+    if (!formData.startDate) errors.startDate = "Дата початку обов'язкова.";
+
+    if (formData.endDate && new Date(formData.endDate) < new Date(formData.startDate)) {
+      errors.endDate = "Дата завершення не може бути раніше дати початку.";
+    }
     return errors;
   };
 
@@ -73,7 +93,7 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
       <DialogTitle>
         {formData.id ? 'Редагувати зв’язок лічильник-орендар' : 'Додати зв’язок лічильник-орендар'}
       </DialogTitle>
-      <DialogContent sx={{ mt: 1, pb: 0 }}>
+      <DialogContent sx={{ pb: 0 }}>
         {error && (
           <Alert severity="error" sx={{ mb: 1 }}>
             {error}
@@ -105,7 +125,6 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
           value={formData.meterId}
           onChange={handleChange}
           fullWidth
-          sx={{ mt: 1 }}
           error={!!formErrors.meterId}
           helperText={formErrors.meterId || ' '}
         >
@@ -123,7 +142,6 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
           value={formData.startDate}
           onChange={handleChange}
           fullWidth
-          sx={{ mt: 1 }}
           error={!!formErrors.startDate}
           helperText={formErrors.startDate || ' '}
           InputLabelProps={{ shrink: true }}
@@ -136,7 +154,9 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
           value={formData.endDate}
           onChange={handleChange}
           fullWidth
-          sx={{ mt: 1 }}
+          error={!!formErrors.endDate}
+          helperText={formErrors.endDate}
+          sx={{ mb: 2}}
           InputLabelProps={{ shrink: true }}
         />
       </DialogContent>
