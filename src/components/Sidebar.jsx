@@ -22,11 +22,12 @@ import {
   Assignment,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
+import { NavLink } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import useMediaQuery from '../hooks/useMediaQuery';
 import { useAuthContext } from '../contexts/AuthContext';
 
-const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
+const Sidebar = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width: 600px)');
   const [collapsed, setCollapsed] = useState(() => {
@@ -38,6 +39,7 @@ const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const { isAuthenticated, user, loginWithRedirect, handleLogout } = useAuth();
+  const { isAdmin } = useAuthContext();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -47,52 +49,41 @@ const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
 
   useEffect(() => {
     if (isMobile) setMobileOpen(false);
-  }, [selectedMenuItem, isMobile]);
-
-  const { isAdmin } = useAuthContext();
+  }, [isMobile]);
 
   const menuItems = [
-    { key: '1', label: 'Подача показників', icon: <Assignment /> },
-    ...(isAdmin ? [{ key: '2', label: 'Панель керування', icon: <Dashboard /> }] : []),
-    { key: '3', label: 'Звіти', icon: <Description /> },
-    { key: '4', label: 'Налаштування', icon: <Settings /> },
+    { key: '1', label: 'Подача показників', icon: <Assignment />, path: '/' },
+    ...(isAdmin ? [{ key: '2', label: 'Панель керування', icon: <Dashboard />, path: '/dashboard' }] : []),
+    { key: '3', label: 'Звіти', icon: <Description />, path: '/reports' },
+    { key: '4', label: 'Налаштування', icon: <Settings />, path: '/settings' },
   ];
 
-  const handleItemClick = (key) => {
-    onMenuSelect(key);
-    if (isMobile) setMobileOpen(false);
-  };
-
-  const MenuItem = ({ item, isCollapsed }) => {
-    const isSelected = selectedMenuItem === item.key;
-
-    return (
-      <ListItemButton
-        selected={isSelected}
-        onClick={() => handleItemClick(item.key)}
+  const MenuItem = ({ item, isCollapsed }) => (
+    <ListItemButton
+      component={NavLink}
+      to={item.path}
+      sx={{
+        minHeight: 48,
+        justifyContent: isCollapsed && !isMobile ? 'center' : 'initial',
+        px: 2.5,
+        '&.active': {
+          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+          borderRight: isCollapsed && !isMobile ? 'none' : '3px solid #ffffff',
+        },
+      }}
+    >
+      <ListItemIcon
         sx={{
-          minHeight: 48,
-          justifyContent: isCollapsed && !isMobile ? 'center' : 'initial',
-          px: 2.5,
-          '&.Mui-selected': {
-            backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            borderRight: isCollapsed && !isMobile ? 'none' : '3px solid #ffffff',
-          },
+          minWidth: 0,
+          mr: isCollapsed && !isMobile ? 0 : 3,
+          color: 'inherit',
         }}
       >
-        <ListItemIcon
-          sx={{
-            minWidth: 0,
-            mr: isCollapsed && !isMobile ? 0 : 3,
-            color: 'inherit',
-          }}
-        >
-          {item.icon}
-        </ListItemIcon>
-        {(!isCollapsed || isMobile) && <ListItemText primary={item.label} />}
-      </ListItemButton>
-    );
-  };
+        {item.icon}
+      </ListItemIcon>
+      {(!isCollapsed || isMobile) && <ListItemText primary={item.label} />}
+    </ListItemButton>
+  );
 
   const UserSection = ({ isCollapsed }) => (
     <Box sx={{ mt: 'auto', p: 1, borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
@@ -132,9 +123,7 @@ const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
             onClick={isAuthenticated ? handleLogout : loginWithRedirect}
             sx={{
               color: 'inherit',
-              '&:hover': {
-                backgroundColor: 'transparent',
-              },
+              '&:hover': { backgroundColor: 'transparent' },
             }}
           >
             {isAuthenticated ? <ExitToApp /> : <Menu />}
@@ -159,10 +148,7 @@ const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
           <Box sx={{ display: 'flex', justifyContent: collapsed ? 'center' : 'flex-end' }}>
             <IconButton
               onClick={() => setCollapsed(!collapsed)}
-              sx={{
-                color: 'inherit',
-                '&:hover': { backgroundColor: 'transparent' },
-              }}
+              sx={{ color: 'inherit', '&:hover': { backgroundColor: 'transparent' } }}
             >
               {collapsed ? <ChevronRight /> : <ChevronLeft />}
             </IconButton>
@@ -171,13 +157,6 @@ const Sidebar = ({ selectedMenuItem, onMenuSelect }) => {
       )}
     </>
   );
-
-  const drawerSx = {
-    '& .MuiDrawer-paper': {
-      backgroundColor: theme.palette.primary.main,
-      color: theme.palette.primary.contrastText,
-    },
-  };
 
   return (
     <>
