@@ -1,9 +1,10 @@
-import React from 'react';
 import { Box, Button, Typography, Paper } from '@mui/material';
-import useAuth from '../hooks/useAuth';
+import { useAuthContext } from '../contexts/AuthContext';
 
 const SubmitMetricsPage = () => {
-  const { isAuthenticated, loginWithRedirect } = useAuth();
+  const { isAuthenticated, loginWithRedirect, isLoading } = useAuthContext();
+
+  if (isLoading) return null;
 
   if (!isAuthenticated) {
     return (
@@ -11,7 +12,7 @@ const SubmitMetricsPage = () => {
         <Typography variant="h5" gutterBottom>
           Щоб подавати показники, потрібно увійти
         </Typography>
-        <Button onClick={loginWithRedirect} variant="contained" color="primary" href="/register">
+        <Button onClick={loginWithRedirect} variant="contained" color="primary">
           Увійти / Зареєструватися
         </Button>
       </Box>

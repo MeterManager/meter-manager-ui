@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { Paper, Box, Typography, Collapse, IconButton, Divider } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import UsersTable from './UsersTable';
-import UserForm from './UserForm';
 import { useUsers } from '../../hooks/useUsers';
-import useAuth from '../../hooks/useAuth';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 const UsersSection = ({ initialExpanded = true }) => {
   const { users, search, setSearch, editUser, removeUser, updateUserStatus, error, setError } = useUsers();
-
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const currentUserId = user?.sub;
 
   const [expanded, setExpanded] = useState(initialExpanded);
@@ -62,15 +60,6 @@ const UsersSection = ({ initialExpanded = true }) => {
           </Box>
         </Collapse>
       </Paper>
-
-      <UserForm
-        open={formOpen}
-        onClose={handleFormClose}
-        onSubmit={() => {}}
-        initialData={editingUser || {}}
-        error={error}
-        users={users}
-      />
     </>
   );
 };

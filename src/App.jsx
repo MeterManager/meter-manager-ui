@@ -1,35 +1,29 @@
 import { useState } from 'react';
 import { Box, CssBaseline, ThemeProvider, CircularProgress, Fade } from '@mui/material';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import useAuth from './hooks/useAuth';
+import { useAuthContext } from './contexts/AuthContext';
 import ConsentHandler from './components/ConsentHandler';
 import Sidebar from './components/Sidebar';
+import BlockedUserPage from './components/BlockedUserPage';
 import theme from './theme';
 
 import SubmitMetricsPage from './pages/SubmitMetricsPage';
 import DashboardPage from './pages/DashboardPage';
-// import ReportsPage from './pages/ReportsPage';
-// import SettingsPage from './pages/SettingsPage';
 
 const App = () => {
-  const [collapsed, setCollapsed] = useState(false);
-  const { isLoading, error } = useAuth();
+  const { isLoading, error, isBlocked, isAuthenticated } = useAuthContext();
 
-  if (error && error.includes('Consent required')) {
+  console.log('🔍 App render:', {
+    isLoading,
+    error,
+    isBlocked,
+    isAuthenticated
+  });
+
+  if (isLoading) {
     return (
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Box sx={{ p: 3 }}>
-          <ConsentHandler />
-        </Box>
-      </ThemeProvider>
-    );
-  }
-
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      {isLoading ? (
         <Fade in={true} timeout={500}>
           <Box
             sx={{
@@ -42,21 +36,44 @@ const App = () => {
             <CircularProgress />
           </Box>
         </Fade>
-      ) : (
-        <Router>
-          <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-            <Sidebar collapsed={collapsed} onCollapse={() => setCollapsed(!collapsed)} />
-            <Box sx={{ flexGrow: 1, p: 3 }}>
-              <Routes>
-                <Route path="/" element={<SubmitMetricsPage />} />
-                <Route path="/dashboard" element={<DashboardPage />} />
-                {/* <Route path="/reports" element={<ReportsPage />} /> */}
-                {/* <Route path="/settings" element={<SettingsPage />} /> */}
-              </Routes>
-            </Box>
+      </ThemeProvider>
+    );
+  }
+
+  if (error && error.includes('Consent required')) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box sx={{ p: 3 }}>
+          <ConsentHandler />
+        </Box>
+      </ThemeProvider>
+    );
+  }
+
+  if (isBlocked) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <BlockedUserPage error={error} />
+      </ThemeProvider>
+    );
+  }
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Router>
+        <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+        {isAuthenticated && <Sidebar />}
+          <Box sx={{ flexGrow: 1, p: 3 }}>
+            <Routes>
+              <Route path="/" element={<SubmitMetricsPage />} />
+              <Route path="/dashboard/:section?" element={<DashboardPage />} />
+            </Routes>
           </Box>
-        </Router>
-      )}
+        </Box>
+      </Router>
     </ThemeProvider>
   );
 };

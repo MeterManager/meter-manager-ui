@@ -1,9 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import * as locationApi from '../api/locationsApi';
-import useAuth from './useAuth';
+import { useAuthContext } from '../contexts/AuthContext';
 
-const fetcher = async (url, token, search = '') => {
+const fetcher = async (url, getToken, search = '') => {
+  const token = await getToken();
+  if (!token) throw new Error('No token available');
+  
   const response = await locationApi.getLocations(token, search);
   return (response.data || []).map((loc) => ({
     ...loc,
@@ -12,25 +15,26 @@ const fetcher = async (url, token, search = '') => {
 };
 
 export const useLocations = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, getToken, isBlocked } = useAuthContext();
   const [search, setSearch] = useState('');
   const [error, setError] = useState(null);
 
-  const token = localStorage.getItem('token');
-
-  const swrKey = isAuthenticated && !isLoading && token ? ['locations', token, search] : null;
+  const swrKey = isAuthenticated && !isLoading && !isBlocked && getToken ? 
+    ['locations', getToken, search] : null;
 
   const {
     data: locations = [],
     error: swrError,
     isLoading: loading,
     mutate: mutateLocations,
-  } = useSWR(swrKey, ([url, token, search]) => fetcher(url, token, search), {
+  } = useSWR(swrKey, ([url, getToken, search]) => fetcher(url, getToken, search), {
     onError: (err) => {
+      if (err.response?.status === 403) {
+        return;
+      }
       setError('Помилка при завантаженні локацій');
       console.error('SWR Error:', err);
     },
-
     revalidateOnFocus: false,
     dedupingInterval: 5000,
   });
@@ -41,7 +45,11 @@ export const useLocations = () => {
 
   const addLocation = useCallback(
     async (data) => {
-      const token = localStorage.getItem('token');
+      if (isBlocked) throw new Error('User is blocked');
+      
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
+      
       const transformedData = {
         name: data.name,
         address: data.address,
@@ -76,12 +84,16 @@ export const useLocations = () => {
         throw err;
       }
     },
-    [locations, mutateLocations]
+    [locations, mutateLocations, getToken, isBlocked]
   );
 
   const editLocation = useCallback(
     async (id, data) => {
-      const token = localStorage.getItem('token');
+      if (isBlocked) throw new Error('User is blocked');
+      
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
+      
       const transformedData = {
         name: data.name,
         address: data.address,
@@ -109,12 +121,15 @@ export const useLocations = () => {
         throw err;
       }
     },
-    [locations, mutateLocations]
+    [locations, mutateLocations, getToken, isBlocked]
   );
 
   const removeLocation = useCallback(
     async (id) => {
-      const token = localStorage.getItem('token');
+      if (isBlocked) throw new Error('User is blocked');
+      
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
 
       try {
         setError(null);
@@ -134,12 +149,16 @@ export const useLocations = () => {
         throw err;
       }
     },
-    [locations, mutateLocations]
+    [locations, mutateLocations, getToken, isBlocked]
   );
 
   const updateLocationStatus = useCallback(
     async (id, is_active) => {
-      const token = localStorage.getItem('token');
+      if (isBlocked) throw new Error('User is blocked');
+      
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
+      
       const loc = locations.find((l) => l.id === id);
 
       if (!loc) throw new Error('Локацію не знайдено');
@@ -170,7 +189,7 @@ export const useLocations = () => {
         throw err;
       }
     },
-    [locations, mutateLocations]
+    [locations, mutateLocations, getToken, isBlocked]
   );
 
   const refreshLocations = useCallback(() => {

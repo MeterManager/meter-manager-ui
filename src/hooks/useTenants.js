@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import * as tenantApi from '../api/tenantsApi';
-import useAuth from './useAuth';
+import { useAuthContext } from '../contexts/AuthContext';
 
 const fetcher = async (url, token, search = '') => {
   const response = await tenantApi.getTenants(token, search);
@@ -20,35 +20,41 @@ const fetcher = async (url, token, search = '') => {
 };
 
 export const useTenants = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, getToken, isBlocked } = useAuthContext();
   const [search, setSearch] = useState('');
   const [error, setError] = useState(null);
 
-  const token = localStorage.getItem('token');
-
-  const swrKey = isAuthenticated && !isLoading && token ? ['tenants', token, search] : null;
+  const swrKey = isAuthenticated && !isLoading && !isBlocked ? ['tenants', search] : null; 
 
   const {
     data: tenants = [],
     error: swrError,
     isLoading: loading,
     mutate: mutateTenants,
-  } = useSWR(swrKey, ([url, token, search]) => fetcher(url, token, search), {
-    onError: (err) => {
-      setError('Помилка при завантаженні орендарів');
-      console.error('SWR Error:', err);
+  } = useSWR(
+    swrKey,
+    async ([, search]) => {
+      const token = await getToken();
+      return fetcher('tenants', token, search);
     },
-    revalidateOnFocus: false,
-    dedupingInterval: 5000,
-  });
+    {
+      onError: (err) => {
+        if (err.response?.status === 403) return;
+        setError('Помилка при завантаженні орендарів');
+        console.error('SWR Error:', err);
+      },
+      revalidateOnFocus: false,
+      dedupingInterval: 5000,
+    }
+  );
 
-  const activeTenants = useMemo(() => {
-    return tenants.filter((tenant) => tenant.isActive);
-  }, [tenants]);
+  const activeTenants = useMemo(() => tenants.filter((t) => t.isActive), [tenants]);
 
   const addTenant = useCallback(
     async (data) => {
-      const token = localStorage.getItem('token');
+      if (isBlocked) throw new Error('User is blocked'); 
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
       const tenantData = {
         name: data.name,
         location_id: data.locationId,
@@ -61,48 +67,30 @@ export const useTenants = () => {
 
       try {
         setError(null);
-
         const tempId = Date.now();
-        const optimisticTenant = {
-          id: tempId,
-          name: tenantData.name,
-          locationId: tenantData.location_id,
-          occupiedArea: tenantData.occupied_area,
-          contactPerson: tenantData.contact_person,
-          phone: tenantData.phone,
-          email: tenantData.email,
-          isActive: tenantData.is_active,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          isOptimistic: true,
-        };
-
+        const optimisticTenant = { ...tenantData, id: tempId, isActive: tenantData.is_active, isOptimistic: true };
         mutateTenants([...tenants, optimisticTenant], false);
 
         const response = await tenantApi.createTenant(token, tenantData);
 
         mutateTenants();
-
-        mutate('meters');
-        mutate('metersTenant');
-        mutate('deliveries');
-        mutate('resourceDeliveries');
-        mutate('payments');
-        mutate('contracts');
+        ['meters', 'metersTenant', 'deliveries', 'resourceDeliveries', 'payments', 'contracts'].forEach(mutate);
 
         return response;
-      } catch (error) {
+      } catch (err) {
         mutateTenants();
         setError('Помилка при додаванні орендаря');
-        throw error;
+        throw err;
       }
     },
-    [tenants, mutateTenants]
+    [tenants, mutateTenants, getToken, isBlocked]
   );
 
   const editTenant = useCallback(
     async (id, data) => {
-      const token = localStorage.getItem('token');
+      if (isBlocked) throw new Error('User is blocked');
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
       const tenantData = {
         name: data.name,
         location_id: data.locationId,
@@ -115,129 +103,75 @@ export const useTenants = () => {
 
       try {
         setError(null);
-
-        const updatedTenants = tenants.map((tenant) =>
-          tenant.id === id
-            ? {
-                ...tenant,
-                name: tenantData.name,
-                locationId: tenantData.location_id,
-                occupiedArea: tenantData.occupied_area,
-                contactPerson: tenantData.contact_person,
-                phone: tenantData.phone,
-                email: tenantData.email,
-                isActive: tenantData.is_active,
-                updatedAt: new Date().toISOString(),
-              }
-            : tenant
+        mutateTenants(
+          tenants.map((t) =>
+            t.id === id ? { ...t, ...tenantData, isActive: tenantData.is_active, updatedAt: new Date().toISOString() } : t
+          ),
+          false
         );
-        mutateTenants(updatedTenants, false);
 
         const response = await tenantApi.updateTenant(token, id, tenantData);
-
         mutateTenants();
-        mutate('meters');
-        mutate('metersTenant');
-        mutate('deliveries');
-        mutate('resourceDeliveries');
+        ['meters', 'metersTenant', 'deliveries', 'resourceDeliveries'].forEach(mutate);
 
         return response;
-      } catch (error) {
+      } catch (err) {
         mutateTenants();
         setError('Помилка при редагуванні орендаря');
-        throw error;
+        throw err;
       }
     },
-    [tenants, mutateTenants]
+    [tenants, mutateTenants, getToken, isBlocked]
   );
 
   const removeTenant = useCallback(
     async (id) => {
-      const token = localStorage.getItem('token');
-
+      if (isBlocked) throw new Error('User is blocked');
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
       try {
         setError(null);
-
-        const filteredTenants = tenants.filter((tenant) => tenant.id !== id);
-        mutateTenants(filteredTenants, false);
-
+        mutateTenants(tenants.filter((t) => t.id !== id), false);
         await tenantApi.deleteTenant(token, id);
-
         mutateTenants();
-        mutate('meters');
-        mutate('metersTenant');
-        mutate('deliveries');
-        mutate('resourceDeliveries');
-        mutate('payments');
-        mutate('contracts');
-      } catch (error) {
+        ['meters', 'metersTenant', 'deliveries', 'resourceDeliveries', 'payments', 'contracts'].forEach(mutate);
+      } catch (err) {
         mutateTenants();
         setError('Помилка при видаленні орендаря');
-        throw error;
+        throw err;
       }
     },
-    [tenants, mutateTenants]
+    [tenants, mutateTenants, getToken, isBlocked]
   );
 
   const updateTenantStatus = useCallback(
     async (id, is_active) => {
-      const token = localStorage.getItem('token');
+      if (isBlocked) throw new Error('User is blocked');
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
       const tenant = tenants.find((t) => t.id === id);
-
       if (!tenant) throw new Error('Орендар не знайдений');
 
-      const payload = {
-        name: tenant.name,
-        location_id: tenant.locationId,
-        occupied_area: tenant.occupiedArea || null,
-        contact_person: tenant.contactPerson || null,
-        phone: tenant.phone || null,
-        email: tenant.email || null,
-        is_active,
-      };
-
+      const payload = { ...tenant, is_active };
       try {
         setError(null);
-
-        const updatedTenants = tenants.map((t) =>
-          t.id === id ? { ...t, isActive: is_active, updatedAt: new Date().toISOString() } : t
+        mutateTenants(
+          tenants.map((t) => (t.id === id ? { ...t, isActive: is_active, updatedAt: new Date().toISOString() } : t)),
+          false
         );
-        mutateTenants(updatedTenants, false);
 
         const response = await tenantApi.updateTenant(token, id, payload);
-
         mutateTenants();
-        mutate('meters');
-        mutate('metersTenant');
-        mutate('deliveries');
+        ['meters', 'metersTenant', 'deliveries'].forEach(mutate);
 
         return response;
-      } catch (error) {
+      } catch (err) {
         mutateTenants();
         setError('Помилка при оновленні статусу орендаря');
-        console.error('Update tenant status error:', error.response?.data);
-        throw error;
+        throw err;
       }
     },
-    [tenants, mutateTenants]
-  );
-
-  const refreshTenants = useCallback(() => {
-    mutateTenants();
-  }, [mutateTenants]);
-
-  const getTenantsByLocation = useCallback(
-    (locationId) => {
-      return tenants.filter((tenant) => tenant.locationId === locationId);
-    },
-    [tenants]
-  );
-
-  const getActiveTenantsByLocation = useCallback(
-    (locationId) => {
-      return activeTenants.filter((tenant) => tenant.locationId === locationId);
-    },
-    [activeTenants]
+    [tenants, mutateTenants, getToken, isBlocked]
   );
 
   return {
@@ -250,9 +184,9 @@ export const useTenants = () => {
     editTenant,
     removeTenant,
     updateTenantStatus,
-    refreshTenants,
-    getTenantsByLocation,
-    getActiveTenantsByLocation,
+    refreshTenants: mutateTenants,
+    getTenantsByLocation: useCallback((locId) => tenants.filter((t) => t.locationId === locId), [tenants]),
+    getActiveTenantsByLocation: useCallback((locId) => activeTenants.filter((t) => t.locationId === locId), [activeTenants]),
     error: error || swrError,
     setError,
   };

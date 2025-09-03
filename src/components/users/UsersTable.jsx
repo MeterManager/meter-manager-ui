@@ -10,6 +10,7 @@ import {
   Box,
   Switch,
 } from '@mui/material';
+import { useMemo } from 'react';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -36,7 +37,15 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, removeUser, se
     }
   };
 
-  const filteredUsers = users.filter((u) => u.full_name.toLowerCase().includes(search.toLowerCase()));
+  const filteredUsers = useMemo(
+    () =>
+      users.filter(
+        (u) =>
+          u.full_name.toLowerCase().includes(search.toLowerCase()) && 
+          u.role !== 'admin' 
+      ),
+    [users, search]
+  );
 
   return (
     <Box>

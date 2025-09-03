@@ -9,6 +9,7 @@ import {
   Typography,
   Button,
   SwipeableDrawer,
+  Collapse,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import {
@@ -20,13 +21,14 @@ import {
   ExitToApp,
   Menu,
   Assignment,
-  AccountCircle 
+  AccountCircle,
+  ExpandLess,
+  ExpandMore,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { NavLink } from 'react-router-dom';
-import useAuth from '../hooks/useAuth';
-import useMediaQuery from '../hooks/useMediaQuery';
 import { useAuthContext } from '../contexts/AuthContext';
+import useMediaQuery from '../hooks/useMediaQuery';
 
 const Sidebar = () => {
   const theme = useTheme();
@@ -38,9 +40,15 @@ const Sidebar = () => {
     return false;
   });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('expandedMenus');
+      return saved ? JSON.parse(saved) : {};
+    }
+    return {};
+  });
 
-  const { isAuthenticated, user, loginWithRedirect, handleLogout } = useAuth();
-  const { isAdmin } = useAuthContext();
+  const { isAuthenticated, user, loginWithRedirect, handleLogout, isAdmin } = useAuthContext();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -52,39 +60,130 @@ const Sidebar = () => {
     if (isMobile) setMobileOpen(false);
   }, [isMobile]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('expandedMenus', JSON.stringify(expandedMenus));
+    }
+  }, [expandedMenus]);
+
+  const toggleMenu = (key) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
   const menuItems = [
     { key: '1', label: 'Подача показників', icon: <Assignment />, path: '/' },
-    ...(isAdmin ? [{ key: '2', label: 'Панель керування', icon: <Dashboard />, path: '/dashboard' }] : []),
+    ...(isAdmin ? [{ 
+      key: '2', 
+      label: 'Панель керування', 
+      icon: <Dashboard />, 
+      path: '/dashboard',
+      hasSubmenu: true,
+      submenu: [
+        { key: '2-1', label: 'Локації', path: '/dashboard/locations' },
+        { key: '2-2', label: 'Типи ресурсів', path: '/dashboard/resource-types' },
+        { key: '2-3', label: 'Орендарі', path: '/dashboard/tenants' },
+        { key: '2-4', label: 'Поставки ресурсів', path: '/dashboard/resource-delivery' },
+        { key: '2-5', label: 'Тарифи', path: '/dashboard/tariffs' },
+        { key: '2-6', label: 'Лічильники', path: '/dashboard/meters' },
+        { key: '2-7', label: 'Прив\'язка лічильників', path: '/dashboard/meter-tenants' },
+        { key: '2-8', label: 'Користувачі', path: '/dashboard/users' }
+      ]
+    }] : []),
     { key: '3', label: 'Звіти', icon: <Description />, path: '/reports' },
     { key: '4', label: 'Налаштування', icon: <Settings />, path: '/settings' },
   ];
 
-  const MenuItem = ({ item, isCollapsed }) => (
-    <ListItemButton
-      component={NavLink}
-      to={item.path}
-      sx={{
-        minHeight: 48,
-        justifyContent: isCollapsed && !isMobile ? 'center' : 'initial',
-        px: 2.5,
-        '&.active': {
-          backgroundColor: 'rgba(255, 255, 255, 0.2)',
-          borderRight: isCollapsed && !isMobile ? 'none' : '3px solid #ffffff',
-        },
-      }}
-    >
-      <ListItemIcon
+  const MenuItem = ({ item, isCollapsed }) => {
+    const hasSubmenu = item.hasSubmenu && item.submenu;
+    const isExpanded = expandedMenus[item.key];
+
+    if (hasSubmenu) {
+      return (
+        <>
+          <ListItemButton
+            onClick={() => toggleMenu(item.key)}
+            sx={{
+              minHeight: 48,
+              justifyContent: isCollapsed && !isMobile ? 'center' : 'initial',
+              px: 2.5,
+            }}
+          >
+            <ListItemIcon
+              sx={{
+                minWidth: 0,
+                mr: isCollapsed && !isMobile ? 0 : 3,
+                color: 'inherit',
+              }}
+            >
+              {item.icon}
+            </ListItemIcon>
+            {(!isCollapsed || isMobile) && (
+              <>
+                <ListItemText primary={item.label} />
+                {isExpanded ? <ExpandLess /> : <ExpandMore />}
+              </>
+            )}
+          </ListItemButton>
+          
+          {isExpanded && (!isCollapsed || isMobile) && (
+            <Collapse in={isExpanded} timeout="auto">
+              <List component="div" disablePadding>
+                {item.submenu.map((subItem) => (
+                  <ListItemButton
+                    key={subItem.key}
+                    component={NavLink}
+                    to={subItem.path}
+                    sx={{
+                      pl: 8,
+                      minHeight: 40,
+                      '&.active': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRight: '3px solid #ffffff',
+                      },
+                    }}
+                  >
+                    <ListItemText primary={subItem.label}
+                    primaryTypographyProps={{ fontSize: '0.875rem' }}/>
+                  </ListItemButton>
+
+                ))}
+              </List>
+            </Collapse>
+          )}
+        </>
+      );
+    }
+
+    return (
+      <ListItemButton
+        component={NavLink}
+        to={item.path}
         sx={{
-          minWidth: 0,
-          mr: isCollapsed && !isMobile ? 0 : 3,
-          color: 'inherit',
+          minHeight: 48,
+          justifyContent: isCollapsed && !isMobile ? 'center' : 'initial',
+          px: 2.5,
+          '&.active': {
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            borderRight: isCollapsed && !isMobile ? 'none' : '3px solid #ffffff',
+          },
         }}
       >
-        {item.icon}
-      </ListItemIcon>
-      {(!isCollapsed || isMobile) && <ListItemText primary={item.label} />}
-    </ListItemButton>
-  );
+        <ListItemIcon
+          sx={{
+            minWidth: 0,
+            mr: isCollapsed && !isMobile ? 0 : 3,
+            color: 'inherit',
+          }}
+        >
+          {item.icon}
+        </ListItemIcon>
+        {(!isCollapsed || isMobile) && <ListItemText primary={item.label} />}
+      </ListItemButton>
+    );
+  };
 
   const UserSection = ({ isCollapsed }) => (
     <Box sx={{ mt: 'auto', p: 1, borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>

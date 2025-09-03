@@ -1,84 +1,113 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as userApi from '../api/userApi';
-import useAuth from './useAuth';
+import { useAuthContext } from '../contexts/AuthContext';
 
 export const useUsers = () => {
-  const { isAuthenticated, isLoading, currentUser  } = useAuth();
+  const { isAuthenticated, isLoading, user: currentUser, getToken, isBlocked } = useAuthContext();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [error, setError] = useState(null);
 
   const fetchData = useCallback(async () => {
-    if (!isAuthenticated || isLoading || (currentUser && !currentUser.isActive)) return;
+    if (!isAuthenticated || isLoading || isBlocked) {
+      console.log('Skipping fetchData:', { isAuthenticated, isLoading, isBlocked, isActive: currentUser?.isActive });
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Токен не знайдено');
-      }
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
       const response = await userApi.getUsers(token, search);
-      setUsers(
-        (response.data || []).map((u) => ({
-          ...u,
-          isActive: u.is_active === true,
-        }))
-      );
+      console.log('Users from API:', response.data);
+      // Обробка як об'єкта { data: [...] }, так і прямого масиву
+      const usersData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+      const newUsers = usersData.map((u) => ({ ...u, isActive: u.is_active === true }));
+      setUsers(newUsers);
+      console.log('Set users:', newUsers);
     } catch (err) {
       console.error('Error fetching users:', err);
+      if (err.response?.status === 403) {
+        setLoading(false);
+        return;
+      }
       setError('Помилка при завантаженні користувачів');
     } finally {
       setLoading(false);
     }
-  }, [search, isAuthenticated, isLoading, currentUser]);
+  }, [search, isAuthenticated, isLoading, currentUser, getToken, isBlocked]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const editUser = async (id, payload) => {
-    const userToEdit = users.find((u) => u.id === id);
-    if (!userToEdit) {
-      throw new Error('Користувача не знайдено');
-    }
-    if (userToEdit.role === 'admin') {
-      throw new Error('Не можна редагувати користувача з роллю "admin".');
-    }
-    const token = localStorage.getItem('token');
-    const response = await userApi.updateUser(token, id, payload);
-    await fetchData();
-    return response;
-  };
+  const editUser = useCallback(
+    async (id, payload) => {
+      if (isBlocked) throw new Error('User is blocked');
+      const userToEdit = users.find((u) => u.id === id);
+      if (!userToEdit) throw new Error('Користувача не знайдено');
+      if (userToEdit.role === 'admin') throw new Error('Не можна редагувати користувача з роллю "admin".');
 
-  const removeUser = async (id) => {
-    const userToRemove = users.find((u) => u.id === id);
-    if (!userToRemove) {
-      throw new Error('Користувача не знайдено');
-    }
-    if (userToRemove.role === 'admin') {
-      throw new Error('Не можна видалити користувача з роллю "admin".');
-    }
-    const token = localStorage.getItem('token');
-    await userApi.deleteUser(token, id);
-    await fetchData();
-  };
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
+      try {
+        setError(null);
+        const response = await userApi.updateUser(token, id, payload);
+        await fetchData();
+        return response;
+      } catch (err) {
+        setError('Помилка при редагуванні користувача');
+        throw err;
+      }
+    },
+    [users, fetchData, getToken, isBlocked]
+  );
 
-  const updateUserStatus = async (id, is_active) => {
-    const user = users.find((u) => u.id === id);
-    if (!user) {
-      throw new Error('Користувача не знайдено');
-    }
-    if (user.role === 'admin') {
-      throw new Error('Не можна змінити статус користувача з роллю "admin".');
-    }
-    const token = localStorage.getItem('token');
-    if (!user) throw new Error('Користувача не знайдено');
-    const payload = { is_active };
-    const response = await userApi.updateUser(token, id, payload);
-    await fetchData();
-    return response;
-  };
+  const removeUser = useCallback(
+    async (id) => {
+      if (isBlocked) throw new Error('User is blocked');
+      const userToRemove = users.find((u) => u.id === id);
+      if (!userToRemove) throw new Error('Користувача не знайдено');
+      if (userToRemove.role === 'admin') throw new Error('Не можна видалити користувача з роллю "admin".');
+
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
+      try {
+        setError(null);
+        await userApi.deleteUser(token, id);
+        await fetchData();
+      } catch (err) {
+        setError('Помилка при видаленні користувача');
+        throw err;
+      }
+    },
+    [users, fetchData, getToken, isBlocked]
+  );
+
+  const updateUserStatus = useCallback(
+    async (id, is_active) => {
+      if (isBlocked) throw new Error('User is blocked');
+      const user = users.find((u) => u.id === id);
+      if (!user) throw new Error('Користувача не знайдено');
+      if (user.role === 'admin') throw new Error('Не можна змінити статус користувача з роллю "admin".');
+
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
+      try {
+        setError(null);
+        const payload = { is_active };
+        const response = await userApi.updateUser(token, id, payload);
+        await fetchData();
+        return response;
+      } catch (err) {
+        setError('Помилка при оновленні статусу користувача');
+        throw err;
+      }
+    },
+    [users, fetchData, getToken, isBlocked]
+  );
 
   return {
     users,

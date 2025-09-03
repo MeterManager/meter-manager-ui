@@ -1,4 +1,3 @@
-// src/main.jsx
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Auth0Provider } from '@auth0/auth0-react';
@@ -17,6 +16,7 @@ createRoot(document.getElementById('root')).render(
       }}
       cacheLocation="localstorage"
       useRefreshTokens={true}
+      useRefreshTokensFallback={false}
     >
       <AuthProvider>
         <App />

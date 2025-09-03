@@ -1,9 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import * as meterTenantsApi from '../api/meterTenantsApi';
-import useAuth from './useAuth';
+import { useAuthContext } from '../contexts/AuthContext';
 
-const fetcher = async ([_, token, search]) => {
+const fetcher = async ([_, getToken, search]) => {
+  const token = await getToken();
+  if (!token) throw new Error('No token available');
+  
   const response = await meterTenantsApi.getMeterTenants(token);
   return (response.data || []).filter(
     (mt) =>
@@ -13,12 +16,12 @@ const fetcher = async ([_, token, search]) => {
 };
 
 export const useMeterTenants = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, getToken, isBlocked } = useAuthContext();
   const [search, setSearch] = useState('');
   const [error, setError] = useState(null);
-  const token = localStorage.getItem('token');
 
-  const swrKey = isAuthenticated && !isLoading && token ? ['metersTenant', token, search] : null;
+  const swrKey = isAuthenticated && !isLoading && !isBlocked && getToken ? 
+    ['metersTenant', getToken, search] : null;
 
   const {
     data: meterTenants = [],
@@ -27,6 +30,7 @@ export const useMeterTenants = () => {
     mutate: mutateMeterTenants,
   } = useSWR(swrKey, fetcher, {
     onError: (err) => {
+      if (err.response?.status === 403) return;
       setError('Помилка при завантаженні призначень лічильників');
       console.error('SWR Error:', err);
     },
@@ -36,6 +40,11 @@ export const useMeterTenants = () => {
 
   const addMeterTenant = useCallback(
     async (data) => {
+      if (isBlocked) throw new Error('User is blocked');
+      
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
+
       try {
         setError(null);
 
@@ -60,11 +69,16 @@ export const useMeterTenants = () => {
         throw err;
       }
     },
-    [meterTenants, mutateMeterTenants, token]
+    [meterTenants, mutateMeterTenants, getToken, isBlocked]
   );
 
   const editMeterTenant = useCallback(
     async (id, data) => {
+      if (isBlocked) throw new Error('User is blocked');
+      
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
+
       try {
         setError(null);
 
@@ -84,11 +98,16 @@ export const useMeterTenants = () => {
         throw err;
       }
     },
-    [meterTenants, mutateMeterTenants, token]
+    [meterTenants, mutateMeterTenants, getToken, isBlocked]
   );
 
   const removeMeterTenant = useCallback(
     async (id) => {
+      if (isBlocked) throw new Error('User is blocked');
+      
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
+
       try {
         setError(null);
 
@@ -106,7 +125,7 @@ export const useMeterTenants = () => {
         throw err;
       }
     },
-    [meterTenants, mutateMeterTenants, token]
+    [meterTenants, mutateMeterTenants, getToken, isBlocked]
   );
 
   const tenantsMap = useMemo(() => {

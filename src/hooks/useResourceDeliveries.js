@@ -1,20 +1,30 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as resourceDeliveriesApi from '../api/resourceDeliveriesApi';
-import useAuth from './useAuth';
+import { useAuthContext } from '../contexts/AuthContext';
 
 export const useResourceDeliveries = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, getToken, isBlocked } = useAuthContext();
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [error, setError] = useState(null);
 
   const fetchData = useCallback(async () => {
-    if (!isAuthenticated || isLoading) return;
+    if (!isAuthenticated || isLoading || isBlocked) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    
     try {
-      const token = localStorage.getItem('token');
+      const token = await getToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
       const response = await resourceDeliveriesApi.getResourceDeliveries(token, { search });
       setDeliveries(
         (response.data || []).map((delivery) => ({
@@ -36,20 +46,27 @@ export const useResourceDeliveries = () => {
         }))
       );
     } catch (err) {
+      if (err.response?.status === 403) {
+        return;
+      }
       setError('Помилка при завантаженні поставок');
+      console.error('Fetch deliveries error:', err);
     } finally {
       setLoading(false);
     }
-  }, [search, isAuthenticated, isLoading]);
+  }, [search, isAuthenticated, isLoading, getToken, isBlocked]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const addDelivery = async (data) => {
-    try {
-      const token = localStorage.getItem('token');
+  const addDelivery = useCallback(async (data) => {
+    if (isBlocked) throw new Error('User is blocked');
+    
+    const token = await getToken();
+    if (!token) throw new Error('No token available');
 
+    try {
       const deliveryData = {
         location_id: data.locationId,
         energy_resource_type_id: data.resourceTypeId,
@@ -68,12 +85,15 @@ export const useResourceDeliveries = () => {
       console.error('Create delivery error:', error.response?.data);
       throw error;
     }
-  };
+  }, [getToken, isBlocked, fetchData]);
 
-  const editDelivery = async (id, data) => {
+  const editDelivery = useCallback(async (id, data) => {
+    if (isBlocked) throw new Error('User is blocked');
+    
+    const token = await getToken();
+    if (!token) throw new Error('No token available');
+
     try {
-      const token = localStorage.getItem('token');
-
       const deliveryData = {
         location_id: data.locationId,
         energy_resource_type_id: data.resourceTypeId,
@@ -92,13 +112,22 @@ export const useResourceDeliveries = () => {
       console.error('Update delivery error:', error.response?.data);
       throw error;
     }
-  };
+  }, [getToken, isBlocked, fetchData]);
 
-  const removeDelivery = async (id) => {
-    const token = localStorage.getItem('token');
-    await resourceDeliveriesApi.deleteResourceDelivery(token, id);
-    await fetchData();
-  };
+  const removeDelivery = useCallback(async (id) => {
+    if (isBlocked) throw new Error('User is blocked');
+    
+    const token = await getToken();
+    if (!token) throw new Error('No token available');
+
+    try {
+      await resourceDeliveriesApi.deleteResourceDelivery(token, id);
+      await fetchData();
+    } catch (error) {
+      console.error('Delete delivery error:', error.response?.data);
+      throw error;
+    }
+  }, [getToken, isBlocked, fetchData]);
 
   return {
     deliveries,

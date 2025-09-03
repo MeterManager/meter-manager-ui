@@ -6,7 +6,9 @@ export const verifyUser = async (token) => {
     const response = await api.get('/auth/verify-token');
     return response.data;
   } catch (error) {
-    console.error('Error verifying user:', error.message, error.response?.data);
+    if (error.response?.status !== 403) {
+      console.error('Error verifying user:', error.message);
+    }
     throw error;
   }
 };

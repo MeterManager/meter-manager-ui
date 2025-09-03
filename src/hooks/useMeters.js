@@ -1,9 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import * as metersApi from '../api/metersApi';
-import useAuth from './useAuth';
+import { useAuthContext } from '../contexts/AuthContext';
 
-const fetcher = async (url, token, search = '') => {
+const fetcher = async (url, getToken, search = '') => {
+  const token = await getToken();
+  if (!token) throw new Error('No token available');
+  
   const response = await metersApi.getMeters(token, search);
   return response.data.map((m) => ({
     ...m,
@@ -12,27 +15,26 @@ const fetcher = async (url, token, search = '') => {
 };
 
 export const useMeters = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, getToken, isBlocked } = useAuthContext();
   const [search, setSearch] = useState('');
   const [error, setError] = useState(null);
 
-  const token = localStorage.getItem('token');
-
-  const swrKey = isAuthenticated && !isLoading && token ? ['meters', token, search] : null;
+  const swrKey = isAuthenticated && !isLoading && !isBlocked && getToken ? 
+    ['meters', getToken, search] : null;
 
   const {
     data: meters = [],
     error: swrError,
     isLoading: loading,
     mutate: mutateMeters,
-  } = useSWR(swrKey, ([url, token, search]) => fetcher(url, token, search), {
+  } = useSWR(swrKey, ([url, getToken, search]) => fetcher(url, getToken, search), {
     onError: (err) => {
+      if (err.response?.status === 403) return;
       setError('Помилка при завантаженні лічильників');
       console.error('SWR Error:', err);
     },
     revalidateOnFocus: false,
     dedupingInterval: 5000,
-
     refreshInterval: 30000,
   });
 
@@ -75,7 +77,10 @@ export const useMeters = () => {
 
   const addMeter = useCallback(
     async (data) => {
-      const token = localStorage.getItem('token');
+      if (isBlocked) throw new Error('User is blocked');
+      
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
 
       try {
         setError(null);
@@ -99,11 +104,9 @@ export const useMeters = () => {
         mutate('metersTenant');
         mutate('deliveries');
         mutate('resourceDeliveries');
-
         mutate('locations');
         mutate('resourceTypes');
         mutate('tenants');
-
         mutate('bills');
         mutate('payments');
         mutate('calculations');
@@ -116,12 +119,15 @@ export const useMeters = () => {
         throw error;
       }
     },
-    [meters, mutateMeters]
+    [meters, mutateMeters, getToken, isBlocked]
   );
 
   const editMeter = useCallback(
     async (id, data) => {
-      const token = localStorage.getItem('token');
+      if (isBlocked) throw new Error('User is blocked');
+      
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
 
       try {
         setError(null);
@@ -154,12 +160,15 @@ export const useMeters = () => {
         throw error;
       }
     },
-    [meters, mutateMeters]
+    [meters, mutateMeters, getToken, isBlocked]
   );
 
   const removeMeter = useCallback(
     async (id) => {
-      const token = localStorage.getItem('token');
+      if (isBlocked) throw new Error('User is blocked');
+      
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
 
       try {
         setError(null);
@@ -185,12 +194,16 @@ export const useMeters = () => {
         throw error;
       }
     },
-    [meters, mutateMeters]
+    [meters, mutateMeters, getToken, isBlocked]
   );
 
   const updateMeterStatus = useCallback(
     async (id, isActive) => {
-      const token = localStorage.getItem('token');
+      if (isBlocked) throw new Error('User is blocked');
+      
+      const token = await getToken();
+      if (!token) throw new Error('No token available');
+      
       const meter = meters.find((m) => m.id === id);
 
       if (!meter) throw new Error('Лічільник не знайдено');
@@ -228,7 +241,7 @@ export const useMeters = () => {
         throw error;
       }
     },
-    [meters, mutateMeters]
+    [meters, mutateMeters, getToken, isBlocked]
   );
 
   const refreshMeters = useCallback(() => {
