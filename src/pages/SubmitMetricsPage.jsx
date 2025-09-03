@@ -8,13 +8,41 @@ const SubmitMetricsPage = () => {
 
   if (!isAuthenticated) {
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 10 }}>
-        <Typography variant="h5" gutterBottom>
-          Щоб подавати показники, потрібно увійти
-        </Typography>
-        <Button onClick={loginWithRedirect} variant="contained" color="primary">
-          Увійти / Зареєструватися
-        </Button>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '70vh',
+          bgcolor: 'background.default',
+          px: 2,
+        }}
+      >
+        <Paper
+          elevation={6}
+          sx={{
+            p: 5,
+            textAlign: 'center',
+            maxWidth: 400,
+            borderRadius: 3,
+          }}
+        >
+          <Typography variant="h5" gutterBottom fontWeight={600}>
+            Доступ обмежено
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Щоб подавати показники, увійдіть у свій акаунт
+          </Typography>
+          <Button
+            onClick={loginWithRedirect}
+            variant="contained"
+            color="primary"
+            size="large"
+            sx={{ mt: 3 }}
+          >
+            Увійти / Зареєструватися
+          </Button>
+        </Paper>
       </Box>
     );
   }
