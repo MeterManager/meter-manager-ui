@@ -6,7 +6,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Button,
   Box,
   Switch,
 } from '@mui/material';
@@ -15,7 +14,7 @@ import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 import { useAuthContext } from '../../contexts/AuthContext';
 
-const UsersTable = ({ users, search, setSearch, updateUserStatus, removeUser, setLocalError }) => {
+const UsersTable = ({ users, search, setSearch, updateUserStatus, setLocalError }) => {
   const theme = useTheme();
   const { user, isAdmin } = useAuthContext();
 
@@ -25,15 +24,6 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, removeUser, se
       await updateUserStatus(u.id, !u.isActive);
     } catch (err) {
       setLocalError(err.message || 'Помилка при зміні статусу користувача');
-    }
-  };
-
-  const handleRemove = async (u) => {
-    if (u.auth0_user_id === user?.sub && isAdmin) return;
-    try {
-      await removeUser(u.id);
-    } catch (err) {
-      setLocalError(err.message || 'Помилка при видаленні користувача');
     }
   };
 
@@ -58,10 +48,9 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, removeUser, se
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ width: '30%' }}>ПІБ</TableCell>
-              <TableCell sx={{ width: '25%' }}>Роль</TableCell>
-              <TableCell sx={{ width: '25%' }}>Статус</TableCell>
-              <TableCell sx={{ width: '20%' }}>Дії</TableCell>
+              <TableCell sx={{ width: '40%' }}>ПІБ</TableCell>
+              <TableCell sx={{ width: '30%' }}>Роль</TableCell>
+              <TableCell sx={{ width: '30%' }}>Статус</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -79,21 +68,11 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, removeUser, se
                     />
                     {u.isActive ? 'Активний' : 'Неактивний'}
                   </TableCell>
-                  <TableCell>
-                    <Button
-                      size="small"
-                      onClick={() => handleRemove(u)}
-                      color="error"
-                      disabled={u.auth0_user_id === user?.sub && isAdmin}
-                    >
-                      Видалити
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} align="center">
+                <TableCell colSpan={3} align="center">
                   Користувачів не знайдено
                 </TableCell>
               </TableRow>

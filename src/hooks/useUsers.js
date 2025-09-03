@@ -11,7 +11,6 @@ export const useUsers = () => {
 
   const fetchData = useCallback(async () => {
     if (!isAuthenticated || isLoading || isBlocked) {
-      console.log('Skipping fetchData:', { isAuthenticated, isLoading, isBlocked, isActive: currentUser?.isActive });
       setLoading(false);
       return;
     }
@@ -21,18 +20,10 @@ export const useUsers = () => {
       const token = await getToken();
       if (!token) throw new Error('No token available');
       const response = await userApi.getUsers(token, search);
-      console.log('Users from API:', response.data);
-      // Обробка як об'єкта { data: [...] }, так і прямого масиву
       const usersData = Array.isArray(response.data) ? response.data : response.data?.data || [];
       const newUsers = usersData.map((u) => ({ ...u, isActive: u.is_active === true }));
       setUsers(newUsers);
-      console.log('Set users:', newUsers);
     } catch (err) {
-      console.error('Error fetching users:', err);
-      if (err.response?.status === 403) {
-        setLoading(false);
-        return;
-      }
       setError('Помилка при завантаженні користувачів');
     } finally {
       setLoading(false);
@@ -59,27 +50,6 @@ export const useUsers = () => {
         return response;
       } catch (err) {
         setError('Помилка при редагуванні користувача');
-        throw err;
-      }
-    },
-    [users, fetchData, getToken, isBlocked]
-  );
-
-  const removeUser = useCallback(
-    async (id) => {
-      if (isBlocked) throw new Error('User is blocked');
-      const userToRemove = users.find((u) => u.id === id);
-      if (!userToRemove) throw new Error('Користувача не знайдено');
-      if (userToRemove.role === 'admin') throw new Error('Не можна видалити користувача з роллю "admin".');
-
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-      try {
-        setError(null);
-        await userApi.deleteUser(token, id);
-        await fetchData();
-      } catch (err) {
-        setError('Помилка при видаленні користувача');
         throw err;
       }
     },
@@ -115,7 +85,6 @@ export const useUsers = () => {
     search,
     setSearch,
     editUser,
-    removeUser,
     updateUserStatus,
     error,
     setError,
