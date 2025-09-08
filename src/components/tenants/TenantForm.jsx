@@ -1,16 +1,13 @@
 import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Alert,
-  MenuItem,
-} from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, MenuItem } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '../../hooks/useMediaQuery';
 
 const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants, locations = [] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery('(max-width:800px)');
+  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
+
   const [formData, setFormData] = useState(initialData);
   const [formErrors, setFormErrors] = useState({});
 
@@ -46,7 +43,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
       error = "Площа не може бути від'ємною.";
     }
     if (name === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      error = "Невірний формат email.";
+      error = 'Невірний формат email.';
     }
 
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
@@ -60,19 +57,19 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.name) errors.name = "Назва орендаря обов'язкова";
-    if (!formData.locationId) errors.locationId = 'Локація обов’язкова';
+    if (!formData.name) errors.name = "Назва орендаря обов'язкова.";
+    if (!formData.locationId) errors.locationId = "Локація обов'язкова.";
 
     if (tenants.some((t) => t.name.trim() === formData.name.trim() && t.id !== initialData.id)) {
-      errors.name = 'Орендар з такою назвою вже існує';
+      errors.name = 'Орендар з такою назвою вже існує.';
     }
 
     if (formData.occupiedArea && parseFloat(formData.occupiedArea) < 0) {
-      errors.occupiedArea = 'Площа не може бути від’ємною';
+      errors.occupiedArea = "Площа не може бути від'ємною.";
     }
 
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Невірний формат email';
+      errors.email = 'Невірний формат email.';
     }
 
     return errors;
@@ -102,11 +99,45 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{initialData.id ? 'Редагувати орендаря' : 'Додати орендаря'}</DialogTitle>
-      <DialogContent sx={{ mt: 1, pb: 0 }}>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      fullWidth
+      maxWidth="sm"
+      fullScreen={isMobile}
+      PaperProps={{
+        sx: {
+          width: isMobile ? '100%' : isMobileOrTablet ? '90%' : '500px',
+          maxWidth: isMobile ? '100%' : '500px',
+          margin: isMobile ? 0 : 'auto',
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          fontSize: isMobile ? '1.125rem' : '1.25rem',
+          fontWeight: 600,
+          px: isMobile ? 2 : 3,
+          py: isMobile ? 2 : 2.5,
+        }}
+      >
+        {initialData.id ? 'Редагувати орендаря' : 'Додати орендаря'}
+      </DialogTitle>
+
+      <DialogContent
+        sx={{
+          px: isMobile ? 2 : 3,
+          pb: 1,
+        }}
+      >
         {error && (
-          <Alert severity="error" sx={{ mb: 1 }}>
+          <Alert
+            severity="error"
+            sx={{
+              mb: 2,
+              fontSize: isMobile ? '0.875rem' : '1rem',
+            }}
+          >
             {error}
           </Alert>
         )}
@@ -114,10 +145,21 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
         <TextField
           name="name"
           label="Назва орендаря"
-          value={formData.name}
+          value={formData.name || ''}
           onChange={handleChange}
           fullWidth
-          sx={{ mt: 1 }}
+          variant="outlined"
+          size={isMobile ? 'medium' : 'medium'}
+          sx={{
+            mt: 1,
+            mb: 2,
+            '& .MuiInputBase-input': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+          }}
           error={!!formErrors.name}
           helperText={formErrors.name || ' '}
         />
@@ -126,9 +168,20 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           select
           name="locationId"
           label="Локація"
-          value={formData.locationId}
+          value={formData.locationId || ''}
           onChange={handleChange}
           fullWidth
+          variant="outlined"
+          size={isMobile ? 'medium' : 'medium'}
+          sx={{
+            mb: 2,
+            '& .MuiInputBase-input': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+          }}
           error={!!formErrors.locationId}
           helperText={formErrors.locationId || ' '}
         >
@@ -146,6 +199,17 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           value={formData.occupiedArea || ''}
           onChange={handleChange}
           fullWidth
+          variant="outlined"
+          size={isMobile ? 'medium' : 'medium'}
+          sx={{
+            mb: 2,
+            '& .MuiInputBase-input': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+          }}
           error={!!formErrors.occupiedArea}
           helperText={formErrors.occupiedArea || ' '}
           inputProps={{ min: 0, step: 0.01 }}
@@ -157,6 +221,17 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           value={formData.contactPerson || ''}
           onChange={handleChange}
           fullWidth
+          variant="outlined"
+          size={isMobile ? 'medium' : 'medium'}
+          sx={{
+            mb: 2,
+            '& .MuiInputBase-input': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+          }}
           helperText={formErrors.contactPerson || ' '}
         />
 
@@ -166,6 +241,17 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           value={formData.phone || ''}
           onChange={handleChange}
           fullWidth
+          variant="outlined"
+          size={isMobile ? 'medium' : 'medium'}
+          sx={{
+            mb: 2,
+            '& .MuiInputBase-input': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+          }}
           helperText={formErrors.phone || ' '}
         />
 
@@ -176,16 +262,53 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           value={formData.email || ''}
           onChange={handleChange}
           fullWidth
+          variant="outlined"
+          size={isMobile ? 'medium' : 'medium'}
+          sx={{
+            '& .MuiInputBase-input': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+          }}
           error={!!formErrors.email}
           helperText={formErrors.email || ' '}
         />
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, mb: 1 }}>
-        <Button variant="outlined" size="small" onClick={handleClose}>
+      <DialogActions
+        sx={{
+          px: isMobile ? 2 : 3,
+          py: isMobile ? 2 : 2,
+          gap: isMobile ? 1 : 1,
+          flexDirection: isMobile ? 'column-reverse' : 'row',
+          '& .MuiButton-root': {
+            minWidth: isMobile ? 'auto' : '80px',
+            fontSize: isMobile ? '1rem' : '0.875rem',
+            height: isMobile ? '44px' : '36px',
+          },
+        }}
+      >
+        <Button
+          variant="outlined"
+          onClick={handleClose}
+          fullWidth={isMobile}
+          sx={{
+            order: isMobile ? 1 : 0,
+          }}
+        >
           Скасувати
         </Button>
-        <Button variant="contained" size="small" onClick={handleSubmit}>
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          fullWidth={isMobile}
+          sx={{
+            order: isMobile ? 0 : 1,
+            marginLeft: '0 !important',
+          }}
+        >
           Зберегти
         </Button>
       </DialogActions>

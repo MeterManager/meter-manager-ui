@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, MenuItem } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '../../hooks/useMediaQuery';
 
 const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants = [], meters = [] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery('(max-width:600px)');
+  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
+
   const [formData, setFormData] = useState({
     tenantId: '',
     meterId: '',
@@ -31,9 +37,9 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
     if (name === 'startDate' && !value) error = "Дата початку обов'язкова.";
 
     if (name === 'endDate' && value && formData.startDate && new Date(value) < new Date(formData.startDate)) {
-      error = "Дата завершення не може бути раніше дати початку.";
+      error = 'Дата завершення не може бути раніше дати початку.';
     } else if (name === 'startDate' && value && formData.endDate && new Date(value) > new Date(formData.endDate)) {
-        error = "Дата початку не може бути пізніше дати завершення.";
+      error = 'Дата початку не може бути пізніше дати завершення.';
     }
 
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
@@ -52,7 +58,7 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
     if (!formData.startDate) errors.startDate = "Дата початку обов'язкова.";
 
     if (formData.endDate && new Date(formData.endDate) < new Date(formData.startDate)) {
-      errors.endDate = "Дата завершення не може бути раніше дати початку.";
+      errors.endDate = 'Дата завершення не може бути раніше дати початку.';
     }
     return errors;
   };
@@ -89,13 +95,45 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        {formData.id ? 'Редагувати зв’язок лічильник-орендар' : 'Додати зв’язок лічильник-орендар'}
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      fullWidth
+      maxWidth="sm"
+      fullScreen={isMobile}
+      PaperProps={{
+        sx: {
+          width: isMobile ? '100%' : isMobileOrTablet ? '90%' : '500px',
+          maxWidth: isMobile ? '100%' : '500px',
+          margin: isMobile ? 0 : 'auto',
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          fontSize: isMobile ? '1.125rem' : '1.25rem',
+          fontWeight: 600,
+          px: isMobile ? 2 : 3,
+          py: isMobile ? 2 : 2.5,
+        }}
+      >
+        {formData.id ? "Редагувати зв'язок лічильник-орендар" : "Додати зв'язок лічильник-орендар"}
       </DialogTitle>
-      <DialogContent sx={{ pb: 0 }}>
+
+      <DialogContent
+        sx={{
+          px: isMobile ? 2 : 3,
+          pb: 1,
+        }}
+      >
         {error && (
-          <Alert severity="error" sx={{ mb: 1 }}>
+          <Alert
+            severity="error"
+            sx={{
+              mb: 2,
+              fontSize: isMobile ? '0.875rem' : '1rem',
+            }}
+          >
             {error}
           </Alert>
         )}
@@ -104,10 +142,21 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
           select
           name="tenantId"
           label="Орендар"
-          value={formData.tenantId}
+          value={formData.tenantId || ''}
           onChange={handleChange}
           fullWidth
-          sx={{ mt: 1 }}
+          variant="outlined"
+          size={isMobile ? 'medium' : 'medium'}
+          sx={{
+            mt: 1,
+            mb: 2,
+            '& .MuiInputBase-input': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+          }}
           error={!!formErrors.tenantId}
           helperText={formErrors.tenantId || ' '}
         >
@@ -122,9 +171,20 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
           select
           name="meterId"
           label="Лічильник"
-          value={formData.meterId}
+          value={formData.meterId || ''}
           onChange={handleChange}
           fullWidth
+          variant="outlined"
+          size={isMobile ? 'medium' : 'medium'}
+          sx={{
+            mb: 2,
+            '& .MuiInputBase-input': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+          }}
           error={!!formErrors.meterId}
           helperText={formErrors.meterId || ' '}
         >
@@ -139,9 +199,20 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
           name="startDate"
           label="Дата початку"
           type="date"
-          value={formData.startDate}
+          value={formData.startDate || ''}
           onChange={handleChange}
           fullWidth
+          variant="outlined"
+          size={isMobile ? 'medium' : 'medium'}
+          sx={{
+            mb: 2,
+            '& .MuiInputBase-input': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+          }}
           error={!!formErrors.startDate}
           helperText={formErrors.startDate || ' '}
           InputLabelProps={{ shrink: true }}
@@ -151,21 +222,57 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
           name="endDate"
           label="Дата завершення"
           type="date"
-          value={formData.endDate}
+          value={formData.endDate || ''}
           onChange={handleChange}
           fullWidth
+          variant="outlined"
+          size={isMobile ? 'medium' : 'medium'}
+          sx={{
+            '& .MuiInputBase-input': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+          }}
           error={!!formErrors.endDate}
-          helperText={formErrors.endDate}
-          sx={{ mb: 2}}
+          helperText={formErrors.endDate || ' '}
           InputLabelProps={{ shrink: true }}
         />
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, mb: 1 }}>
-        <Button variant="outlined" size="small" onClick={handleClose}>
+      <DialogActions
+        sx={{
+          px: isMobile ? 2 : 3,
+          py: isMobile ? 2 : 2,
+          gap: isMobile ? 1 : 1,
+          flexDirection: isMobile ? 'column-reverse' : 'row',
+          '& .MuiButton-root': {
+            minWidth: isMobile ? 'auto' : '80px',
+            fontSize: isMobile ? '1rem' : '0.875rem',
+            height: isMobile ? '44px' : '36px',
+          },
+        }}
+      >
+        <Button
+          variant="outlined"
+          onClick={handleClose}
+          fullWidth={isMobile}
+          sx={{
+            order: isMobile ? 1 : 0,
+          }}
+        >
           Скасувати
         </Button>
-        <Button variant="contained" size="small" onClick={handleSubmit}>
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          fullWidth={isMobile}
+          sx={{
+            order: isMobile ? 0 : 1,
+            marginLeft: '0 !important',
+          }}
+        >
           Зберегти
         </Button>
       </DialogActions>

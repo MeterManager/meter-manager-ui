@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Drawer,
   List,
@@ -10,8 +11,9 @@ import {
   Button,
   SwipeableDrawer,
   Collapse,
+  Tooltip,
 } from '@mui/material';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dashboard,
   Settings,
@@ -24,26 +26,43 @@ import {
   AccountCircle,
   ExpandLess,
   ExpandMore,
+  LocationOn,
+  Category,
+  People,
+  LocalShipping,
+  AttachMoney,
+  Speed,
+  Link,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { NavLink } from 'react-router-dom';
+import { Scrollbar } from 'react-scrollbars-custom';
 import { useAuthContext } from '../contexts/AuthContext';
 import useMediaQuery from '../hooks/useMediaQuery';
 
 const Sidebar = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width: 600px)');
+  const isMobileOrTablet = useMediaQuery('(max-width:960px)');
+
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true';
+      const saved = localStorage.getItem('sidebarCollapsed');
+      return saved === 'true';
     }
     return false;
   });
+
   const [mobileOpen, setMobileOpen] = useState(false);
+
   const [expandedMenus, setExpandedMenus] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('expandedMenus');
-      return saved ? JSON.parse(saved) : {};
+      try {
+        return saved ? JSON.parse(saved) : {};
+      } catch (error) {
+        console.warn('Failed to parse expandedMenus from localStorage:', error);
+        return {};
+      }
     }
     return {};
   });
@@ -52,151 +71,231 @@ const Sidebar = () => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarCollapsed', collapsed);
+      localStorage.setItem('sidebarCollapsed', collapsed.toString());
     }
   }, [collapsed]);
 
   useEffect(() => {
-    if (isMobile) setMobileOpen(false);
-  }, [isMobile]);
+    if (!isMobileOrTablet && mobileOpen) {
+      setMobileOpen(false);
+    }
+  }, [isMobileOrTablet, mobileOpen]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('expandedMenus', JSON.stringify(expandedMenus));
+      try {
+        localStorage.setItem('expandedMenus', JSON.stringify(expandedMenus));
+      } catch (error) {
+        console.warn('Failed to save expandedMenus to localStorage:', error);
+      }
     }
   }, [expandedMenus]);
 
-  const toggleMenu = (key) => {
-    setExpandedMenus(prev => ({
+  const toggleMenu = useCallback((key) => {
+    setExpandedMenus((prev) => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: !prev[key],
     }));
-  };
+  }, []);
+
+  const handleMobileDrawerToggle = useCallback(() => {
+    setMobileOpen((prev) => !prev);
+  }, []);
+
+  const handleMobileDrawerClose = useCallback(() => {
+    setMobileOpen(false);
+  }, []);
+
+  const handleMobileDrawerOpen = useCallback(() => {
+    setMobileOpen(true);
+  }, []);
+
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((prev) => !prev);
+  }, []);
 
   const menuItems = [
     { key: '1', label: 'Подача показників', icon: <Assignment />, path: '/' },
-    ...(isAdmin ? [{ 
-      key: '2', 
-      label: 'Панель керування', 
-      icon: <Dashboard />, 
-      path: '/dashboard',
-      hasSubmenu: true,
-      submenu: [
-        { key: '2-1', label: 'Локації', path: '/dashboard/locations' },
-        { key: '2-2', label: 'Типи ресурсів', path: '/dashboard/resource-types' },
-        { key: '2-3', label: 'Орендарі', path: '/dashboard/tenants' },
-        { key: '2-4', label: 'Поставки ресурсів', path: '/dashboard/resource-delivery' },
-        { key: '2-5', label: 'Тарифи', path: '/dashboard/tariffs' },
-        { key: '2-6', label: 'Лічильники', path: '/dashboard/meters' },
-        { key: '2-7', label: 'Прив\'язка лічильників', path: '/dashboard/meter-tenants' },
-        { key: '2-8', label: 'Користувачі', path: '/dashboard/users' }
-      ]
-    }] : []),
+    ...(isAdmin
+      ? [
+          {
+            key: '2',
+            label: 'Панель керування',
+            icon: <Dashboard />,
+            path: '/dashboard',
+            hasSubmenu: true,
+            submenu: [
+              { key: '2-1', label: 'Локації', path: '/dashboard/locations', icon: <LocationOn /> },
+              { key: '2-2', label: 'Типи ресурсів', path: '/dashboard/resource-types', icon: <Category /> },
+              { key: '2-3', label: 'Орендарі', path: '/dashboard/tenants', icon: <People /> },
+              { key: '2-4', label: 'Поставки ресурсів', path: '/dashboard/resource-delivery', icon: <LocalShipping /> },
+              { key: '2-5', label: 'Тарифи', path: '/dashboard/tariffs', icon: <AttachMoney /> },
+              { key: '2-6', label: 'Лічильники', path: '/dashboard/meters', icon: <Speed /> },
+              { key: '2-7', label: "Прив'язка лічильників", path: '/dashboard/meter-tenants', icon: <Link /> },
+              { key: '2-8', label: 'Користувачі', path: '/dashboard/users', icon: <AccountCircle /> },
+            ],
+          },
+        ]
+      : []),
     { key: '3', label: 'Звіти', icon: <Description />, path: '/reports' },
     { key: '4', label: 'Налаштування', icon: <Settings />, path: '/settings' },
   ];
 
-  const MenuItem = ({ item, isCollapsed }) => {
+  const MenuItem = ({ item, isCollapsed, expandedMenus, toggleMenu }) => {
     const hasSubmenu = item.hasSubmenu && item.submenu;
     const isExpanded = expandedMenus[item.key];
 
     if (hasSubmenu) {
       return (
         <>
-          <ListItemButton
-            onClick={() => toggleMenu(item.key)}
-            sx={{
-              minHeight: 48,
-              justifyContent: isCollapsed && !isMobile ? 'center' : 'initial',
-              px: 2.5,
-            }}
-          >
-            <ListItemIcon
+          <Tooltip title={isCollapsed ? item.label : ''} placement="right" disableHoverListener={!isCollapsed}>
+            <ListItemButton
+              onClick={() => toggleMenu(item.key)}
               sx={{
-                minWidth: 0,
-                mr: isCollapsed && !isMobile ? 0 : 3,
-                color: 'inherit',
+                minHeight: 48,
+                justifyContent: isCollapsed ? 'center' : 'initial',
+                px: 2.5,
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
               }}
             >
-              {item.icon}
-            </ListItemIcon>
-            {(!isCollapsed || isMobile) && (
-              <>
-                <ListItemText primary={item.label} />
-                {isExpanded ? <ExpandLess /> : <ExpandMore />}
-              </>
-            )}
-          </ListItemButton>
-          
-          {isExpanded && (!isCollapsed || isMobile) && (
-            <Collapse in={isExpanded} timeout="auto">
-              <List component="div" disablePadding>
-                {item.submenu.map((subItem) => (
+              <ListItemIcon sx={{ minWidth: 0, mr: isCollapsed ? 0 : 3, color: 'inherit' }}>{item.icon}</ListItemIcon>
+              {!isCollapsed && (
+                <>
+                  <ListItemText primary={item.label} />
+                  {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                </>
+              )}
+            </ListItemButton>
+          </Tooltip>
+
+          {/* Collapsed mode - show submenu items as separate buttons */}
+          {isCollapsed && isExpanded && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, px: 1 }}>
+              {item.submenu.map((subItem) => (
+                <Tooltip key={subItem.key} title={subItem.label} placement="right">
                   <ListItemButton
-                    key={subItem.key}
                     component={NavLink}
                     to={subItem.path}
+                    onClick={isMobileOrTablet ? handleMobileDrawerClose : undefined}
                     sx={{
-                      pl: 8,
                       minHeight: 40,
+                      justifyContent: 'center',
+                      px: 1,
                       '&.active': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        borderRight: '3px solid #ffffff',
+                        backgroundColor: 'rgba(255,255,255,0.2)',
+                        borderRadius: 1,
+                      },
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
                       },
                     }}
                   >
-                    <ListItemText primary={subItem.label}
-                    primaryTypographyProps={{ fontSize: '0.875rem' }}/>
+                    <ListItemIcon sx={{ minWidth: 0, color: 'inherit', justifyContent: 'center' }}>
+                      {subItem.icon && React.cloneElement(subItem.icon, { fontSize: 'small' })}
+                    </ListItemIcon>
                   </ListItemButton>
-
-                ))}
-              </List>
-            </Collapse>
+                </Tooltip>
+              ))}
+            </Box>
           )}
+
+          {/* Expanded mode - show submenu as collapsible list */}
+          <Collapse in={!isCollapsed && isExpanded} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding>
+              {item.submenu.map((subItem) => (
+                <Tooltip
+                  key={subItem.key}
+                  title={isCollapsed ? subItem.label : ''}
+                  placement="right"
+                  disableHoverListener={!isCollapsed}
+                >
+                  <ListItemButton
+                    component={NavLink}
+                    to={subItem.path}
+                    onClick={isMobileOrTablet ? handleMobileDrawerClose : undefined}
+                    sx={{
+                      pl: 6,
+                      minHeight: 40,
+                      '&.active': {
+                        backgroundColor: 'rgba(255,255,255,0.2)',
+                        borderRight: '3px solid #fff',
+                      },
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 24, color: 'inherit' }}>
+                      {subItem.icon && React.cloneElement(subItem.icon, { fontSize: '1rem' })}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={subItem.label}
+                      primaryTypographyProps={{ marginLeft: 1, fontSize: '0.9rem' }}
+                    />
+                  </ListItemButton>
+                </Tooltip>
+              ))}
+            </List>
+          </Collapse>
         </>
       );
     }
 
     return (
-      <ListItemButton
-        component={NavLink}
-        to={item.path}
-        sx={{
-          minHeight: 48,
-          justifyContent: isCollapsed && !isMobile ? 'center' : 'initial',
-          px: 2.5,
-          '&.active': {
-            backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            borderRight: isCollapsed && !isMobile ? 'none' : '3px solid #ffffff',
-          },
-        }}
-      >
-        <ListItemIcon
+      <Tooltip title={isCollapsed ? item.label : ''} placement="right" disableHoverListener={!isCollapsed}>
+        <ListItemButton
+          component={NavLink}
+          to={item.path}
+          onClick={isMobileOrTablet ? handleMobileDrawerClose : undefined}
           sx={{
-            minWidth: 0,
-            mr: isCollapsed && !isMobile ? 0 : 3,
-            color: 'inherit',
+            minHeight: 48,
+            justifyContent: isCollapsed ? 'center' : 'initial',
+            px: 2.5,
+            '&.active': {
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              borderRight: isCollapsed ? 'none' : '3px solid #fff',
+            },
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            },
           }}
         >
-          {item.icon}
-        </ListItemIcon>
-        {(!isCollapsed || isMobile) && <ListItemText primary={item.label} />}
-      </ListItemButton>
+          <ListItemIcon sx={{ minWidth: 0, mr: isCollapsed ? 0 : 3, color: 'inherit' }}>{item.icon}</ListItemIcon>
+          {!isCollapsed && <ListItemText primary={item.label} />}
+        </ListItemButton>
+      </Tooltip>
     );
   };
 
   const UserSection = ({ isCollapsed }) => (
     <Box sx={{ mt: 'auto', p: 1, borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
-      {!isCollapsed || isMobile ? (
+      {!isCollapsed || isMobileOrTablet ? (
         <Box sx={{ px: 1 }}>
           {isAuthenticated ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2" sx={{ flexGrow: 1, fontSize: '0.875rem', fontWeight: 500 }} noWrap>
+              <Typography
+                variant="body2"
+                sx={{ flexGrow: 1, fontSize: '0.875rem', fontWeight: 500 }}
+                noWrap
+                title={user?.full_name || user?.name || 'Користувач'}
+              >
                 {user?.full_name || user?.name || 'Користувач'}
               </Typography>
-              <IconButton onClick={handleLogout} sx={{ color: 'inherit' }}>
-                <ExitToApp />
-              </IconButton>
+              <Tooltip title="Вийти">
+                <IconButton
+                  onClick={handleLogout}
+                  sx={{
+                    color: 'inherit',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                  }}
+                >
+                  <ExitToApp />
+                </IconButton>
+              </Tooltip>
             </Box>
           ) : (
             <Button
@@ -209,7 +308,8 @@ const Sidebar = () => {
                 color: 'inherit',
                 borderColor: 'currentColor',
                 '&:hover': {
-                  backgroundColor: 'transparent',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderColor: 'currentColor',
                 },
               }}
             >
@@ -219,15 +319,19 @@ const Sidebar = () => {
         </Box>
       ) : (
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-          <IconButton
-            onClick={isAuthenticated ? handleLogout : loginWithRedirect}
-            sx={{
-              color: 'inherit',
-              '&:hover': { backgroundColor: 'transparent' },
-            }}
-          >
-            {isAuthenticated ? <ExitToApp /> : <AccountCircle />}
-          </IconButton>
+          <Tooltip title={isAuthenticated ? 'Вийти' : 'Увійти'}>
+            <IconButton
+              onClick={isAuthenticated ? handleLogout : loginWithRedirect}
+              sx={{
+                color: 'inherit',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            >
+              {isAuthenticated ? <ExitToApp /> : <AccountCircle />}
+            </IconButton>
+          </Tooltip>
         </Box>
       )}
     </Box>
@@ -237,21 +341,68 @@ const Sidebar = () => {
 
   const DrawerContent = ({ isCollapsed }) => (
     <>
-      <List sx={{ flexGrow: 1, pt: isMobile ? 8 : 1 }}>
-        {menuItems.map((item) => (
-          <MenuItem key={item.key} item={item} isCollapsed={isCollapsed} />
-        ))}
-      </List>
+      <Scrollbar
+        style={{ height: 'calc(100vh - 80px)' }}
+        noScrollX
+        trackYProps={{
+          renderer: ({ elementRef, style, ...props }) => (
+            <div
+              {...props}
+              ref={elementRef}
+              style={{
+                ...style,
+                width: '6px',
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                borderRadius: 3,
+              }}
+            />
+          ),
+        }}
+        thumbYProps={{
+          renderer: ({ elementRef, style, ...props }) => (
+            <div
+              {...props}
+              ref={elementRef}
+              style={{
+                ...style,
+                backgroundColor: 'rgba(255,255,255,0.3)',
+                borderRadius: 3,
+              }}
+            />
+          ),
+        }}
+      >
+        <List sx={{ flexGrow: 1, pt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          {menuItems.map((item) => (
+            <MenuItem
+              key={item.key}
+              item={item}
+              isCollapsed={isCollapsed}
+              expandedMenus={expandedMenus}
+              toggleMenu={toggleMenu}
+            />
+          ))}
+        </List>
+      </Scrollbar>
+
       <UserSection isCollapsed={isCollapsed} />
-      {!isMobile && (
+
+      {!isMobileOrTablet && (
         <Box sx={{ p: 1, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
           <Box sx={{ display: 'flex', justifyContent: collapsed ? 'center' : 'flex-end' }}>
-            <IconButton
-              onClick={() => setCollapsed(!collapsed)}
-              sx={{ color: 'inherit', '&:hover': { backgroundColor: 'transparent' } }}
-            >
-              {collapsed ? <ChevronRight /> : <ChevronLeft />}
-            </IconButton>
+            <Tooltip title={collapsed ? 'Розгорнути' : 'Згорнути'}>
+              <IconButton
+                onClick={toggleCollapsed}
+                sx={{
+                  color: 'inherit',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  },
+                }}
+              >
+                {collapsed ? <ChevronRight /> : <ChevronLeft />}
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
       )}
@@ -260,9 +411,9 @@ const Sidebar = () => {
 
   return (
     <>
-      {isMobile && (
+      {isMobileOrTablet && (
         <IconButton
-          onClick={() => setMobileOpen(!mobileOpen)}
+          onClick={handleMobileDrawerToggle}
           sx={{
             position: 'fixed',
             top: 16,
@@ -272,8 +423,8 @@ const Sidebar = () => {
             backgroundColor: theme.palette.primary.main,
             boxShadow: 2,
             '&:hover': {
-              backgroundColor: theme.palette.primary.main,
-              boxShadow: 'none',
+              backgroundColor: theme.palette.primary.dark,
+              boxShadow: 4,
             },
           }}
         >
@@ -281,12 +432,12 @@ const Sidebar = () => {
         </IconButton>
       )}
 
-      {isMobile ? (
+      {isMobileOrTablet ? (
         <SwipeableDrawer
           anchor="left"
           open={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-          onOpen={() => setMobileOpen(true)}
+          onClose={handleMobileDrawerClose}
+          onOpen={handleMobileDrawerOpen}
           sx={{
             '& .MuiDrawer-paper': {
               width: theme.custom.drawerWidth,
@@ -302,12 +453,17 @@ const Sidebar = () => {
           variant="permanent"
           sx={{
             width: drawerWidth,
+            flexShrink: 0,
             '& .MuiDrawer-paper': {
               width: drawerWidth,
-              transition: 'width 0.3s ease-in-out',
+              transition: theme.transitions.create('width', {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.enteringScreen,
+              }),
               overflowX: 'hidden',
               backgroundColor: theme.palette.primary.main,
               color: theme.palette.primary.contrastText,
+              boxSizing: 'border-box',
             },
           }}
         >

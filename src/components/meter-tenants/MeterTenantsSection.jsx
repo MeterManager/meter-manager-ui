@@ -65,7 +65,7 @@ const MeterTenantsSection = ({ tenants = [], meters = [], initialExpanded = true
               meters={meters.filter((m) => m.isActive)}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              onAdd={handleAdd} // кнопка всередині таблиці
+              onAdd={handleAdd}
             />
           </Box>
         </Collapse>

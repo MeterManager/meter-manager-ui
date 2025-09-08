@@ -43,26 +43,82 @@ const DashboardPage = () => {
       case 'tenants':
         return <TenantsSection locations={locationsHook.activeLocations} initialExpanded={true} />;
       case 'resource-delivery':
-        return <ResourceDeliverySection locations={locationsHook.activeLocations} resourceTypes={resourceTypesHook.activeResourceTypes} initialExpanded={true} />;
+        return (
+          <ResourceDeliverySection
+            locations={locationsHook.activeLocations}
+            resourceTypes={resourceTypesHook.activeResourceTypes}
+            initialExpanded={true}
+          />
+        );
       case 'tariffs':
-        return <TariffsSection initialExpanded={true} locations={locationsHook.activeLocations} resourceTypes={resourceTypesHook.activeResourceTypes} />;
+        return (
+          <TariffsSection
+            initialExpanded={true}
+            locations={locationsHook.activeLocations}
+            resourceTypes={resourceTypesHook.activeResourceTypes}
+          />
+        );
       case 'meters':
-        return <MetersSection initialExpanded={true} locations={locationsHook.activeLocations} energyResourceTypes={resourceTypesHook.activeResourceTypes} />;
+        return (
+          <MetersSection
+            initialExpanded={true}
+            locations={locationsHook.activeLocations}
+            energyResourceTypes={resourceTypesHook.activeResourceTypes}
+          />
+        );
       case 'meter-tenants':
-        return <MeterTenantsSection tenants={tenantsHook.activeTenants} meters={metersHook.activeMeters} initialExpanded={true} />;
+        return (
+          <MeterTenantsSection
+            tenants={tenantsHook.activeTenants}
+            meters={metersHook.activeMeters}
+            initialExpanded={true}
+          />
+        );
       case 'users':
         return <UsersSection initialExpanded={true} />;
       default:
         return (
-          <Stack spacing={3}>
-            <LocationsSection initialExpanded={false} />
-            <ResourceTypesSection initialExpanded={false} />
-            <TenantsSection locations={locationsHook.activeLocations} initialExpanded={false} />
-            <ResourceDeliverySection locations={locationsHook.activeLocations} resourceTypes={resourceTypesHook.activeResourceTypes} initialExpanded={false} />
-            <TariffsSection initialExpanded={false} locations={locationsHook.activeLocations} resourceTypes={resourceTypesHook.activeResourceTypes} />
-            <MetersSection initialExpanded={false} locations={locationsHook.activeLocations} energyResourceTypes={resourceTypesHook.activeResourceTypes} />
-            <MeterTenantsSection tenants={tenantsHook.activeTenants} meters={metersHook.activeMeters} initialExpanded={false} />
-            <UsersSection initialExpanded={false} />
+          <Stack spacing={3} direction={{ xs: 'column', md: 'row' }} flexWrap="wrap">
+            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
+              <LocationsSection initialExpanded={false} />
+            </Box>
+            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
+              <ResourceTypesSection initialExpanded={false} />
+            </Box>
+            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
+              <TenantsSection locations={locationsHook.activeLocations} initialExpanded={false} />
+            </Box>
+            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
+              <ResourceDeliverySection
+                locations={locationsHook.activeLocations}
+                resourceTypes={resourceTypesHook.activeResourceTypes}
+                initialExpanded={false}
+              />
+            </Box>
+            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
+              <TariffsSection
+                initialExpanded={false}
+                locations={locationsHook.activeLocations}
+                resourceTypes={resourceTypesHook.activeResourceTypes}
+              />
+            </Box>
+            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
+              <MetersSection
+                initialExpanded={false}
+                locations={locationsHook.activeLocations}
+                energyResourceTypes={resourceTypesHook.activeResourceTypes}
+              />
+            </Box>
+            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
+              <MeterTenantsSection
+                tenants={tenantsHook.activeTenants}
+                meters={metersHook.activeMeters}
+                initialExpanded={false}
+              />
+            </Box>
+            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
+              <UsersSection initialExpanded={false} />
+            </Box>
           </Stack>
         );
     }
@@ -70,10 +126,16 @@ const DashboardPage = () => {
 
   return (
     <Container maxWidth="lg">
-      <Typography variant="h3" align="center" sx={{ my: 4 }}>
+      <Typography
+        variant="h3"
+        align="center"
+        sx={{
+          my: 4,
+          fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
+        }}
+      >
         Панель керування
       </Typography>
-
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />

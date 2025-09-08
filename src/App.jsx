@@ -6,6 +6,7 @@ import ConsentHandler from './components/ConsentHandler';
 import Sidebar from './components/Sidebar';
 import BlockedUserPage from './components/BlockedUserPage';
 import theme from './theme';
+import { Scrollbar } from 'react-scrollbars-custom';
 
 import SubmitMetricsPage from './pages/SubmitMetricsPage';
 import DashboardPage from './pages/DashboardPage';
@@ -17,7 +18,7 @@ const App = () => {
     isLoading,
     error,
     isBlocked,
-    isAuthenticated
+    isAuthenticated,
   });
 
   if (isLoading) {
@@ -65,7 +66,7 @@ const App = () => {
       <CssBaseline />
       <Router>
         <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-        {isAuthenticated && <Sidebar />}
+          {isAuthenticated && <Sidebar />}
           <Box sx={{ flexGrow: 1, p: 3 }}>
             <Routes>
               <Route path="/" element={<SubmitMetricsPage />} />

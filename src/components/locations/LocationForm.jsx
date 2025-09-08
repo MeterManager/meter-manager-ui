@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '../../hooks/useMediaQuery';
 
 const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locations }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery('(max-width:800px)');
+  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
+
   const [formData, setFormData] = useState(initialData);
   const [formErrors, setFormErrors] = useState({});
 
@@ -70,39 +76,126 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
   };
 
   return (
-    <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>{initialData.id ? 'Редагувати локацію' : 'Додати локацію'}</DialogTitle>
-      <DialogContent sx={{ pb: 0 }}>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      fullWidth
+      maxWidth="sm"
+      fullScreen={isMobile}
+      PaperProps={{
+        sx: {
+          width: isMobile ? '100%' : isMobileOrTablet ? '90%' : '500px',
+          maxWidth: isMobile ? '100%' : '500px',
+          margin: isMobile ? 0 : 'auto',
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          fontSize: isMobile ? '1.125rem' : '1.25rem',
+          fontWeight: 600,
+          px: isMobile ? 2 : 3,
+          py: isMobile ? 2 : 2.5,
+        }}
+      >
+        {initialData.id ? 'Редагувати локацію' : 'Додати локацію'}
+      </DialogTitle>
+
+      <DialogContent
+        sx={{
+          px: isMobile ? 2 : 3,
+          pb: 1,
+        }}
+      >
         {error && (
-          <Alert severity="error" sx={{ mb: 1 }}>
+          <Alert
+            severity="error"
+            sx={{
+              mb: 2,
+              fontSize: isMobile ? '0.875rem' : '1rem',
+            }}
+          >
             {error}
           </Alert>
         )}
+
         <TextField
           name="name"
           label="Назва"
           value={formData.name || ''}
           onChange={handleChange}
           fullWidth
-          sx={{ mt: 1 }}
+          variant="outlined"
+          size={isMobile ? 'medium' : 'medium'}
+          sx={{
+            mt: 1,
+            mb: 2,
+            '& .MuiInputBase-input': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+          }}
           error={!!formErrors.name}
           helperText={formErrors.name || ' '}
         />
+
         <TextField
           name="address"
           label="Адреса"
           value={formData.address || ''}
           onChange={handleChange}
           fullWidth
+          variant="outlined"
+          size={isMobile ? 'medium' : 'medium'}
+          multiline={!isMobile}
+          rows={isMobile ? 1 : 2}
+          sx={{
+            '& .MuiInputBase-input': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: isMobile ? '1rem' : '1rem',
+            },
+          }}
           error={!!formErrors.address}
           helperText={formErrors.address || ' '}
         />
       </DialogContent>
-      <DialogActions sx={{ px: 3, mb: 1 }}>
-        <Button variant="outlined" size="small" onClick={handleClose}>
+
+      <DialogActions
+        sx={{
+          px: isMobile ? 2 : 3,
+          py: isMobile ? 2 : 2,
+          gap: isMobile ? 1 : 1,
+          flexDirection: isMobile ? 'column-reverse' : 'row',
+          '& .MuiButton-root': {
+            minWidth: isMobile ? 'auto' : '80px',
+            fontSize: isMobile ? '1rem' : '0.875rem',
+            height: isMobile ? '44px' : '36px',
+          },
+        }}
+      >
+        <Button
+          variant="outlined"
+          onClick={handleClose}
+          fullWidth={isMobile}
+          sx={{
+            order: isMobile ? 1 : 0,
+          }}
+        >
           Скасувати
         </Button>
-        <Button variant="contained" size="small" onClick={handleSubmit}>
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          fullWidth={isMobile}
+          sx={{
+            order: isMobile ? 0 : 1,
+            marginLeft: '0 !important',
+          }}
+        >
           Зберегти
         </Button>
       </DialogActions>

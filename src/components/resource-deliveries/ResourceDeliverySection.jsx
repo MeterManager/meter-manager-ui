@@ -73,7 +73,18 @@ const ResourceDeliverySection = ({ locations = [], resourceTypes = [], initialEx
   );
 
   return (
-    <>
+    <Box
+      sx={{
+        width: '86vw',
+        maxWidth: '100vw',
+        minWidth: 0,
+        position: 'relative',
+        left: '50%',
+        right: '50%',
+        marginLeft: '-43vw',
+        boxSizing: 'border-box',
+      }}
+    >
       <Paper sx={{ mb: 3, borderRadius: 2 }} elevation={1}>
         <Box
           sx={{
@@ -82,39 +93,66 @@ const ResourceDeliverySection = ({ locations = [], resourceTypes = [], initialEx
             justifyContent: 'space-between',
             p: 2,
             cursor: 'pointer',
-            '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' },
+            '&:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.02)',
+            },
           }}
           onClick={handleToggle}
         >
-          <Typography variant="h5">Поставки ресурсів ({deliveries.length})</Typography>
-          <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
+          <Typography
+            variant="h5"
+            component="h2"
+            sx={{
+              flexGrow: 1,
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Поставки ресурсів ({deliveries.length})
+          </Typography>
+          <IconButton onClick={handleToggle} size="small" sx={{ flexShrink: 0 }}>
+            {expanded ? <ExpandLess /> : <ExpandMore />}
+          </IconButton>
         </Box>
+
         <Divider />
-        <Collapse in={expanded} timeout="auto">
-          <Box sx={{ p: 3 }}>
+
+        <Collapse in={expanded}>
+          <Box
+            sx={{
+              p: 3,
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
             <ResourceDeliveryTable
               deliveries={deliveries}
               locations={memoizedLocations}
+              resourceTypes={memoizedResourceTypes}
               search={search}
               setSearch={setSearch}
               onAdd={handleAdd}
               onEdit={handleEdit}
               removeDelivery={handleRemove}
-              setLocalError={setError}
+              error={error}
             />
           </Box>
         </Collapse>
       </Paper>
+
       <ResourceDeliveryForm
         open={formOpen}
         onClose={handleFormClose}
         onSubmit={handleFormSubmit}
         initialData={editingDelivery || {}}
-        error={error}
         locations={memoizedLocations}
         resourceTypes={memoizedResourceTypes}
+        error={error}
       />
-    </>
+    </Box>
   );
 };
 
