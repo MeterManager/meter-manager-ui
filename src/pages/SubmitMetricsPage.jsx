@@ -1,5 +1,7 @@
-import { Box, Button, Typography, Paper } from '@mui/material';
-import { useAuthContext } from '../contexts/AuthContext';
+import React, { useState } from "react";
+import {Box,Button,Typography,Paper,DialogContent} from "@mui/material";
+import { useAuthContext } from "../contexts/AuthContext";
+import MeterReadingSection from "../components/meterReadings/MeterReadingSection";
 
 const SubmitMetricsPage = () => {
   const { isAuthenticated, loginWithRedirect, isLoading } = useAuthContext();
@@ -48,16 +50,13 @@ const SubmitMetricsPage = () => {
   }
 
   return (
-    <Paper sx={{ p: 4, maxWidth: 600, mx: 'auto', mt: 5 }}>
+    <Paper sx={{ p: 4, maxWidth: 1200, mx: "auto", mt: 5 }}>
       <Typography variant="h4" gutterBottom>
         Подача показників
       </Typography>
-      <Typography variant="body1" gutterBottom>
-        Тут у майбутньому буде форма для подачі показників лічильників.
-      </Typography>
-      <Button variant="contained" color="primary" disabled>
-        Подати показники
-      </Button>
+        <DialogContent>
+          <MeterReadingSection />
+        </DialogContent>    
     </Paper>
   );
 };
