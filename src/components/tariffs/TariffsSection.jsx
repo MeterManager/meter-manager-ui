@@ -1,21 +1,23 @@
 import { useState } from 'react';
-import { Paper, Box, Typography, Collapse, IconButton, Divider } from '@mui/material';
+import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import TariffsTable from '../tariffs/TariffsTable';
 import TariffForm from '../tariffs/TariffForm';
 import { useTariffs } from '../../hooks/useTariffs';
-import SearchField from '../ui/SearchField';
+import { useLocations } from '../../hooks/useLocations';
+import { useResourceTypes } from '../../hooks/useResourceTypes';
 
-const TariffsSection = ({ initialExpanded = true, locations, resourceTypes }) => {
+const TariffsSection = ({ initialExpanded = true }) => {
   const { tariffs, search, setSearch, addTariff, editTariff, removeTariff, error, setError } = useTariffs();
+  const { locations, loading: locationsLoading, error: locationsError } = useLocations();
+  const { resourceTypes, loading: typesLoading, error: typesError } = useResourceTypes();
 
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [editingTariff, setEditingTariff] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const handleToggle = () => {
-    setExpanded(!expanded);
-  };
+  const handleToggle = () => setExpanded((prev) => !prev);
 
   const handleAdd = () => {
     setEditingTariff(null);
@@ -29,16 +31,19 @@ const TariffsSection = ({ initialExpanded = true, locations, resourceTypes }) =>
 
   const handleFormSubmit = async (formData) => {
     try {
+      setError(null);
       if (editingTariff?.id) {
         await editTariff(editingTariff.id, formData);
+        setSnackbar({ open: true, message: 'Тариф успішно оновлено', severity: 'success' });
       } else {
         await addTariff(formData);
+        setSnackbar({ open: true, message: 'Тариф успішно додано', severity: 'success' });
       }
       setFormOpen(false);
       setEditingTariff(null);
     } catch (err) {
-      console.error('Error in handleFormSubmit:', err);
       setError(err.message || 'Помилка при збереженні тарифу');
+      setSnackbar({ open: true, message: err.message || 'Помилка при збереженні тарифу', severity: 'error' });
     }
   };
 
@@ -50,21 +55,28 @@ const TariffsSection = ({ initialExpanded = true, locations, resourceTypes }) =>
   const handleRemove = async (id) => {
     try {
       await removeTariff(id);
+      setSnackbar({ open: true, message: 'Тариф видалено', severity: 'success' });
     } catch (err) {
       setError(err.message || 'Помилка при видаленні тарифу');
+      setSnackbar({ open: true, message: err.message || 'Помилка при видаленні тарифу', severity: 'error' });
     }
   };
-  const locationsMap =
-    locations?.reduce((acc, loc) => {
-      acc[loc.id] = loc.name;
-      return acc;
-    }, {}) || {};
 
-  const resourceTypesMap =
-    resourceTypes?.reduce((acc, rt) => {
-      acc[rt.id] = rt.name;
-      return acc;
-    }, {}) || {};
+  const handleCloseSnackbar = () => setSnackbar({ open: false, message: '', severity: 'success' });
+
+  if (locationsLoading || typesLoading) return <Typography>Завантаження...</Typography>;
+  if (locationsError) return <Typography color="error">Помилка при завантаженні локацій</Typography>;
+  if (typesError) return <Typography color="error">Помилка при завантаженні типів ресурсів</Typography>;
+
+  const locationsMap = locations?.reduce((acc, loc) => {
+    acc[loc.id] = loc.name;
+    return acc;
+  }, {}) || {};
+
+  const resourceTypesMap = resourceTypes?.reduce((acc, rt) => {
+    acc[rt.id] = rt.name;
+    return acc;
+  }, {}) || {};
 
   return (
     <>
@@ -76,9 +88,7 @@ const TariffsSection = ({ initialExpanded = true, locations, resourceTypes }) =>
             justifyContent: 'space-between',
             p: 2,
             cursor: 'pointer',
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.02)',
-            },
+            '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' },
           }}
           onClick={handleToggle}
         >
@@ -114,6 +124,12 @@ const TariffsSection = ({ initialExpanded = true, locations, resourceTypes }) =>
         locations={locations}
         resourceTypes={resourceTypes}
       />
+
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

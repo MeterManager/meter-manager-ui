@@ -34,3 +34,9 @@ export const deleteMeter = async (token, id) => {
   const api = createApi(token);
   await api.delete(`/meters/${id}`);
 };
+
+export const getMeterDependencies = async (token, id) => {
+  const api = createApi(token);
+  const response = await api.get(`/meters/${id}/dependencies`);
+  return response.data;
+};

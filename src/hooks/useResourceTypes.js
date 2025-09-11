@@ -167,6 +167,17 @@ export const useResourceTypes = () => {
     [resourceTypes, mutateResourceTypes, getToken]
   );
 
+  const getDependencies = useCallback(async (id) => {
+    const token = await getToken();
+    try {
+      const response = await resourceTypeApi.getResourceTypeDependencies(token, id);
+      return response.data;
+    } catch (err) {
+      setError('Помилка при отриманні залежностей типу ресурсу');
+      throw err;
+    }
+  }, [getToken]);
+
   return {
     resourceTypes,
     activeResourceTypes,
@@ -177,6 +188,7 @@ export const useResourceTypes = () => {
     editResourceType,
     removeResourceType,
     updateResourceTypeStatus,
+    getDependencies,
     refreshResourceTypes: mutateResourceTypes,
     error: error || swrError,
     setError,

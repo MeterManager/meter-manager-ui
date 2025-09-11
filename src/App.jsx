@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Box, CssBaseline, ThemeProvider, CircularProgress, Fade } from '@mui/material';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useAuthContext } from './contexts/AuthContext';
@@ -6,7 +5,6 @@ import ConsentHandler from './components/ConsentHandler';
 import Sidebar from './components/Sidebar';
 import BlockedUserPage from './components/BlockedUserPage';
 import theme from './theme';
-import { Scrollbar } from 'react-scrollbars-custom';
 
 import SubmitMetricsPage from './pages/SubmitMetricsPage';
 import DashboardPage from './pages/DashboardPage';

@@ -45,7 +45,6 @@ const MetersTable = ({
       setLocalError?.(err.message || 'Помилка при зміні статусу лічільника');
     }
   };
-
   const getLocationName = (locationId) => locations.find((l) => l.id === locationId)?.name || 'Невідома локація';
 
   const getResourceName = (resourceId) =>

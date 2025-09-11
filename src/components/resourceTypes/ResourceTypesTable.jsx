@@ -28,8 +28,8 @@ const ResourceTypesTable = ({
   setSearch,
   onEdit,
   onAdd,
-  removeResourceType,
-  updateResourceTypeStatus,
+  onRemove,
+  onStatusChange,
   setLocalError,
 }) => {
   const theme = useTheme();
@@ -38,7 +38,7 @@ const ResourceTypesTable = ({
 
   const handleStatusChange = async (type) => {
     try {
-      await updateResourceTypeStatus(type.id, !type.isActive);
+      await onStatusChange(type.id, !type.isActive);
     } catch (err) {
       setLocalError(err.message || 'Помилка при зміні статусу типу ресурсу');
     }
@@ -96,7 +96,7 @@ const ResourceTypesTable = ({
               <span>
                 <IconButton
                   size="small"
-                  onClick={() => removeResourceType(resourceType.id)}
+                  onClick={() => onRemove(resourceType.id)}
                   color="error"
                   disabled={resourceType.isActive}
                 >
@@ -258,7 +258,7 @@ const ResourceTypesTable = ({
                           <span>
                             <IconButton
                               size="small"
-                              onClick={() => removeResourceType(type.id)}
+                              onClick={() => onRemove(resourceType.id)}
                               disabled={type.isActive}
                               color="error"
                             >
