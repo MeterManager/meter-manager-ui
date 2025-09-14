@@ -10,6 +10,12 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
   const theme = useTheme();
   const isMobile = useMediaQuery("(max-width:800px)");
 
+  const methodMap = {
+    direct: "Прямий",
+    area_based: "За площею",
+    mixed: "Змішаний",
+  };
+
   const MobileReadingCard = ({ r }) => (
     <Card
       sx={{
@@ -32,12 +38,18 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
           Локація: {r.MeterTenant?.Tenant?.Location?.name || "Невідома"} –{" "}
           {r.MeterTenant?.Tenant?.Location?.address || ""}
         </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          Тип Ресурсу: {r.MeterTenant?.Meter?.EnergyResourceType?.name || "Невідомий"} 
+        </Typography>
   
         <Typography variant="body2">Поточний: {r.current_reading}</Typography>
         <Typography variant="body2">Споживання: {r.total_consumption}</Typography>
         <Typography variant="body2">Ціна: {r.unit_price}</Typography>
         <Typography variant="body2">Вартість: {r.total_cost}</Typography>
-        <Typography variant="body2">Метод: {r.calculation_method}</Typography>
+        <Typography variant="body2">
+          Метод: {methodMap[r.calculation_method] || r.calculation_method}
+        </Typography>
+
         <Typography variant="body2">Виконавець: {r.executor_name || "-"}</Typography>
         <Typography variant="body2" sx={{ mb: 2 }}>
           Представник: {r.tenant_representative || "-"}
@@ -87,6 +99,7 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
                 </TableCell>
                 <TableCell align="center" sx={{ fontWeight: "bold" }}>Лічильник</TableCell>
                 <TableCell align="center" sx={{ fontWeight: "bold" }}>Локація</TableCell>
+                <TableCell align="center" sx={{ fontWeight: "bold" }}>Тип Ресурсу</TableCell>
                 <TableCell align="center" sx={{ fontWeight: "bold" }}>Поточний</TableCell>
                 <TableCell align="center" sx={{ fontWeight: "bold" }}>Споживання</TableCell>
                 <TableCell align="center" sx={{ fontWeight: "bold" }}>Ціна</TableCell>
@@ -118,11 +131,12 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
                         {r.MeterTenant?.Tenant?.Location?.address || ""}
                       </Typography>
                     </TableCell>
+                    <TableCell align="center">{r.MeterTenant?.Meter?.EnergyResourceType?.name || "Невідомий"}</TableCell>
                     <TableCell align="center">{r.current_reading}</TableCell>
                     <TableCell align="center">{r.total_consumption}</TableCell>
                     <TableCell align="center">{r.unit_price}</TableCell>
                     <TableCell align="center">{r.total_cost}</TableCell>
-                    <TableCell align="center">{r.calculation_method}</TableCell>
+                    <TableCell align="center"> {methodMap[r.calculation_method] || r.calculation_method}</TableCell>
                     <TableCell align="center">{r.executor_name || "-"}</TableCell>
                     <TableCell align="center">{r.tenant_representative || "-"}</TableCell>
                     <TableCell align="center">

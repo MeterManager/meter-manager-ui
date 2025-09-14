@@ -7,7 +7,7 @@ const fetcher = async ([_, getToken, search]) => {
   const token = await getToken();
   if (!token) throw new Error('No token available');
   
-  const response = await meterTenantsApi.getMeterTenants(token);
+  const response = await meterTenantsApi.getAllMeterTenants(token);
   if (!search) return response.data || [];
   return (response.data || []).filter(
     (mt) =>

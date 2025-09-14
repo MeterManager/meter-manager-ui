@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "../../hooks/useMediaQuery";
-import { createMeterReading } from "../../api/meterReadings";
+import { createMeterReading, updateMeterReading } from "../../api/meterReadings";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useMeterTenants } from "../../hooks/useMeterTenants";
 
@@ -26,6 +26,8 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
   const { getAllMeterTenants } = useMeterTenants();
 
   const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedResource, setSelectedResource] = useState("");
+
   const [formData, setFormData] = useState({
     meter_tenant_id: "",
     reading_date: "",
@@ -34,6 +36,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
     calculation_method: "",
     executor_name: "",
     tenant_representative: "",
+    calculation_coefficient: 1,
   });
   const [allTenants, setAllTenants] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -69,6 +72,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
         calculation_method: initialData.calculation_method || "",
         executor_name: initialData.executor_name || "",
         tenant_representative: initialData.tenant_representative || "",
+        calculation_coefficient: initialData.calculation_coefficient || 1
       });
     } else {
       setFormData({
@@ -79,6 +83,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
         calculation_method: "",
         executor_name: "",
         tenant_representative: "",
+        calculation_coefficient: ""
       });
     }
   }, [initialData]);
@@ -94,6 +99,16 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
       } else {
         setSelectedLocation("");
       }
+      if (mt?.Meter?.EnergyResourceType) {
+        const type = mt.Meter.EnergyResourceType;
+        setSelectedResource(`${type.name}`);
+
+      } else {
+        setSelectedResource("");
+      }
+    }
+    if (name === "calculation_coefficient") {
+      value = Number(value);
     }
     setFormData((prev) => ({
       ...prev,
@@ -124,7 +139,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
 
     try {
       setLoading(true);
-
+  
       const payload = {
         meter_tenant_id: Number(formData.meter_tenant_id),
         reading_date: formData.reading_date,
@@ -134,31 +149,27 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
           formData.area_based_consumption !== ""
             ? Number(formData.area_based_consumption)
             : undefined,
+        calculation_coefficient: formData.calculation_coefficient || 1,
         executor_name: formData.executor_name || null,
         tenant_representative: formData.tenant_representative || null,
         created_by: user?.id,
       };
+  
+      let response;
+      if (initialData?.id) {
+        response = await updateMeterReading(token, initialData.id, payload);
+      } else {
+        response = await createMeterReading(token, payload);
+      }
 
-      const response = await createMeterReading(token, payload);
-
-      setFormData({
-        meter_tenant_id: "",
-        reading_date: "",
-        current_reading: "",
-        area_based_consumption: "",
-        calculation_method: "",
-        executor_name: "",
-        tenant_representative: "",
-      });
-
+  
       onSuccess?.(response);
     } catch (err) {
-      setError(err.message || "Не вдалося подати показники.");
+      setError(err.message || "Не вдалося зберегти показники.");
     } finally {
       setLoading(false);
     }
-  };
-
+  };  
 
   const selectLabelId = "meter-tenant-select-label";
 
@@ -225,6 +236,13 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
             fullWidth
             sx={{ bgcolor: "#f5f5f5" }}
           />
+          <TextField
+            label="Ресурс"
+            value={selectedResource}
+            InputProps={{ readOnly: true }}
+            fullWidth
+            sx={{ bgcolor: "#f5f5f5" }}
+          />
 
           <TextField
             label="Дата показника"
@@ -269,6 +287,15 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
               required
             />
           )}
+          <TextField
+            label="Розрахунковий коефіцієнт"
+            type="number"
+            name="calculation_coefficient"
+            value={formData.calculation_coefficient}
+            onChange={handleChange}
+            inputProps={{ step: "0.01", min: "0" }}
+            required
+          />
 
           <TextField
             label="Ім’я виконавця"

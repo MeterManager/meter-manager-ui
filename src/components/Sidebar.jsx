@@ -137,7 +137,7 @@ const Sidebar = () => {
           },
         ]
       : []),
-    { key: '3', label: 'Звіти', icon: <Description />, path: '/reports' },
+    { key: '3', label: 'Звіти', icon: <Description />, path: '/acts' },
     { key: '4', label: 'Налаштування', icon: <Settings />, path: '/settings' },
   ];
 
