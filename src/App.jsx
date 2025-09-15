@@ -65,9 +65,17 @@ const App = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
-        <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+        <Box sx={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
           {isAuthenticated && <Sidebar />}
-          <Box sx={{ flexGrow: 1, p: 3 }}>
+          <Box
+            sx={{
+              flexGrow: 1,
+              minWidth: 0,
+              overflowX: 'auto',
+              overflowY: 'auto',
+              p: 3,
+            }}
+          >
             <Routes>
               <Route path="/" element={<SubmitMetricsPage />} />
               <Route path="/dashboard/:section?" element={<DashboardPage />} />

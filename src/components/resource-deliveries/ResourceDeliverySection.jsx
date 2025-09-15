@@ -73,18 +73,7 @@ const ResourceDeliverySection = ({ locations = [], resourceTypes = [], initialEx
   );
 
   return (
-    <Box
-      sx={{
-        width: '86vw',
-        maxWidth: '100vw',
-        minWidth: 0,
-        position: 'relative',
-        left: '50%',
-        right: '50%',
-        marginLeft: '-43vw',
-        boxSizing: 'border-box',
-      }}
-    >
+    <>
       <Paper sx={{ mb: 3, borderRadius: 2 }} elevation={1}>
         <Box
           sx={{
@@ -112,7 +101,7 @@ const ResourceDeliverySection = ({ locations = [], resourceTypes = [], initialEx
           >
             Поставки ресурсів ({deliveries.length})
           </Typography>
-          <IconButton onClick={handleToggle} size="small" sx={{ flexShrink: 0 }}>
+          <IconButton onClick={handleToggle} size="small">
             {expanded ? <ExpandLess /> : <ExpandMore />}
           </IconButton>
         </Box>
@@ -120,14 +109,7 @@ const ResourceDeliverySection = ({ locations = [], resourceTypes = [], initialEx
         <Divider />
 
         <Collapse in={expanded}>
-          <Box
-            sx={{
-              p: 3,
-              width: '100%',
-              maxWidth: '100%',
-              boxSizing: 'border-box',
-            }}
-          >
+          <Box sx={{ p: 3 }}>
             <ResourceDeliveryTable
               deliveries={deliveries}
               locations={memoizedLocations}
@@ -152,7 +134,7 @@ const ResourceDeliverySection = ({ locations = [], resourceTypes = [], initialEx
         resourceTypes={memoizedResourceTypes}
         error={error}
       />
-    </Box>
+    </>
   );
 };
 
