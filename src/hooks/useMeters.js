@@ -298,6 +298,19 @@ export const useMeters = () => {
     [meters]
   );
 
+  const getMeterDependencies = useCallback(async (id) => {
+    const token = await getToken();
+    if (!token) throw new Error('No token available');
+
+    try {
+      const response = await metersApi.getMeterDependencies(token, id);
+      return response.data;
+    } catch (err) {
+      setError('Помилка при отриманні залежностей лічільника');
+      throw err;
+    }
+  }, [getToken]);
+
   return {
     meters,
     activeMeters,
@@ -306,6 +319,7 @@ export const useMeters = () => {
     metersByTenant,
     loading,
     search,
+    getMeterDependencies,
     setSearch,
     addMeter,
     editMeter,

@@ -8,21 +8,11 @@ import TariffsSection from '../components/tariffs/TariffsSection';
 import MetersSection from '../components/meters/MetersSection';
 import MeterTenantsSection from '../components/meter-tenants/MeterTenantsSection';
 import UsersSection from '../components/users/UsersSection';
-import { useLocations } from '../hooks/useLocations';
-import { useTenants } from '../hooks/useTenants';
-import { useMeters } from '../hooks/useMeters';
-import { useResourceTypes } from '../hooks/useResourceTypes';
 import { useAuthContext } from '../contexts/AuthContext';
 
 const DashboardPage = () => {
   const { section } = useParams();
   const { isAdmin, loading: authLoading } = useAuthContext();
-  const locationsHook = useLocations();
-  const resourceTypesHook = useResourceTypes();
-  const tenantsHook = useTenants();
-  const metersHook = useMeters();
-
-  const loading = authLoading || locationsHook.loading || resourceTypesHook.loading || metersHook.loading;
 
   if (!isAdmin && !authLoading) {
     return (
@@ -41,39 +31,15 @@ const DashboardPage = () => {
       case 'resource-types':
         return <ResourceTypesSection initialExpanded={true} />;
       case 'tenants':
-        return <TenantsSection locations={locationsHook.activeLocations} initialExpanded={true} />;
+        return <TenantsSection initialExpanded={true} />;
       case 'resource-delivery':
-        return (
-          <ResourceDeliverySection
-            locations={locationsHook.activeLocations}
-            resourceTypes={resourceTypesHook.activeResourceTypes}
-            initialExpanded={true}
-          />
-        );
+        return <ResourceDeliverySection initialExpanded={true} />;
       case 'tariffs':
-        return (
-          <TariffsSection
-            initialExpanded={true}
-            locations={locationsHook.activeLocations}
-            resourceTypes={resourceTypesHook.activeResourceTypes}
-          />
-        );
+        return <TariffsSection initialExpanded={true} />;
       case 'meters':
-        return (
-          <MetersSection
-            initialExpanded={true}
-            locations={locationsHook.activeLocations}
-            energyResourceTypes={resourceTypesHook.activeResourceTypes}
-          />
-        );
+        return <MetersSection initialExpanded={true} />;
       case 'meter-tenants':
-        return (
-          <MeterTenantsSection
-            tenants={tenantsHook.activeTenants}
-            meters={metersHook.activeMeters}
-            initialExpanded={true}
-          />
-        );
+        return <MeterTenantsSection initialExpanded={true} />;
       case 'users':
         return <UsersSection initialExpanded={true} />;
       default:
@@ -86,35 +52,19 @@ const DashboardPage = () => {
               <ResourceTypesSection initialExpanded={false} />
             </Box>
             <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-              <TenantsSection locations={locationsHook.activeLocations} initialExpanded={false} />
+              <TenantsSection initialExpanded={false} />
             </Box>
             <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-              <ResourceDeliverySection
-                locations={locationsHook.activeLocations}
-                resourceTypes={resourceTypesHook.activeResourceTypes}
-                initialExpanded={false}
-              />
+              <ResourceDeliverySection initialExpanded={false} />
             </Box>
             <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-              <TariffsSection
-                initialExpanded={false}
-                locations={locationsHook.activeLocations}
-                resourceTypes={resourceTypesHook.activeResourceTypes}
-              />
+              <TariffsSection initialExpanded={false} />
             </Box>
             <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-              <MetersSection
-                initialExpanded={false}
-                locations={locationsHook.activeLocations}
-                energyResourceTypes={resourceTypesHook.activeResourceTypes}
-              />
+              <MetersSection initialExpanded={false} />
             </Box>
             <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-              <MeterTenantsSection
-                tenants={tenantsHook.activeTenants}
-                meters={metersHook.activeMeters}
-                initialExpanded={false}
-              />
+              <MeterTenantsSection initialExpanded={false} />
             </Box>
             <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
               <UsersSection initialExpanded={false} />
@@ -136,7 +86,7 @@ const DashboardPage = () => {
       >
         Панель керування
       </Typography>
-      {loading ? (
+      {authLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />
         </Box>

@@ -28,8 +28,8 @@ const LocationsTable = ({
   setSearch,
   onEdit,
   onAdd,
-  removeLocation,
-  updateLocationStatus,
+  onRemove,
+  onStatusChange,
   setLocalError,
 }) => {
   const theme = useTheme();
@@ -38,15 +38,24 @@ const LocationsTable = ({
 
   const handleStatusChange = async (location) => {
     try {
-      await updateLocationStatus(location.id, !location.isActive);
+      await onStatusChange(location.id, !location.isActive);
     } catch (err) {
       setLocalError(err.message || 'Помилка при зміні статусу локації');
     }
   };
 
+  const handleRemove = async (id) => {
+    try {
+      await onRemove(id);
+    } catch (err) {
+      setLocalError(err.message || 'Помилка при видаленні локації');
+    }
+  };
+
   const filteredLocations = locations.filter(
     (loc) =>
-      loc.name.toLowerCase().includes(search.toLowerCase()) || loc.address.toLowerCase().includes(search.toLowerCase())
+      loc.name.toLowerCase().includes(search.toLowerCase()) ||
+      loc.address.toLowerCase().includes(search.toLowerCase())
   );
 
   const MobileLocationCard = ({ location }) => (
@@ -97,7 +106,7 @@ const LocationsTable = ({
               <span>
                 <IconButton
                   size="small"
-                  onClick={() => removeLocation(location.id)}
+                  onClick={() => handleRemove(location.id)}
                   color="error"
                   disabled={location.isActive}
                 >
@@ -256,7 +265,7 @@ const LocationsTable = ({
                           <span>
                             <IconButton
                               size="small"
-                              onClick={() => removeLocation(loc.id)}
+                              onClick={() => handleRemove(loc.id)}
                               disabled={loc.isActive}
                               color="error"
                             >

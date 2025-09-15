@@ -1,31 +1,67 @@
 import { useState } from 'react';
-import { Paper, Box, Typography, Collapse, IconButton, Divider } from '@mui/material';
+import {
+  Paper,
+  Box,
+  Typography,
+  Collapse,
+  IconButton,
+  Divider,
+  Snackbar,
+  Alert,
+} from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import UsersTable from './UsersTable';
 import { useUsers } from '../../hooks/useUsers';
 import { useAuthContext } from '../../contexts/AuthContext';
 
 const UsersSection = ({ initialExpanded = true }) => {
-  const { users, search, setSearch, editUser, removeUser, updateUserStatus, error, setError } = useUsers();
+  const { users, search, setSearch, editUser, updateUserStatus, error, setError } = useUsers();
   const { user } = useAuthContext();
   const currentUserId = user?.sub;
 
   const [expanded, setExpanded] = useState(initialExpanded);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const handleToggle = () => setExpanded(!expanded);
-  const handleFormClose = () => {
-    setFormOpen(false);
-    setEditingUser(null);
+
+  const handleUpdateStatus = async (id, isActive) => {
+    try {
+      await updateUserStatus(id, isActive);
+      setSnackbar({
+        open: true,
+        message: `Користувача успішно ${isActive ? 'активовано' : 'деактивовано'}`,
+        severity: 'success',
+      });
+    } catch (err) {
+      setError(err.message || 'Помилка при оновленні статусу користувача');
+      setSnackbar({
+        open: true,
+        message: err.message || 'Помилка при оновленні статусу користувача',
+        severity: 'error',
+      });
+    }
   };
 
-  const handleRemove = async (id) => {
+  const handleEditUser = async (id, data) => {
     try {
-      await removeUser(id);
+      await editUser(id, data);
+      setSnackbar({
+        open: true,
+        message: 'Дані користувача успішно оновлено',
+        severity: 'success',
+      });
     } catch (err) {
-      setError(err.message || 'Помилка при видаленні користувача');
+      setError(err.message || 'Помилка при редагуванні користувача');
+      setSnackbar({
+        open: true,
+        message: err.message || 'Помилка при редагуванні користувача',
+        severity: 'error',
+      });
     }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ open: false, message: '', severity: 'success' });
   };
 
   return (
@@ -52,14 +88,20 @@ const UsersSection = ({ initialExpanded = true }) => {
               users={users}
               search={search}
               setSearch={setSearch}
-              removeUser={handleRemove}
-              updateUserStatus={updateUserStatus}
+              editUser={handleEditUser}
+              updateUserStatus={handleUpdateStatus}
               setLocalError={setError}
               currentUserId={currentUserId}
             />
           </Box>
         </Collapse>
       </Paper>
+
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

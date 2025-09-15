@@ -31,3 +31,9 @@ export const deleteResourceType = async (token, id) => {
   const api = createApi(token);
   await api.delete(`/resource-types/${id}`);
 };
+
+export const getResourceTypeDependencies = async (token, id) => {
+  const api = createApi(token);
+  const response = await api.get(`/resource-types/${id}/dependencies`);
+  return response.data;
+};

@@ -24,3 +24,9 @@ export const deleteLocation = async (token, id) => {
   const api = createApi(token);
   await api.delete(`/locations/${id}`);
 };
+
+export const getLocationDependencies = async (token, id) => {
+  const api = createApi(token);
+  const response = await api.get(`/locations/${id}/dependencies`);
+  return response.data;
+};

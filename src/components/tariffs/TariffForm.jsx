@@ -54,7 +54,12 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value === '' && (name === 'valid_to' || name === 'valid_from') ? null : value,
+    }));
+
     validateField(name, value);
   };
 
@@ -80,8 +85,13 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
       setFormErrors(errors);
       return;
     }
+    
+    const payload = { ...formData };
+    if (!payload.valid_to) {
+      delete payload.valid_to;
+    }
 
-    onSubmit(formData);
+    onSubmit(payload);
     setFormData({});
   };
 

@@ -124,21 +124,14 @@ export const useLocations = () => {
     [locations, mutateLocations, getToken, isBlocked]
   );
 
-  const removeLocation = useCallback(
-    async (id) => {
+    const removeLocation = useCallback(async (id) => {
       if (isBlocked) throw new Error('User is blocked');
-      
       const token = await getToken();
       if (!token) throw new Error('No token available');
-
+      
       try {
         setError(null);
-
-        const filteredLocations = locations.filter((loc) => loc.id !== id);
-        mutateLocations(filteredLocations, false);
-
         await locationApi.deleteLocation(token, id);
-
         mutateLocations();
         mutate('meters');
         mutate('tenants');
@@ -148,49 +141,53 @@ export const useLocations = () => {
         setError('Помилка при видаленні локації');
         throw err;
       }
-    },
-    [locations, mutateLocations, getToken, isBlocked]
-  );
+    }, [mutateLocations, getToken, isBlocked]);
 
-  const updateLocationStatus = useCallback(
-    async (id, is_active) => {
-      if (isBlocked) throw new Error('User is blocked');
-      
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-      
-      const loc = locations.find((l) => l.id === id);
-
-      if (!loc) throw new Error('Локацію не знайдено');
-
-      const payload = {
-        name: loc.name,
-        address: loc.address,
-        is_active,
-      };
-
-      try {
-        setError(null);
-
-        const updatedLocations = locations.map((location) =>
-          location.id === id ? { ...location, isActive: is_active } : location
-        );
-        mutateLocations(updatedLocations, false);
-
-        const response = await locationApi.updateLocation(token, id, payload);
-
-        mutateLocations();
-        mutate('meters');
-
-        return response;
-      } catch (err) {
-        mutateLocations();
-        setError('Помилка при оновленні статусу локації');
-        throw err;
+  const updateLocationStatus = useCallback(async (id, is_active) => {
+    if (isBlocked) throw new Error('User is blocked');
+    const token = await getToken();
+    if (!token) throw new Error('No token available');
+    const loc = locations.find((l) => l.id === id);
+    if (!loc) throw new Error('Локацію не знайдено');
+    try {
+      setError(null);
+      if (!is_active) {
+        const dependencies = await locationApi.getLocationDependencies(token, id);
+        if (dependencies.data.active_meters > 0) {
+          const confirm = window.confirm(
+            `Ця дія деактивує ${dependencies.data.active_meters} активних лічильників. Продовжити?`
+          );
+          if (!confirm) return;
+        }
       }
-    },
-    [locations, mutateLocations, getToken, isBlocked]
-  );
+      const payload = { name: loc.name, address: loc.address, is_active };
+      const updatedLocations = locations.map((location) =>
+        location.id === id ? { ...location, isActive: is_active } : location
+      );
+      mutateLocations(updatedLocations, false);
+      const response = await locationApi.updateLocation(token, id, payload);
+      mutateLocations();
+      mutate('meters');
+      return response;
+    } catch (err) {
+      mutateLocations();
+      setError('Помилка при оновленні статусу локації');
+      throw err;
+    }
+  }, [locations, mutateLocations, getToken, isBlocked]);
+
+  const getDependencies = useCallback(async (id) => {
+    const token = await getToken();
+    if (!token) throw new Error('No token available');
+    try {
+      setError(null);
+      const response = await locationApi.getLocationDependencies(token, id);
+      return response.data;
+    } catch (err) {
+      setError('Помилка при отриманні залежностей локації');
+      throw err;
+    }
+  }, [getToken]);
 
   const refreshLocations = useCallback(() => {
     mutateLocations();
@@ -207,6 +204,7 @@ export const useLocations = () => {
     removeLocation,
     updateLocationStatus,
     refreshLocations,
+    getDependencies,
     error: error || swrError,
     setError,
   };

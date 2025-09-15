@@ -30,18 +30,44 @@ const TenantsTable = ({
   onAdd,
   removeTenant,
   updateTenantStatus,
+  getTenantDependencies,
   setLocalError,
   locations = [],
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
   const isTablet = useMediaQuery('(max-width:960px)');
-
   const handleStatusChange = async (tenant) => {
     try {
+      if (tenant.isActive) {
+        const deps = await getTenantDependencies(tenant.id);
+        if (deps?.data?.active_meter_tenants > 0) {
+          const confirm = window.confirm(
+            `У орендаря "${tenant.name}" є ${deps.data.active_meter_tenants} активних лічильників.\n` +
+            `Вони також будуть деактивовані. Продовжити?`
+          );
+          if (!confirm) return;
+        }
+      }
       await updateTenantStatus(tenant.id, !tenant.isActive);
     } catch (err) {
       setLocalError(err.message || 'Помилка при зміні статусу орендаря');
+    }
+  };
+
+  const handleRemove = async (tenant) => {
+    try {
+      const deps = await getTenantDependencies(tenant.id);
+      if (deps?.data?.active_meter_tenants > 0) {
+        const confirm = window.confirm(
+          `У орендаря "${tenant.name}" є ${deps.data.active_meter_tenants} активних лічильників.\n` +
+          `Видалення призведе до втрати цих даних. Ви впевнені?`
+        );
+        if (!confirm) return;
+      }
+      await removeTenant(tenant.id);
+    } catch (err) {
+      setLocalError(err.message || 'Помилка при видаленні орендаря');
     }
   };
 
@@ -122,7 +148,7 @@ const TenantsTable = ({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Switch
               checked={tenant.isActive}
-              onChange={() => handleStatusChange(tenant)}
+              onChange={() => handleRemove(tenant)}
               color="primary"
               size="small"
             />
@@ -235,7 +261,7 @@ const TenantsTable = ({
                 </TableCell>
                 <TableCell
                   sx={{
-                    width: '20%',
+                    width: '15%',
                     fontWeight: 600,
                   }}
                 >
@@ -243,14 +269,15 @@ const TenantsTable = ({
                 </TableCell>
                 <TableCell
                   sx={{
-                    width: '20%',
+                    width: '18%',
                     fontWeight: 600,
                   }}
                 >
                   Контакти
                 </TableCell>
                 <TableCell
-                  sx={{
+                    sx={{
+                    width: '17%',
                     fontWeight: 600,
                   }}
                 >
