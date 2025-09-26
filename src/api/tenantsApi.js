@@ -1,20 +1,37 @@
-import api from './baseApi';
+import createApi from './baseApi';
 
-export const getTenants = async (page = 1, limit = 10, search = '') => {
-  const response = await api.get('/tenants', { params: { page, limit, search } });
-  return response.data;
+export const getTenants = async (token, search = '') => {
+  try {
+    const api = createApi(token);
+    const params = {};
+    if (search) params.search = search;
+    const response = await api.get('/tenants', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching tenants:', error.message, error.response?.data);
+    throw error;
+  }
 };
 
-export const createTenant = async (data) => {
+export const createTenant = async (token, data) => {
+  const api = createApi(token);
   const response = await api.post('/tenants', data);
   return response.data;
 };
 
-export const updateTenant = async (id, data) => {
+export const updateTenant = async (token, id, data) => {
+  const api = createApi(token);
   const response = await api.put(`/tenants/${id}`, data);
   return response.data;
 };
 
-export const deleteTenant = async (id) => {
+export const deleteTenant = async (token, id) => {
+  const api = createApi(token);
   await api.delete(`/tenants/${id}`);
+};
+
+export const getTenantDependencies = async (token, id) => {
+  const api = createApi(token);
+  const response = await api.get(`/tenants/${id}/dependencies`);
+  return response.data;
 };

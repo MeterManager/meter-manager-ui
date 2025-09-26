@@ -1,37 +1,23 @@
-import { useState } from "react";
-import {
-  Paper,
-  Box,
-  Typography,
-  Collapse,
-  IconButton,
-  Divider,
-} from "@mui/material";
-import { ExpandLess, ExpandMore } from "@mui/icons-material";
-import TariffsTable from "../tariffs/TariffsTable";
-import TariffForm from "../tariffs/TariffForm";
-import { useTariffs } from "../../hooks/useTariffs";
-import SearchField from '../ui/SearchField'; 
+import { useState } from 'react';
+import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert } from '@mui/material';
+import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import TariffsTable from '../tariffs/TariffsTable';
+import TariffForm from '../tariffs/TariffForm';
+import { useTariffs } from '../../hooks/useTariffs';
+import { useLocations } from '../../hooks/useLocations';
+import { useResourceTypes } from '../../hooks/useResourceTypes';
 
-const TariffsSection = ({ initialExpanded = true, locations, resourceTypes }) => {
-  const {
-    tariffs,
-    search, 
-    setSearch, 
-    addTariff,
-    editTariff,
-    removeTariff,
-    error,
-    setError,
-  } = useTariffs();
+const TariffsSection = ({ initialExpanded = true }) => {
+  const { tariffs, search, setSearch, addTariff, editTariff, removeTariff, error, setError } = useTariffs();
+  const { locations, loading: locationsLoading, error: locationsError } = useLocations();
+  const { resourceTypes, loading: typesLoading, error: typesError } = useResourceTypes();
 
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [editingTariff, setEditingTariff] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const handleToggle = () => {
-    setExpanded(!expanded);
-  };
+  const handleToggle = () => setExpanded((prev) => !prev);
 
   const handleAdd = () => {
     setEditingTariff(null);
@@ -39,26 +25,25 @@ const TariffsSection = ({ initialExpanded = true, locations, resourceTypes }) =>
   };
 
   const handleEdit = (tariff) => {
-    console.log("TariffsSection handleEdit:", tariff);
     setEditingTariff(tariff);
     setFormOpen(true);
   };
 
   const handleFormSubmit = async (formData) => {
-    console.log("TariffsSection handleFormSubmit:", formData);
     try {
+      setError(null);
       if (editingTariff?.id) {
-        console.log("Updating tariff:", editingTariff.id, formData);
         await editTariff(editingTariff.id, formData);
+        setSnackbar({ open: true, message: 'Тариф успішно оновлено', severity: 'success' });
       } else {
-        console.log("Adding new tariff:", formData);
         await addTariff(formData);
+        setSnackbar({ open: true, message: 'Тариф успішно додано', severity: 'success' });
       }
       setFormOpen(false);
       setEditingTariff(null);
     } catch (err) {
-      console.error("Error in handleFormSubmit:", err);
-      setError(err.message || "Помилка при збереженні тарифу");
+      setError(err.message || 'Помилка при збереженні тарифу');
+      setSnackbar({ open: true, message: err.message || 'Помилка при збереженні тарифу', severity: 'error' });
     }
   };
 
@@ -70,15 +55,24 @@ const TariffsSection = ({ initialExpanded = true, locations, resourceTypes }) =>
   const handleRemove = async (id) => {
     try {
       await removeTariff(id);
+      setSnackbar({ open: true, message: 'Тариф видалено', severity: 'success' });
     } catch (err) {
-      setError(err.message || "Помилка при видаленні тарифу");
+      setError(err.message || 'Помилка при видаленні тарифу');
+      setSnackbar({ open: true, message: err.message || 'Помилка при видаленні тарифу', severity: 'error' });
     }
   };
+
+  const handleCloseSnackbar = () => setSnackbar({ open: false, message: '', severity: 'success' });
+
+  if (locationsLoading || typesLoading) return <Typography>Завантаження...</Typography>;
+  if (locationsError) return <Typography color="error">Помилка при завантаженні локацій</Typography>;
+  if (typesError) return <Typography color="error">Помилка при завантаженні типів ресурсів</Typography>;
+
   const locationsMap = locations?.reduce((acc, loc) => {
     acc[loc.id] = loc.name;
     return acc;
   }, {}) || {};
-  
+
   const resourceTypesMap = resourceTypes?.reduce((acc, rt) => {
     acc[rt.id] = rt.name;
     return acc;
@@ -89,21 +83,17 @@ const TariffsSection = ({ initialExpanded = true, locations, resourceTypes }) =>
       <Paper sx={{ mb: 3, borderRadius: 2 }} elevation={1}>
         <Box
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
             p: 2,
-            cursor: "pointer",
-            "&:hover": {
-              backgroundColor: "rgba(0, 0, 0, 0.02)",
-            },
+            cursor: 'pointer',
+            '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' },
           }}
           onClick={handleToggle}
         >
           <Typography variant="h5">Тарифи ({tariffs.length})</Typography>
-          <IconButton size="small">
-            {expanded ? <ExpandLess /> : <ExpandMore />}
-          </IconButton>
+          <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
 
         <Divider />
@@ -112,8 +102,8 @@ const TariffsSection = ({ initialExpanded = true, locations, resourceTypes }) =>
           <Box sx={{ p: 3 }}>
             <TariffsTable
               tariffs={tariffs}
-              search={search} 
-              setSearch={setSearch} 
+              search={search}
+              setSearch={setSearch}
               onAdd={handleAdd}
               onEdit={handleEdit}
               onDelete={handleRemove}
@@ -134,6 +124,12 @@ const TariffsSection = ({ initialExpanded = true, locations, resourceTypes }) =>
         locations={locations}
         resourceTypes={resourceTypes}
       />
+
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

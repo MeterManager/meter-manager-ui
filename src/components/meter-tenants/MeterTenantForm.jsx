@@ -3,24 +3,27 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, A
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
 
-const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants, locations = [] }) => {
+const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants = [], meters = [] }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:800px)');
+  const isMobile = useMediaQuery('(max-width:600px)');
   const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
 
-  const [formData, setFormData] = useState(initialData);
+  const [formData, setFormData] = useState({
+    tenantId: '',
+    meterId: '',
+    startDate: '',
+    endDate: '',
+    id: undefined,
+  });
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     if (open) {
       setFormData({
-        name: initialData.name || '',
-        locationId: initialData.locationId || '',
-        occupiedArea: initialData.occupiedArea || '',
-        contactPerson: initialData.contactPerson || '',
-        phone: initialData.phone || '',
-        email: initialData.email || '',
-        isActive: initialData.isActive ?? true,
+        tenantId: initialData.tenantId || '',
+        meterId: initialData.meterId || '',
+        startDate: initialData.startDate || '',
+        endDate: initialData.endDate || '',
         id: initialData.id,
       });
       setFormErrors({});
@@ -29,21 +32,14 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
 
   const validateField = (name, value) => {
     let error = '';
-    if (name === 'name') {
-      if (!value) {
-        error = "Назва орендаря обов'язкова.";
-      } else if (tenants.some((t) => t.name.trim() === value.trim() && t.id !== initialData.id)) {
-        error = 'Орендар з такою назвою вже існує.';
-      }
-    }
-    if (name === 'locationId' && !value) {
-      error = "Локація обов'язкова.";
-    }
-    if (name === 'occupiedArea' && value && parseFloat(value) < 0) {
-      error = "Площа не може бути від'ємною.";
-    }
-    if (name === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      error = 'Невірний формат email.';
+    if (name === 'tenantId' && !value) error = "Орендар обов'язковий.";
+    if (name === 'meterId' && !value) error = "Лічильник обов'язковий.";
+    if (name === 'startDate' && !value) error = "Дата початку обов'язкова.";
+
+    if (name === 'endDate' && value && formData.startDate && new Date(value) < new Date(formData.startDate)) {
+      error = 'Дата завершення не може бути раніше дати початку.';
+    } else if (name === 'startDate' && value && formData.endDate && new Date(value) > new Date(formData.endDate)) {
+      error = 'Дата початку не може бути пізніше дати завершення.';
     }
 
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
@@ -57,21 +53,13 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.name) errors.name = "Назва орендаря обов'язкова.";
-    if (!formData.locationId) errors.locationId = "Локація обов'язкова.";
+    if (!formData.tenantId) errors.tenantId = "Орендар обов'язковий.";
+    if (!formData.meterId) errors.meterId = "Лічильник обов'язковий.";
+    if (!formData.startDate) errors.startDate = "Дата початку обов'язкова.";
 
-    if (tenants.some((t) => t.name.trim() === formData.name.trim() && t.id !== initialData.id)) {
-      errors.name = 'Орендар з такою назвою вже існує.';
+    if (formData.endDate && new Date(formData.endDate) < new Date(formData.startDate)) {
+      errors.endDate = 'Дата завершення не може бути раніше дати початку.';
     }
-
-    if (formData.occupiedArea && parseFloat(formData.occupiedArea) < 0) {
-      errors.occupiedArea = "Площа не може бути від'ємною.";
-    }
-
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Невірний формат email.';
-    }
-
     return errors;
   };
 
@@ -83,17 +71,25 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
     }
 
     onSubmit({
-      ...formData,
-      locationId: parseInt(formData.locationId),
-      occupiedArea: formData.occupiedArea ? parseFloat(formData.occupiedArea) : null,
-      isActive: formData.isActive ?? true,
+      tenant_id: parseInt(formData.tenantId),
+      meter_id: parseInt(formData.meterId),
+      assigned_from: formData.startDate || null,
+      assigned_to: formData.endDate || null,
+      id: formData.id,
     });
 
-    setFormData({});
+    if (!formData.id) {
+      setFormData({
+        tenantId: '',
+        meterId: '',
+        startDate: '',
+        endDate: '',
+        id: undefined,
+      });
+    }
   };
 
   const handleClose = () => {
-    setFormData({});
     setFormErrors({});
     onClose();
   };
@@ -121,7 +117,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           py: isMobile ? 2 : 2.5,
         }}
       >
-        {initialData.id ? 'Редагувати орендаря' : 'Додати орендаря'}
+        {formData.id ? "Редагувати зв'язок лічильник-орендар" : "Додати зв'язок лічильник-орендар"}
       </DialogTitle>
 
       <DialogContent
@@ -143,9 +139,10 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
         )}
 
         <TextField
-          name="name"
-          label="Назва орендаря"
-          value={formData.name || ''}
+          select
+          name="tenantId"
+          label="Орендар"
+          value={formData.tenantId || ''}
           onChange={handleChange}
           fullWidth
           variant="outlined"
@@ -160,43 +157,21 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
               fontSize: isMobile ? '1rem' : '1rem',
             },
           }}
-          error={!!formErrors.name}
-          helperText={formErrors.name || ' '}
-        />
-
-        <TextField
-          select
-          name="locationId"
-          label="Локація"
-          value={formData.locationId || ''}
-          onChange={handleChange}
-          fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
-          error={!!formErrors.locationId}
-          helperText={formErrors.locationId || ' '}
+          error={!!formErrors.tenantId}
+          helperText={formErrors.tenantId || ' '}
         >
-          {locations.map((loc) => (
-            <MenuItem key={loc.id} value={loc.id}>
-              {loc.name}
+          {tenants.map((t) => (
+            <MenuItem key={t.id} value={t.id.toString()}>
+              {t.name}
             </MenuItem>
           ))}
         </TextField>
 
         <TextField
-          name="occupiedArea"
-          label="Зайнята площа (м²)"
-          type="number"
-          value={formData.occupiedArea || ''}
+          select
+          name="meterId"
+          label="Лічильник"
+          value={formData.meterId || ''}
           onChange={handleChange}
           fullWidth
           variant="outlined"
@@ -210,15 +185,21 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
               fontSize: isMobile ? '1rem' : '1rem',
             },
           }}
-          error={!!formErrors.occupiedArea}
-          helperText={formErrors.occupiedArea || ' '}
-          inputProps={{ min: 0, step: 0.01 }}
-        />
+          error={!!formErrors.meterId}
+          helperText={formErrors.meterId || ' '}
+        >
+          {meters.map((m) => (
+            <MenuItem key={m.id} value={m.id.toString()}>
+              {m.serial_number || `ID:${m.id}`}
+            </MenuItem>
+          ))}
+        </TextField>
 
         <TextField
-          name="contactPerson"
-          label="Контактна особа"
-          value={formData.contactPerson || ''}
+          name="startDate"
+          label="Дата початку"
+          type="date"
+          value={formData.startDate || ''}
           onChange={handleChange}
           fullWidth
           variant="outlined"
@@ -232,34 +213,16 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
               fontSize: isMobile ? '1rem' : '1rem',
             },
           }}
-          helperText={formErrors.contactPerson || ' '}
+          error={!!formErrors.startDate}
+          helperText={formErrors.startDate || ' '}
+          InputLabelProps={{ shrink: true }}
         />
 
         <TextField
-          name="phone"
-          label="Телефон"
-          value={formData.phone || ''}
-          onChange={handleChange}
-          fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
-          helperText={formErrors.phone || ' '}
-        />
-
-        <TextField
-          name="email"
-          label="Email"
-          type="email"
-          value={formData.email || ''}
+          name="endDate"
+          label="Дата завершення"
+          type="date"
+          value={formData.endDate || ''}
           onChange={handleChange}
           fullWidth
           variant="outlined"
@@ -272,8 +235,9 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
               fontSize: isMobile ? '1rem' : '1rem',
             },
           }}
-          error={!!formErrors.email}
-          helperText={formErrors.email || ' '}
+          error={!!formErrors.endDate}
+          helperText={formErrors.endDate || ' '}
+          InputLabelProps={{ shrink: true }}
         />
       </DialogContent>
 
@@ -316,4 +280,4 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
   );
 };
 
-export default TenantForm;
+export default MeterTenantForm;

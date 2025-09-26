@@ -1,125 +1,476 @@
+import React from 'react';
 import {
   Drawer,
   List,
-  ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
-  Collapse,
   IconButton,
   Box,
-  ListItemButton,
+  Typography,
+  Button,
+  SwipeableDrawer,
+  Collapse,
+  Tooltip,
 } from '@mui/material';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dashboard,
   Settings,
   Description,
-  ExpandLess,
-  ExpandMore,
   ChevronLeft,
   ChevronRight,
+  ExitToApp,
+  Menu,
+  Assignment,
+  AccountCircle,
+  ExpandLess,
+  ExpandMore,
+  LocationOn,
+  Category,
+  People,
+  LocalShipping,
+  AttachMoney,
+  Speed,
+  Link,
 } from '@mui/icons-material';
-import Logo from './ui/Logo';
+import { useTheme } from '@mui/material/styles';
+import { NavLink } from 'react-router-dom';
+import { Scrollbar } from 'react-scrollbars-custom';
+import { useAuthContext } from '../contexts/AuthContext';
+import useMediaQuery from '../hooks/useMediaQuery';
 
-const Sidebar = ({ collapsed, onCollapse, selectedMenuItem, onMenuSelect }) => {
-  const [openSubMenu, setOpenSubMenu] = useState(false);
+const Sidebar = () => {
+  const theme = useTheme();
+  const isMobileOrTablet = useMediaQuery('(max-width:960px)');
 
-  const handleSubMenuToggle = () => {
-    setOpenSubMenu(!openSubMenu);
-  };
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebarCollapsed');
+      return saved === 'true';
+    }
+    return false;
+  });
 
-  const handleItemClick = (key) => {
-    onMenuSelect(key);
-  };
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  return (
-    <Drawer
-      variant="persistent"
-      anchor="left"
-      open={true}
-      sx={{
-        width: (theme) => (collapsed ? theme.custom.collapsedDrawerWidth : theme.custom.drawerWidth),
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: (theme) => (collapsed ? theme.custom.collapsedDrawerWidth : theme.custom.drawerWidth),
-          boxSizing: 'border-box',
-        },
-      }}
-    >
-      <Logo collapsed={collapsed} />
-      <List sx={{ flexGrow: 1 }}>
-        {/* Панель керування */}
-        <ListItem disablePadding>
-          <ListItemButton selected={selectedMenuItem === '1'} onClick={() => handleItemClick('1')}>
-            <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
-              <Dashboard />
-            </ListItemIcon>
-            {!collapsed && <ListItemText primary="Панель керування" />}
-          </ListItemButton>
-        </ListItem>
+  const [expandedMenus, setExpandedMenus] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('expandedMenus');
+      try {
+        return saved ? JSON.parse(saved) : {};
+      } catch (error) {
+        console.warn('Failed to parse expandedMenus from localStorage:', error);
+        return {};
+      }
+    }
+    return {};
+  });
 
-        <ListItem disablePadding>
-          <ListItemButton onClick={handleSubMenuToggle}>
-            <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
-              <Settings />
-            </ListItemIcon>
-            {!collapsed && (
-              <>
-                <ListItemText primary="Лічильники" />
-                {openSubMenu ? <ExpandLess /> : <ExpandMore />}
-              </>
-            )}
-          </ListItemButton>
-        </ListItem>
+  const { isAuthenticated, user, loginWithRedirect, handleLogout, isAdmin } = useAuthContext();
 
-        <Collapse in={openSubMenu && !collapsed} timeout="auto" unmountOnExit>
-          <List component="div" disablePadding>
-            {['Всі лічильники', 'Електрика', 'Вода', 'Газ'].map((text, index) => (
-              <ListItem key={`2-${index + 1}`} disablePadding>
-                <ListItemButton
-                  sx={{ pl: 4 }}
-                  selected={selectedMenuItem === `2-${index + 1}`}
-                  onClick={() => handleItemClick(`2-${index + 1}`)}
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarCollapsed', collapsed.toString());
+    }
+  }, [collapsed]);
+
+  useEffect(() => {
+    if (!isMobileOrTablet && mobileOpen) {
+      setMobileOpen(false);
+    }
+  }, [isMobileOrTablet, mobileOpen]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('expandedMenus', JSON.stringify(expandedMenus));
+      } catch (error) {
+        console.warn('Failed to save expandedMenus to localStorage:', error);
+      }
+    }
+  }, [expandedMenus]);
+
+  const toggleMenu = useCallback((key) => {
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  }, []);
+
+  const handleMobileDrawerToggle = useCallback(() => {
+    setMobileOpen((prev) => !prev);
+  }, []);
+
+  const handleMobileDrawerClose = useCallback(() => {
+    setMobileOpen(false);
+  }, []);
+
+  const handleMobileDrawerOpen = useCallback(() => {
+    setMobileOpen(true);
+  }, []);
+
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((prev) => !prev);
+  }, []);
+
+  const menuItems = [
+    { key: '1', label: 'Подача показників', icon: <Assignment />, path: '/' },
+    ...(isAdmin
+      ? [
+          {
+            key: '2',
+            label: 'Панель керування',
+            icon: <Dashboard />,
+            path: '/dashboard',
+            hasSubmenu: true,
+            submenu: [
+              { key: '2-1', label: 'Локації', path: '/dashboard/locations', icon: <LocationOn /> },
+              { key: '2-2', label: 'Типи ресурсів', path: '/dashboard/resource-types', icon: <Category /> },
+              { key: '2-3', label: 'Орендарі', path: '/dashboard/tenants', icon: <People /> },
+              { key: '2-4', label: 'Поставки ресурсів', path: '/dashboard/resource-delivery', icon: <LocalShipping /> },
+              { key: '2-5', label: 'Тарифи', path: '/dashboard/tariffs', icon: <AttachMoney /> },
+              { key: '2-6', label: 'Лічильники', path: '/dashboard/meters', icon: <Speed /> },
+              { key: '2-7', label: "Прив'язка лічильників", path: '/dashboard/meter-tenants', icon: <Link /> },
+              { key: '2-8', label: 'Користувачі', path: '/dashboard/users', icon: <AccountCircle /> },
+            ],
+          },
+        ]
+      : []),
+    { key: '3', label: 'Звіти', icon: <Description />, path: '/reports' },
+    { key: '4', label: 'Налаштування', icon: <Settings />, path: '/settings' },
+  ];
+
+  const MenuItem = ({ item, isCollapsed, expandedMenus, toggleMenu }) => {
+    const hasSubmenu = item.hasSubmenu && item.submenu;
+    const isExpanded = expandedMenus[item.key];
+
+    if (hasSubmenu) {
+      return (
+        <>
+          <Tooltip title={isCollapsed ? item.label : ''} placement="right" disableHoverListener={!isCollapsed}>
+            <ListItemButton
+              onClick={() => toggleMenu(item.key)}
+              sx={{
+                minHeight: 48,
+                justifyContent: isCollapsed ? 'center' : 'initial',
+                px: 2.5,
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 0, mr: isCollapsed ? 0 : 3, color: 'inherit' }}>{item.icon}</ListItemIcon>
+              {!isCollapsed && (
+                <>
+                  <ListItemText primary={item.label} />
+                  {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                </>
+              )}
+            </ListItemButton>
+          </Tooltip>
+
+          {/* Collapsed mode - show submenu items as separate buttons */}
+          {isCollapsed && isExpanded && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, px: 1 }}>
+              {item.submenu.map((subItem) => (
+                <Tooltip key={subItem.key} title={subItem.label} placement="right">
+                  <ListItemButton
+                    component={NavLink}
+                    to={subItem.path}
+                    onClick={isMobileOrTablet ? handleMobileDrawerClose : undefined}
+                    sx={{
+                      minHeight: 40,
+                      justifyContent: 'center',
+                      px: 1,
+                      '&.active': {
+                        backgroundColor: 'rgba(255,255,255,0.2)',
+                        borderRadius: 1,
+                      },
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 0, color: 'inherit', justifyContent: 'center' }}>
+                      {subItem.icon && React.cloneElement(subItem.icon, { fontSize: 'small' })}
+                    </ListItemIcon>
+                  </ListItemButton>
+                </Tooltip>
+              ))}
+            </Box>
+          )}
+
+          {/* Expanded mode - show submenu as collapsible list */}
+          <Collapse in={!isCollapsed && isExpanded} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding>
+              {item.submenu.map((subItem) => (
+                <Tooltip
+                  key={subItem.key}
+                  title={isCollapsed ? subItem.label : ''}
+                  placement="right"
+                  disableHoverListener={!isCollapsed}
                 >
-                  <ListItemText primary={text} />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </Collapse>
+                  <ListItemButton
+                    component={NavLink}
+                    to={subItem.path}
+                    onClick={isMobileOrTablet ? handleMobileDrawerClose : undefined}
+                    sx={{
+                      pl: 6,
+                      minHeight: 40,
+                      '&.active': {
+                        backgroundColor: 'rgba(255,255,255,0.2)',
+                        borderRight: '3px solid #fff',
+                      },
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 24, color: 'inherit' }}>
+                      {subItem.icon && React.cloneElement(subItem.icon, { fontSize: '1rem' })}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={subItem.label}
+                      primaryTypographyProps={{ marginLeft: 1, fontSize: '0.9rem' }}
+                    />
+                  </ListItemButton>
+                </Tooltip>
+              ))}
+            </List>
+          </Collapse>
+        </>
+      );
+    }
 
-        <ListItem disablePadding>
-          <ListItemButton selected={selectedMenuItem === '3'} onClick={() => handleItemClick('3')}>
-            <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
-              <Description />
-            </ListItemIcon>
-            {!collapsed && <ListItemText primary="Звіти" />}
-          </ListItemButton>
-        </ListItem>
+    return (
+      <Tooltip title={isCollapsed ? item.label : ''} placement="right" disableHoverListener={!isCollapsed}>
+        <ListItemButton
+          component={NavLink}
+          to={item.path}
+          onClick={isMobileOrTablet ? handleMobileDrawerClose : undefined}
+          sx={{
+            minHeight: 48,
+            justifyContent: isCollapsed ? 'center' : 'initial',
+            px: 2.5,
+            '&.active': {
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              borderRight: isCollapsed ? 'none' : '3px solid #fff',
+            },
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 0, mr: isCollapsed ? 0 : 3, color: 'inherit' }}>{item.icon}</ListItemIcon>
+          {!isCollapsed && <ListItemText primary={item.label} />}
+        </ListItemButton>
+      </Tooltip>
+    );
+  };
 
-        <ListItem disablePadding>
-          <ListItemButton selected={selectedMenuItem === '4'} onClick={() => handleItemClick('4')}>
-            <ListItemIcon sx={{ minWidth: collapsed ? 0 : 56 }}>
-              <Settings />
-            </ListItemIcon>
-            {!collapsed && <ListItemText primary="Налаштування" />}
-          </ListItemButton>
-        </ListItem>
-      </List>
+  const UserSection = ({ isCollapsed }) => (
+    <Box sx={{ mt: 'auto', p: 1, borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
+      {!isCollapsed || isMobileOrTablet ? (
+        <Box sx={{ px: 1 }}>
+          {isAuthenticated ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="body2"
+                sx={{ flexGrow: 1, fontSize: '0.875rem', fontWeight: 500 }}
+                noWrap
+                title={user?.full_name || user?.name || 'Користувач'}
+              >
+                {user?.full_name || user?.name || 'Користувач'}
+              </Typography>
+              <Tooltip title="Вийти">
+                <IconButton
+                  onClick={handleLogout}
+                  sx={{
+                    color: 'inherit',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                  }}
+                >
+                  <ExitToApp />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          ) : (
+            <Button
+              variant="outlined"
+              onClick={loginWithRedirect}
+              fullWidth
+              size="small"
+              sx={{
+                textTransform: 'none',
+                color: 'inherit',
+                borderColor: 'currentColor',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderColor: 'currentColor',
+                },
+              }}
+            >
+              Увійти / Зареєструватися
+            </Button>
+          )}
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+          <Tooltip title={isAuthenticated ? 'Вийти' : 'Увійти'}>
+            <IconButton
+              onClick={isAuthenticated ? handleLogout : loginWithRedirect}
+              sx={{
+                color: 'inherit',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            >
+              {isAuthenticated ? <ExitToApp /> : <AccountCircle />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )}
+    </Box>
+  );
 
-      <Box
-        sx={{
-          mt: 'auto',
-          display: 'flex',
-          justifyContent: 'right',
-          p: (theme) => theme.custom.iconButtonPadding,
+  const drawerWidth = collapsed ? theme.custom.collapsedDrawerWidth : theme.custom.drawerWidth;
+
+  const DrawerContent = ({ isCollapsed }) => (
+    <>
+      <Scrollbar
+        style={{ height: 'calc(100vh - 80px)' }}
+        noScrollX
+        trackYProps={{
+          renderer: ({ elementRef, style, ...props }) => (
+            <div
+              {...props}
+              ref={elementRef}
+              style={{
+                ...style,
+                width: '6px',
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                borderRadius: 3,
+              }}
+            />
+          ),
+        }}
+        thumbYProps={{
+          renderer: ({ elementRef, style, ...props }) => (
+            <div
+              {...props}
+              ref={elementRef}
+              style={{
+                ...style,
+                backgroundColor: 'rgba(255,255,255,0.3)',
+                borderRadius: 3,
+              }}
+            />
+          ),
         }}
       >
-        <IconButton onClick={onCollapse} sx={{ color: 'inherit' }}>
-          {collapsed ? <ChevronRight /> : <ChevronLeft />}
+        <List sx={{ flexGrow: 1, pt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          {menuItems.map((item) => (
+            <MenuItem
+              key={item.key}
+              item={item}
+              isCollapsed={isCollapsed}
+              expandedMenus={expandedMenus}
+              toggleMenu={toggleMenu}
+            />
+          ))}
+        </List>
+      </Scrollbar>
+
+      <UserSection isCollapsed={isCollapsed} />
+
+      {!isMobileOrTablet && (
+        <Box sx={{ p: 1, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <Box sx={{ display: 'flex', justifyContent: collapsed ? 'center' : 'flex-end' }}>
+            <Tooltip title={collapsed ? 'Розгорнути' : 'Згорнути'}>
+              <IconButton
+                onClick={toggleCollapsed}
+                sx={{
+                  color: 'inherit',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  },
+                }}
+              >
+                {collapsed ? <ChevronRight /> : <ChevronLeft />}
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      {isMobileOrTablet && (
+        <IconButton
+          onClick={handleMobileDrawerToggle}
+          sx={{
+            position: 'fixed',
+            top: 16,
+            left: 16,
+            zIndex: 1300,
+            color: '#ffffff',
+            backgroundColor: theme.palette.primary.main,
+            boxShadow: 2,
+            '&:hover': {
+              backgroundColor: theme.palette.primary.dark,
+              boxShadow: 4,
+            },
+          }}
+        >
+          <Menu />
         </IconButton>
-      </Box>
-    </Drawer>
+      )}
+
+      {isMobileOrTablet ? (
+        <SwipeableDrawer
+          anchor="left"
+          open={mobileOpen}
+          onClose={handleMobileDrawerClose}
+          onOpen={handleMobileDrawerOpen}
+          sx={{
+            '& .MuiDrawer-paper': {
+              width: theme.custom.drawerWidth,
+              backgroundColor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
+            },
+          }}
+        >
+          <DrawerContent isCollapsed={false} />
+        </SwipeableDrawer>
+      ) : (
+        <Drawer
+          variant="permanent"
+          sx={{
+            width: drawerWidth,
+            flexShrink: 0,
+            '& .MuiDrawer-paper': {
+              width: drawerWidth,
+              transition: theme.transitions.create('width', {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.enteringScreen,
+              }),
+              overflowX: 'hidden',
+              backgroundColor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
+              boxSizing: 'border-box',
+            },
+          }}
+        >
+          <DrawerContent isCollapsed={collapsed} />
+        </Drawer>
+      )}
+    </>
   );
 };
 

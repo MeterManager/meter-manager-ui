@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -22,43 +23,42 @@ import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 
-const LocationsTable = ({
-  locations,
-  search,
-  setSearch,
+const MetersTable = ({
+  meters,
   onEdit,
   onAdd,
-  onRemove,
-  onStatusChange,
+  removeMeter,
+  updateMeterStatus,
   setLocalError,
+  locations = [],
+  energyResourceTypes = [],
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:800px)');
+  const isMobile = useMediaQuery('(max-width:600px)');
   const isTablet = useMediaQuery('(max-width:960px)');
+  const [search, setSearch] = useState('');
 
-  const handleStatusChange = async (location) => {
+  const handleStatusChange = async (meter) => {
     try {
-      await onStatusChange(location.id, !location.isActive);
+      await updateMeterStatus(meter.id, !meter.isActive);
     } catch (err) {
-      setLocalError(err.message || 'Помилка при зміні статусу локації');
+      setLocalError?.(err.message || 'Помилка при зміні статусу лічільника');
     }
   };
+  const getLocationName = (locationId) => locations.find((l) => l.id === locationId)?.name || 'Невідома локація';
 
-  const handleRemove = async (id) => {
-    try {
-      await onRemove(id);
-    } catch (err) {
-      setLocalError(err.message || 'Помилка при видаленні локації');
-    }
-  };
+  const getResourceName = (resourceId) =>
+    energyResourceTypes.find((rt) => rt.id === resourceId)?.name || 'Невідомий ресурс';
 
-  const filteredLocations = locations.filter(
-    (loc) =>
-      loc.name.toLowerCase().includes(search.toLowerCase()) ||
-      loc.address.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredMeters = meters.filter((meter) => {
+    const serial = (meter.serial_number || '').toLowerCase();
+    const locationName = getLocationName(meter.location_id).toLowerCase();
+    const resourceName = getResourceName(meter.energy_resource_type_id).toLowerCase();
+    const query = search.toLowerCase();
+    return serial.includes(query) || locationName.includes(query) || resourceName.includes(query);
+  });
 
-  const MobileLocationCard = ({ location }) => (
+  const MobileMeterCard = ({ meter }) => (
     <Card
       sx={{
         mb: 2,
@@ -71,45 +71,39 @@ const LocationsTable = ({
       <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-            {location.name}
+            {meter.serial_number}
           </Typography>
           <Chip
-            label={location.isActive ? 'Активна' : 'Неактивна'}
-            color={location.isActive ? 'success' : 'default'}
+            label={meter.isActive ? 'Активний' : 'Неактивний'}
+            color={meter.isActive ? 'success' : 'default'}
             size="small"
             sx={{ ml: 1, flexShrink: 0 }}
           />
         </Box>
 
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          <strong>Локація:</strong> {getLocationName(meter.location_id)}
+        </Typography>
+
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {location.address}
+          <strong>Тип ресурсу:</strong> {getResourceName(meter.energy_resource_type_id)}
         </Typography>
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Switch
-              checked={location.isActive}
-              onChange={() => handleStatusChange(location)}
-              color="primary"
-              size="small"
-            />
-            <Typography variant="body2">{location.isActive ? 'Активна' : 'Неактивна'}</Typography>
+            <Switch checked={meter.isActive} onChange={() => handleStatusChange(meter)} color="primary" size="small" />
+            <Typography variant="body2">{meter.isActive ? 'Активний' : 'Неактивний'}</Typography>
           </Box>
 
           <Stack direction="row" spacing={1}>
             <Tooltip title="Редагувати">
-              <IconButton size="small" onClick={() => onEdit(location)} color="primary">
+              <IconButton size="small" onClick={() => onEdit(meter)} color="primary">
                 <Edit fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title={location.isActive ? 'Неможливо видалити активну локацію' : 'Видалити'}>
+            <Tooltip title={meter.isActive ? 'Неможливо видалити активний лічільник' : 'Видалити'}>
               <span>
-                <IconButton
-                  size="small"
-                  onClick={() => handleRemove(location.id)}
-                  color="error"
-                  disabled={location.isActive}
-                >
+                <IconButton size="small" onClick={() => removeMeter(meter.id)} color="error" disabled={meter.isActive}>
                   <Delete fontSize="small" />
                 </IconButton>
               </span>
@@ -143,16 +137,17 @@ const LocationsTable = ({
             flexShrink: 0,
           }}
         >
-          Додати локацію
+          Додати лічільник
         </Button>
 
         <SearchField
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           fullWidth={isMobile}
+          placeholder="Пошук за серійним номером, локацією або ресурсом..."
           sx={{
-            width: isMobile ? '100%' : '350px',
-            maxWidth: isMobile ? '100%' : '400px',
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '100%' : '450px',
             flexShrink: 1,
           }}
         />
@@ -160,19 +155,19 @@ const LocationsTable = ({
 
       {search && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Знайдено: {filteredLocations.length} з {locations.length}
+          Знайдено: {filteredMeters.length} з {meters.length}
         </Typography>
       )}
 
       {isMobile ? (
         <Box>
-          {filteredLocations.length > 0 ? (
-            filteredLocations.map((location) => <MobileLocationCard key={location.id} location={location} />)
+          {filteredMeters.length > 0 ? (
+            filteredMeters.map((meter) => <MobileMeterCard key={meter.id} meter={meter} />)
           ) : (
             <Card>
               <CardContent>
                 <Typography variant="body1" align="center" color="text.secondary">
-                  {search ? 'За вашим запитом нічого не знайдено' : 'Локації не знайдено'}
+                  {search ? 'За вашим запитом нічого не знайдено' : 'Лічільники не знайдено'}
                 </Typography>
               </CardContent>
             </Card>
@@ -185,23 +180,31 @@ const LocationsTable = ({
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
                 <TableCell
                   sx={{
-                    width: isTablet ? '25%' : '20%',
+                    width: isTablet ? '20%' : '20%',
                     fontWeight: 600,
                   }}
                 >
-                  Назва
+                  Серійний номер
                 </TableCell>
                 <TableCell
                   sx={{
-                    width: isTablet ? '35%' : '40%',
+                    width: isTablet ? '25%' : '25%',
                     fontWeight: 600,
                   }}
                 >
-                  Адреса
+                  Локація
                 </TableCell>
                 <TableCell
                   sx={{
                     width: isTablet ? '20%' : '20%',
+                    fontWeight: 600,
+                  }}
+                >
+                  Тип ресурсу
+                </TableCell>
+                <TableCell
+                  sx={{
+                    width: isTablet ? '15%' : '15%',
                     fontWeight: 600,
                   }}
                 >
@@ -218,10 +221,10 @@ const LocationsTable = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredLocations.length > 0 ? (
-                filteredLocations.map((loc) => (
+              {filteredMeters.length > 0 ? (
+                filteredMeters.map((meter) => (
                   <TableRow
-                    key={loc.id}
+                    key={meter.id}
                     sx={{
                       '&:hover': {
                         backgroundColor: theme.palette.action.hover,
@@ -230,25 +233,30 @@ const LocationsTable = ({
                   >
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {loc.name}
+                        {meter.serial_number}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {loc.address}
+                        {getLocationName(meter.location_id)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {getResourceName(meter.energy_resource_type_id)}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Switch
-                          checked={loc.isActive}
-                          onChange={() => handleStatusChange(loc)}
+                          checked={meter.isActive}
+                          onChange={() => handleStatusChange(meter)}
                           color="primary"
                           size="small"
                         />
                         <Chip
-                          label={loc.isActive ? 'Активна' : 'Неактивна'}
-                          color={loc.isActive ? 'success' : 'default'}
+                          label={meter.isActive ? 'Активний' : 'Неактивний'}
+                          color={meter.isActive ? 'success' : 'default'}
                           size="small"
                           variant="outlined"
                         />
@@ -256,17 +264,17 @@ const LocationsTable = ({
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
-                        <Tooltip title="Редагувати локацію">
-                          <IconButton size="small" onClick={() => onEdit(loc)} color="primary">
+                        <Tooltip title="Редагувати лічільник">
+                          <IconButton size="small" onClick={() => onEdit(meter)} color="primary">
                             <Edit fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title={loc.isActive ? 'Спочатку деактивуйте локацію' : 'Видалити локацію'}>
+                        <Tooltip title={meter.isActive ? 'Спочатку деактивуйте лічільник' : 'Видалити лічільник'}>
                           <span>
                             <IconButton
                               size="small"
-                              onClick={() => handleRemove(loc.id)}
-                              disabled={loc.isActive}
+                              onClick={() => removeMeter(meter.id)}
+                              disabled={meter.isActive}
                               color="error"
                             >
                               <Delete fontSize="small" />
@@ -279,13 +287,13 @@ const LocationsTable = ({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                      {search ? 'За вашим запитом нічого не знайдено' : 'Локації не знайдено'}
+                      {search ? 'За вашим запитом нічого не знайдено' : 'Лічільники не знайдено'}
                     </Typography>
                     {!search && (
                       <Button variant="outlined" onClick={onAdd} sx={{ mt: 2 }}>
-                        Додати першу локацію
+                        Додати перший лічільник
                       </Button>
                     )}
                   </TableCell>
@@ -299,4 +307,4 @@ const LocationsTable = ({
   );
 };
 
-export default LocationsTable;
+export default MetersTable;
