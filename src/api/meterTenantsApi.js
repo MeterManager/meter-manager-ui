@@ -1,8 +1,14 @@
 import createApi from './baseApi';
 
-export const getMeterTenants = async (token, filters = {}) => {
+export const getAllMeterTenants = async (token, filters = {}) => {
   const api = createApi(token);
   const response = await api.get('/meter-tenants', { params: filters });
+  return response.data;
+};
+
+export const getMeterTenantById = async (token, id) => {
+  const api = createApi(token);
+  const response = await api.get(`/meter-tenants/${id}`);
   return response.data;
 };
 
