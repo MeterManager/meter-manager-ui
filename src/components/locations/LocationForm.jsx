@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, CircularProgress, IconButton } from '@mui/material';
+import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
 
-const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locations }) => {
+const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locations, isLoading }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
   const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -19,6 +20,9 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
         isActive: initialData.isActive ?? true,
         id: initialData.id,
       });
+      setFormErrors({});
+    } else {
+      setFormData({});
       setFormErrors({});
     }
   }, [open, initialData]);
@@ -65,20 +69,12 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
       ...formData,
       isActive: formData.isActive,
     });
-
-    setFormData({});
-  };
-
-  const handleClose = () => {
-    setFormData({});
-    setFormErrors({});
-    onClose();
   };
 
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
+      onClose={onClose}
       fullWidth
       maxWidth="sm"
       fullScreen={isMobile}
@@ -96,9 +92,15 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           fontWeight: 600,
           px: isMobile ? 2 : 3,
           py: isMobile ? 2 : 2.5,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
         {initialData.id ? 'Редагувати локацію' : 'Додати локацію'}
+        <IconButton onClick={onClose} disabled={isLoading} size="small">
+          <Close />
+        </IconButton>
       </DialogTitle>
 
       <DialogContent
@@ -179,8 +181,9 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
       >
         <Button
           variant="outlined"
-          onClick={handleClose}
+          onClick={onClose}
           fullWidth={isMobile}
+          disabled={isLoading}
           sx={{
             order: isMobile ? 1 : 0,
           }}
@@ -191,12 +194,13 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           variant="contained"
           onClick={handleSubmit}
           fullWidth={isMobile}
+          disabled={isLoading}
           sx={{
             order: isMobile ? 0 : 1,
             marginLeft: '0 !important',
           }}
         >
-          Зберегти
+          {isLoading ? <CircularProgress size={24} /> : 'Зберегти'}
         </Button>
       </DialogActions>
     </Dialog>
