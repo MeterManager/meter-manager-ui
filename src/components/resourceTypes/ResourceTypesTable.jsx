@@ -31,6 +31,7 @@ const ResourceTypesTable = ({
   onRemove,
   onStatusChange,
   setLocalError,
+  isLoading,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
@@ -44,6 +45,14 @@ const ResourceTypesTable = ({
     }
   };
 
+  const handleRemove = async (id) => {
+    try {
+      await onRemove(id);
+    } catch (err) {
+      setLocalError(err.message || 'Помилка при видаленні типу ресурсу');
+    }
+  };
+
   const filteredTypes = (resourceTypes || []).filter(
     (t) => t.name.toLowerCase().includes(search.toLowerCase()) || t.unit.toLowerCase().includes(search.toLowerCase())
   );
@@ -53,9 +62,7 @@ const ResourceTypesTable = ({
       sx={{
         mb: 2,
         border: `1px solid ${theme.palette.divider}`,
-        '&:hover': {
-          boxShadow: 2,
-        },
+        '&:hover': { boxShadow: 2 },
       }}
     >
       <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
@@ -82,13 +89,14 @@ const ResourceTypesTable = ({
               onChange={() => handleStatusChange(resourceType)}
               color="primary"
               size="small"
+              disabled={isLoading}
             />
             <Typography variant="body2">{resourceType.isActive ? 'Активний' : 'Неактивний'}</Typography>
           </Box>
 
           <Stack direction="row" spacing={1}>
             <Tooltip title="Редагувати">
-              <IconButton size="small" onClick={() => onEdit(resourceType)} color="primary">
+              <IconButton size="small" onClick={() => onEdit(resourceType)} color="primary" disabled={isLoading}>
                 <Edit fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -96,9 +104,9 @@ const ResourceTypesTable = ({
               <span>
                 <IconButton
                   size="small"
-                  onClick={() => onRemove(resourceType.id)}
+                  onClick={() => handleRemove(resourceType.id)}
                   color="error"
-                  disabled={resourceType.isActive}
+                  disabled={resourceType.isActive || isLoading}
                 >
                   <Delete fontSize="small" />
                 </IconButton>
@@ -126,8 +134,9 @@ const ResourceTypesTable = ({
           variant="contained"
           onClick={onAdd}
           fullWidth={isMobile}
+          disabled={isLoading}
           sx={{
-            minWidth: isMobile ? 'auto' : '180px',
+            minWidth: isMobile ? 'auto' : '160px',
             height: '40px',
             whiteSpace: 'nowrap',
             flexShrink: 0,
@@ -140,12 +149,13 @@ const ResourceTypesTable = ({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           fullWidth={isMobile}
-          placeholder="Пошук за типом або одиницею..."
+          placeholder="Пошук за типом чи одиницею"
           sx={{
             width: isMobile ? '100%' : '350px',
             maxWidth: isMobile ? '100%' : '400px',
             flexShrink: 1,
           }}
+          disabled={isLoading}
         />
       </Box>
 
@@ -176,36 +186,16 @@ const ResourceTypesTable = ({
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '30%' : '30%',
-                    fontWeight: 600,
-                  }}
-                >
+                <TableCell sx={{ width: isTablet ? '35%' : '30%', fontWeight: 600 }}>
                   Тип ресурсу
                 </TableCell>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '30%' : '30%',
-                    fontWeight: 600,
-                  }}
-                >
+                <TableCell sx={{ width: isTablet ? '35%' : '30%', fontWeight: 600 }}>
                   Одиниця вимірювання
                 </TableCell>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '20%' : '20%',
-                    fontWeight: 600,
-                  }}
-                >
+                <TableCell sx={{ width: isTablet ? '20%' : '20%', fontWeight: 600 }}>
                   Статус
                 </TableCell>
-                <TableCell
-                  sx={{
-                    width: '5%',
-                    fontWeight: 600,
-                  }}
-                >
+                <TableCell sx={{ width: '15%', fontWeight: 600 }}>
                   Дії
                 </TableCell>
               </TableRow>
@@ -215,11 +205,7 @@ const ResourceTypesTable = ({
                 filteredTypes.map((type) => (
                   <TableRow
                     key={type.id}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: theme.palette.action.hover,
-                      },
-                    }}
+                    sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}
                   >
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
@@ -238,6 +224,7 @@ const ResourceTypesTable = ({
                           onChange={() => handleStatusChange(type)}
                           color="primary"
                           size="small"
+                          disabled={isLoading}
                         />
                         <Chip
                           label={type.isActive ? 'Активний' : 'Неактивний'}
@@ -250,7 +237,7 @@ const ResourceTypesTable = ({
                     <TableCell>
                       <Stack direction="row" spacing={1}>
                         <Tooltip title="Редагувати тип ресурсу">
-                          <IconButton size="small" onClick={() => onEdit(type)} color="primary">
+                          <IconButton size="small" onClick={() => onEdit(type)} color="primary" disabled={isLoading}>
                             <Edit fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -258,8 +245,8 @@ const ResourceTypesTable = ({
                           <span>
                             <IconButton
                               size="small"
-                              onClick={() => onRemove(resourceType.id)}
-                              disabled={type.isActive}
+                              onClick={() => handleRemove(type.id)}
+                              disabled={type.isActive || isLoading}
                               color="error"
                             >
                               <Delete fontSize="small" />
@@ -277,7 +264,7 @@ const ResourceTypesTable = ({
                       {search ? 'За вашим запитом нічого не знайдено' : 'Типи ресурсів не знайдено'}
                     </Typography>
                     {!search && (
-                      <Button variant="outlined" onClick={onAdd} sx={{ mt: 2 }}>
+                      <Button variant="outlined" onClick={onAdd} sx={{ mt: 2 }} disabled={isLoading}>
                         Додати перший тип ресурсу
                       </Button>
                     )}

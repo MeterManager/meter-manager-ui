@@ -16,11 +16,15 @@ import {
   CardContent,
   Stack,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import { Edit, Delete, Phone, Email } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
+import { useState } from 'react';
+import ConfirmDialog from '../ConfirmDialog';
+import { getDialogMessage } from '../../utils/getDialogMessage';
 
 const TenantsTable = ({
   tenants,
@@ -30,45 +34,61 @@ const TenantsTable = ({
   onAdd,
   removeTenant,
   updateTenantStatus,
-  getTenantDependencies,
   setLocalError,
   locations = [],
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
   const isTablet = useMediaQuery('(max-width:960px)');
-  const handleStatusChange = async (tenant) => {
+  const [loadingTenantId, setLoadingTenantId] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    action: null,
+    tenantId: null,
+    tenantName: '',
+    dependencies: null,
+  });
+
+  const handleStatusChange = (tenant) => {
+    setLoadingTenantId(tenant.id);
+    setConfirmDialog({
+      open: true,
+      action: 'deactivate',
+      tenantId: tenant.id,
+      tenantName: tenant.name,
+      dependencies: { active_meters: 0 }, // Немає залежностей, оскільки деактивація не впливає на лічильники
+    });
+  };
+
+  const handleRemove = (tenant) => {
+    setLoadingTenantId(tenant.id);
+    setConfirmDialog({
+      open: true,
+      action: 'delete',
+      tenantId: tenant.id,
+      tenantName: tenant.name,
+      dependencies: { active_meters: 0 }, // Тимчасово ставимо 0, оскільки маршрут залежностей видалено
+    });
+  };
+
+  const handleConfirmAction = async () => {
     try {
-      if (tenant.isActive) {
-        const deps = await getTenantDependencies(tenant.id);
-        if (deps?.data?.active_meter_tenants > 0) {
-          const confirm = window.confirm(
-            `У орендаря "${tenant.name}" є ${deps.data.active_meter_tenants} активних лічильників.\n` +
-            `Вони також будуть деактивовані. Продовжити?`
-          );
-          if (!confirm) return;
-        }
+      if (confirmDialog.action === 'delete') {
+        await removeTenant(confirmDialog.tenantId);
+      } else if (confirmDialog.action === 'deactivate') {
+        await updateTenantStatus(confirmDialog.tenantId, false);
       }
-      await updateTenantStatus(tenant.id, !tenant.isActive);
+      setConfirmDialog({ open: false, action: null, tenantId: null, tenantName: '', dependencies: null });
     } catch (err) {
-      setLocalError(err.message || 'Помилка при зміні статусу орендаря');
+      setLocalError(err.message || `Помилка при ${confirmDialog.action === 'delete' ? 'видаленні' : 'деактивації'} орендаря`);
+    } finally {
+      setLoadingTenantId(null);
     }
   };
 
-  const handleRemove = async (tenant) => {
-    try {
-      const deps = await getTenantDependencies(tenant.id);
-      if (deps?.data?.active_meter_tenants > 0) {
-        const confirm = window.confirm(
-          `У орендаря "${tenant.name}" є ${deps.data.active_meter_tenants} активних лічильників.\n` +
-          `Видалення призведе до втрати цих даних. Ви впевнені?`
-        );
-        if (!confirm) return;
-      }
-      await removeTenant(tenant.id);
-    } catch (err) {
-      setLocalError(err.message || 'Помилка при видаленні орендаря');
-    }
+  const handleCloseDialog = () => {
+    setConfirmDialog({ open: false, action: null, tenantId: null, tenantName: '', dependencies: null });
+    setLoadingTenantId(null);
   };
 
   const getLocationName = (locationId) => {
@@ -146,18 +166,23 @@ const TenantsTable = ({
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Switch
-              checked={tenant.isActive}
-              onChange={() => handleRemove(tenant)}
-              color="primary"
-              size="small"
-            />
+            {loadingTenantId === tenant.id ? (
+              <CircularProgress size={24} />
+            ) : (
+              <Switch
+                checked={tenant.isActive}
+                onChange={() => handleStatusChange(tenant)}
+                color="primary"
+                size="small"
+                disabled={loadingTenantId !== null}
+              />
+            )}
             <Typography variant="body2">{tenant.isActive ? 'Активний' : 'Неактивний'}</Typography>
           </Box>
 
           <Stack direction="row" spacing={1}>
             <Tooltip title="Редагувати">
-              <IconButton size="small" onClick={() => onEdit(tenant)} color="primary">
+              <IconButton size="small" onClick={() => onEdit(tenant)} color="primary" disabled={loadingTenantId !== null}>
                 <Edit fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -165,11 +190,11 @@ const TenantsTable = ({
               <span>
                 <IconButton
                   size="small"
-                  onClick={() => removeTenant(tenant.id)}
+                  onClick={() => handleRemove(tenant)}
                   color="error"
-                  disabled={tenant.isActive}
+                  disabled={tenant.isActive || loadingTenantId !== null}
                 >
-                  <Delete fontSize="small" />
+                  {loadingTenantId === tenant.id ? <CircularProgress size={20} /> : <Delete fontSize="small" />}
                 </IconButton>
               </span>
             </Tooltip>
@@ -201,6 +226,7 @@ const TenantsTable = ({
             whiteSpace: 'nowrap',
             flexShrink: 0,
           }}
+          disabled={loadingTenantId !== null}
         >
           Додати орендаря
         </Button>
@@ -276,7 +302,7 @@ const TenantsTable = ({
                   Контакти
                 </TableCell>
                 <TableCell
-                    sx={{
+                  sx={{
                     width: '17%',
                     fontWeight: 600,
                   }}
@@ -349,12 +375,17 @@ const TenantsTable = ({
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Switch
-                          checked={tenant.isActive}
-                          onChange={() => handleStatusChange(tenant)}
-                          color="primary"
-                          size="small"
-                        />
+                        {loadingTenantId === tenant.id ? (
+                          <CircularProgress size={24} />
+                        ) : (
+                          <Switch
+                            checked={tenant.isActive}
+                            onChange={() => handleStatusChange(tenant)}
+                            color="primary"
+                            size="small"
+                            disabled={loadingTenantId !== null}
+                          />
+                        )}
                         <Chip
                           label={tenant.isActive ? 'Активний' : 'Неактивний'}
                           color={tenant.isActive ? 'success' : 'default'}
@@ -366,7 +397,7 @@ const TenantsTable = ({
                     <TableCell>
                       <Stack direction="row" spacing={1}>
                         <Tooltip title="Редагувати орендаря">
-                          <IconButton size="small" onClick={() => onEdit(tenant)} color="primary">
+                          <IconButton size="small" onClick={() => onEdit(tenant)} color="primary" disabled={loadingTenantId !== null}>
                             <Edit fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -374,11 +405,11 @@ const TenantsTable = ({
                           <span>
                             <IconButton
                               size="small"
-                              onClick={() => removeTenant(tenant.id)}
-                              disabled={tenant.isActive}
+                              onClick={() => handleRemove(tenant)}
+                              disabled={tenant.isActive || loadingTenantId !== null}
                               color="error"
                             >
-                              <Delete fontSize="small" />
+                              {loadingTenantId === tenant.id ? <CircularProgress size={20} /> : <Delete fontSize="small" />}
                             </IconButton>
                           </span>
                         </Tooltip>
@@ -404,6 +435,16 @@ const TenantsTable = ({
           </Table>
         </TableContainer>
       )}
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onClose={handleCloseDialog}
+        onConfirm={handleConfirmAction}
+        action={confirmDialog.action}
+        dependencies={confirmDialog.dependencies}
+        isLoading={loadingTenantId !== null}
+        entity="tenant"
+      />
     </Box>
   );
 };

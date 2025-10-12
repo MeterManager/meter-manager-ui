@@ -66,9 +66,15 @@ const TenantsSection = ({ initialExpanded = true }) => {
   };
 
   const handleRemove = async (id) => {
+    const tenant = tenants.find((t) => t.id === id);
+    if (!tenant) return;
+
+    const confirm = window.confirm(`Ви впевнені, що хочете видалити орендаря "${tenant.name}"?`);
+    if (!confirm) return;
+
     try {
       await removeTenant(id);
-      setSnackbar({ open: true, message: 'Орендаря видалено', severity: 'success' });
+      setSnackbar({ open: true, message: 'Орендаря успішно видалено', severity: 'success' });
     } catch (err) {
       setError(err.message || 'Помилка при видаленні орендаря');
       setSnackbar({ open: true, message: err.message || 'Помилка при видаленні орендаря', severity: 'error' });
@@ -140,7 +146,12 @@ const TenantsSection = ({ initialExpanded = true }) => {
         locations={locations}
       />
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>

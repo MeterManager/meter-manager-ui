@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, IconButton } from '@mui/material';
+import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
 
-const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, resourceTypes = [] }) => {
+const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, resourceTypes = [], isLoading }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
   const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -65,8 +66,6 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
       ...formData,
       isActive: formData.isActive ?? initialData.isActive ?? true,
     });
-
-    setFormData({});
   };
 
   const handleClose = () => {
@@ -96,9 +95,15 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
           fontWeight: 600,
           px: isMobile ? 2 : 3,
           py: isMobile ? 2 : 2.5,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
         {initialData.id ? 'Редагувати тип ресурсу' : 'Додати тип ресурсу'}
+        <IconButton onClick={handleClose} disabled={isLoading} size="small">
+          <Close />
+        </IconButton>
       </DialogTitle>
 
       <DialogContent
@@ -139,6 +144,7 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
           }}
           error={!!formErrors.name}
           helperText={formErrors.name || ' '}
+          disabled={isLoading}
         />
 
         <TextField
@@ -159,6 +165,7 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
           }}
           error={!!formErrors.unit}
           helperText={formErrors.unit || ' '}
+          disabled={isLoading}
         />
       </DialogContent>
 
@@ -179,6 +186,7 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
           variant="outlined"
           onClick={handleClose}
           fullWidth={isMobile}
+          disabled={isLoading}
           sx={{
             order: isMobile ? 1 : 0,
           }}
@@ -189,6 +197,7 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
           variant="contained"
           onClick={handleSubmit}
           fullWidth={isMobile}
+          disabled={isLoading}
           sx={{
             order: isMobile ? 0 : 1,
             marginLeft: '0 !important',

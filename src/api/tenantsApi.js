@@ -29,9 +29,3 @@ export const deleteTenant = async (token, id) => {
   const api = createApi(token);
   await api.delete(`/tenants/${id}`);
 };
-
-export const getTenantDependencies = async (token, id) => {
-  const api = createApi(token);
-  const response = await api.get(`/tenants/${id}/dependencies`);
-  return response.data;
-};

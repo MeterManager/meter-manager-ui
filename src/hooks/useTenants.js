@@ -24,7 +24,7 @@ export const useTenants = () => {
   const [search, setSearch] = useState('');
   const [error, setError] = useState(null);
 
-  const swrKey = isAuthenticated && !isLoading && !isBlocked ? ['tenants', search] : null; 
+  const swrKey = isAuthenticated && !isLoading && !isBlocked ? ['tenants', search] : null;
 
   const {
     data: tenants = [],
@@ -52,7 +52,7 @@ export const useTenants = () => {
 
   const addTenant = useCallback(
     async (data) => {
-      if (isBlocked) throw new Error('User is blocked'); 
+      if (isBlocked) throw new Error('User is blocked');
       const token = await getToken();
       if (!token) throw new Error('No token available');
       const tenantData = {
@@ -174,22 +174,6 @@ export const useTenants = () => {
     [tenants, mutateTenants, getToken, isBlocked]
   );
 
-  const getTenantDependencies = useCallback(
-    async (id) => {
-      if (isBlocked) throw new Error('User is blocked');
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-      try {
-        const response = await tenantApi.getTenantDependencies(token, id);
-        return response;
-      } catch (err) {
-        setError('Помилка при завантаженні залежностей орендаря');
-        throw err;
-      }
-    },
-    [getToken, isBlocked]
-  );
-  
   return {
     tenants,
     activeTenants,
@@ -200,7 +184,6 @@ export const useTenants = () => {
     editTenant,
     removeTenant,
     updateTenantStatus,
-    getTenantDependencies,
     refreshTenants: mutateTenants,
     getTenantsByLocation: useCallback((locId) => tenants.filter((t) => t.locationId === locId), [tenants]),
     getActiveTenantsByLocation: useCallback((locId) => activeTenants.filter((t) => t.locationId === locId), [activeTenants]),
