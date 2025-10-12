@@ -138,7 +138,7 @@ const Sidebar = () => {
         ]
       : []),
     { key: '3', label: 'Звіти', icon: <Description />, path: '/acts' },
-    { key: '4', label: 'Налаштування', icon: <Settings />, path: '/settings' },
+    // { key: '4', label: 'Налаштування', icon: <Settings />, path: '/settings' },
   ];
 
   const MenuItem = ({ item, isCollapsed, expandedMenus, toggleMenu }) => {

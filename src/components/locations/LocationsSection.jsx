@@ -22,7 +22,7 @@ const LocationsSection = ({ initialExpanded = true }) => {
     setError,
     loading,
   } = useLocations();
-  const { useSimpleTenants} = useTenants();
+const { tenants: simpleTenants } = useTenants();
 
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);

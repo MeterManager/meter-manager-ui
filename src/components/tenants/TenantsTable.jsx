@@ -23,8 +23,7 @@ import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 import { useState } from 'react';
-import ConfirmDialog from '../ConfirmDialog';
-import { getDialogMessage } from '../../utils/getDialogMessage';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 const TenantsTable = ({
   tenants,

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, CircularProgress, IconButton } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, CircularProgress, IconButton, FormControl, InputLabel, Select, MenuItem, } from '@mui/material';
 import { Close } from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
+import { useMediaQuery } from '@mui/material';
+
 
 const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locations = [], tenants = [] }) => {
   const theme = useTheme();
@@ -103,7 +106,7 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
         }}
       >
         {initialData.id ? 'Редагувати локацію' : 'Додати локацію'}
-        <IconButton onClick={onClose} disabled={isLoading} size="small">
+        <IconButton onClick={onClose} size="small">
           <Close />
         </IconButton>
       </DialogTitle>
@@ -185,7 +188,6 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           variant="outlined"
           onClick={onClose}
           fullWidth={isMobile}
-          disabled={isLoading}
           sx={{
             order: isMobile ? 1 : 0,
           }}
@@ -196,13 +198,12 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           variant="contained"
           onClick={handleSubmit}
           fullWidth={isMobile}
-          disabled={isLoading}
           sx={{
             order: isMobile ? 0 : 1,
             marginLeft: '0 !important',
           }}
         >
-          {isLoading ? <CircularProgress size={24} /> : 'Зберегти'}
+          Зберегти
         </Button>
       </DialogActions>
     </Dialog>

@@ -18,15 +18,12 @@ export const AuthProvider = ({ children }) => {
   const verificationPromiseRef = useRef(null);
 
   const updateState = useCallback((newState) => {
-    console.log('📝 Updating auth state:', newState);
     if (newState.userData !== undefined) setUserData(newState.userData);
     if (newState.token !== undefined) setToken(newState.token);
     if (newState.isBlocked !== undefined) {
-      console.log('🚫 Setting isBlocked to:', newState.isBlocked);
       setIsBlocked(newState.isBlocked);
     }
     if (newState.error !== undefined) {
-      console.log('❌ Setting error to:', newState.error);
       setError(newState.error);
     }
     if (newState.hasVerified !== undefined) setHasVerified(newState.hasVerified);
@@ -34,26 +31,21 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const verify = useCallback(async () => {
-    console.log('🔐 Starting verify process...', { isAuthenticated, auth0Loading });
     
     if (!isAuthenticated || auth0Loading) {
-      console.log('⏸️ Skipping verify - not authenticated or still loading');
       setLoading(false);
       return null;
     }
 
     if (isBlocked) {
-      console.log('🚫 User is blocked, stopping all verification');
       return null;
     }
 
     if (hasVerified && token) {
-      console.log('✅ Already verified, using cached token');
       return token;
     }
 
     if (verificationPromiseRef.current) {
-      console.log('⏳ Verification already in progress...');
       try {
         const result = await verificationPromiseRef.current;
         return result;
@@ -62,20 +54,16 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    console.log('🚀 Starting new verification...');
     verificationPromiseRef.current = (async () => {
       try {
         setLoading(true);
-        console.log('🎫 Getting access token...');
         const newToken = await getAccessTokenSilently({ 
           authorizationParams: { audience }, 
           cacheMode: 'on' 
         });
         
-        console.log('📡 Verifying user with API...');
         const response = await verifyUserApi(newToken);
         
-        console.log('✅ User verification successful:', response);
         const newState = {
           token: newToken,
           userData: response.user,
@@ -98,7 +86,6 @@ export const AuthProvider = ({ children }) => {
         
         let newState;
         if (err.response?.status === 403) {
-          console.log('🚫 403 error - blocking user PERMANENTLY');
           newState = {
             isBlocked: true,
             error: err.response?.data?.message || 'Ваш акаунт деактивовано.',
@@ -109,7 +96,6 @@ export const AuthProvider = ({ children }) => {
           };
           localStorage.removeItem('token');
         } else {
-          console.log('⚠️ Other error - not blocking user');
           newState = {
             error: err.message,
             userData: null,
@@ -120,7 +106,6 @@ export const AuthProvider = ({ children }) => {
         updateState(newState);
         return null;
       } finally {
-        console.log('🏁 Verification process finished');
         verificationPromiseRef.current = null;
       }
     })();
@@ -133,7 +118,6 @@ export const AuthProvider = ({ children }) => {
   }, [isAuthenticated, auth0Loading, getAccessTokenSilently, audience, updateState, isBlocked, hasVerified, token]);
 
   useEffect(() => {
-    console.log('🔄 AuthProvider useEffect triggered');
     isMountedRef.current = true;
     
     if (!isBlocked) {
@@ -154,7 +138,6 @@ export const AuthProvider = ({ children }) => {
   }, [userData]);
 
   const handleLogout = useCallback(() => {
-    console.log('👋 Logging out...');
     setUserData(null);
     setToken(null);
     setIsBlocked(false);
@@ -183,8 +166,6 @@ export const AuthProvider = ({ children }) => {
     getToken,
     isAdmin,
   };
-
-  console.log('🔤 AuthProvider providing:', value);
   
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

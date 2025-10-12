@@ -1,14 +1,13 @@
 import { useState, useCallback, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import * as tenantApi from '../api/tenantsApi';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthRequest } from './useAuthRequest';
+import { useErrorHandler } from './useErrorHandler';
 
-const fetcher = async (url, token, filters = {}) => {
+const fetcher = async (token, filters = {}) => {
   const response = await tenantApi.getTenants(token, filters);
-
   return (response.data || []).map((tenant) => {
     const locations = Array.isArray(tenant.Locations) ? tenant.Locations : [];
-
     return {
       id: tenant.id,
       name: tenant.name,
@@ -19,12 +18,10 @@ const fetcher = async (url, token, filters = {}) => {
       isActive: tenant.is_active === true,
       createdAt: tenant.created_at,
       updatedAt: tenant.updated_at,
-
       locations: locations.map((loc) => ({
         id: loc.id,
         name: loc.name,
       })),
-
       locationId: locations[0]?.id || null,
       locationName: locations[0]?.name || null,
     };
@@ -32,28 +29,21 @@ const fetcher = async (url, token, filters = {}) => {
 };
 
 export const useTenants = () => {
-  const { isAuthenticated, isLoading, getToken, isBlocked } = useAuthContext();
+  const { canRequest, withToken } = useAuthRequest();
+  const { error, setError, handleError } = useErrorHandler('Помилка при завантаженні орендарів');
   const [nameSearch, setNameSearch] = useState('');
-  const [error, setError] = useState(null);
 
-  const swrKey = isAuthenticated && !isLoading && !isBlocked ? ['tenants', search] : null; 
+  const swrKey = canRequest ? ['tenants', nameSearch] : null;
 
   const {
     data: tenants = [],
-    error: swrError,
     isLoading: loading,
     mutate: mutateTenants,
   } = useSWR(
     swrKey,
-    async ([, filters]) => {
-      const token = await getToken();
-      return fetcher('tenants', token, filters);
-    },
+    async ([, filters]) => withToken(fetcher, filters),
     {
-      onError: (err) => {
-        if (err.response?.status === 403) return;
-        setError(err.response?.data?.message || 'Помилка при завантаженні орендарів');
-      },
+      onError: handleError,
       revalidateOnFocus: false,
       dedupingInterval: 5000,
     }
@@ -63,103 +53,94 @@ export const useTenants = () => {
 
   const addTenant = useCallback(
     async (data) => {
-      if (isBlocked) throw new Error('User is blocked');
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-      const tenantData = {
-        name: data.name,
-        occupied_area: data.occupiedArea || null,
-        contact_person: data.contactPerson || null,
-        phone: data.phone || null,
-        email: data.email || null,
-        is_active: data.isActive ?? true,
-      };
-
       try {
         setError(null);
-  
-        const tempId = Date.now();
-        const optimisticTenant = { 
-            ...tenantData, 
-            id: tempId, 
-            isActive: tenantData.is_active, 
-            isOptimistic: true, 
-            locationId: data.locationId || null 
+        const tenantData = {
+          name: data.name,
+          occupied_area: data.occupiedArea || null,
+          contact_person: data.contactPerson || null,
+          phone: data.phone || null,
+          email: data.email || null,
+          is_active: data.isActive ?? true,
         };
+
+        const tempId = Date.now();
+        const optimisticTenant = {
+          ...tenantData,
+          id: tempId,
+          isActive: tenantData.is_active,
+          isOptimistic: true,
+          locationId: data.locationId || null,
+        };
+
         await mutateTenants([...tenants, optimisticTenant], {
-            optimisticData: [...tenants, optimisticTenant],
-            rollbackOnError: true,
-            populateCache: true,
-            revalidate: false
+          optimisticData: [...tenants, optimisticTenant],
+          rollbackOnError: true,
+          populateCache: true,
+          revalidate: false,
         });
 
-        const response = await tenantApi.createTenant(token, tenantData);
+        const response = await withToken(tenantApi.createTenant, tenantData);
         const newTenantId = response.data.data.id;
 
         if (data.locationId) {
-            await assignLocation(newTenantId, data.locationId);
+          await withToken(tenantApi.assignLocationToTenant, newTenantId, data.locationId);
         }
 
         mutateTenants();
-        ['meters', 'metersTenant', 'deliveries', 'resourceDeliveries', 'payments', 'contracts', 'locations'].forEach(mutate);
+        ['meters', 'metersTenant', 'deliveries', 'resourceDeliveries', 'payments', 'contracts', 'locations'].forEach(
+          mutate
+        );
 
         return response;
       } catch (err) {
-        const errorMessage = err.response?.data?.message || 'Помилка при додаванні орендаря';
-        mutateTenants(); 
-        setError(errorMessage);
-        throw new Error(errorMessage);
+        mutateTenants();
+        handleError(err, 'Помилка при додаванні орендаря');
+        throw err;
       }
     },
-    [tenants, mutateTenants, getToken, isBlocked]
+    [tenants, mutateTenants, withToken]
   );
 
   const editTenant = useCallback(
     async (id, data) => {
-      if (isBlocked) throw new Error('User is blocked');
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-      
-      const tenantData = {
-        name: data.name,
-        occupied_area: data.occupiedArea || null,
-        contact_person: data.contactPerson || null,
-        phone: data.phone || null,
-        email: data.email || null,
-        is_active: data.isActive,
-      };
-      
-      const oldTenant = tenants.find(t => t.id === id);
+      const oldTenant = tenants.find((t) => t.id === id);
       const oldLocationId = oldTenant?.locationId;
       const newLocationId = data.locationId;
 
       try {
         setError(null);
+        const tenantData = {
+          name: data.name,
+          occupied_area: data.occupiedArea || null,
+          contact_person: data.contactPerson || null,
+          phone: data.phone || null,
+          email: data.email || null,
+          is_active: data.isActive,
+        };
+
         const updatedTenants = tenants.map((t) =>
-            t.id === id ? { 
-                ...t, 
-                ...tenantData, 
-                isActive: tenantData.is_active, 
-                locationId: newLocationId,
-                updatedAt: new Date().toISOString() 
-            } : t
+          t.id === id
+            ? { ...t, ...tenantData, isActive: tenantData.is_active, locationId: newLocationId, updatedAt: new Date().toISOString() }
+            : t
         );
+
         await mutateTenants(updatedTenants, {
-            optimisticData: updatedTenants,
-            rollbackOnError: true,
-            populateCache: true,
-            revalidate: false
+          optimisticData: updatedTenants,
+          rollbackOnError: true,
+          populateCache: true,
+          revalidate: false,
         });
 
-        const response = await tenantApi.updateTenant(token, id, tenantData);
+        const response = await withToken(tenantApi.updateTenant, id, tenantData);
 
         if (newLocationId !== oldLocationId) {
-            if (oldLocationId) {
-                await unassignLocation(oldLocationId);
-            }
-            if (newLocationId) {
-                await assignLocation(id, newLocationId);
-            }
+          if (oldLocationId) {
+            await withToken(tenantApi.unassignLocationFromTenant, oldLocationId);
+          }
+          if (newLocationId) {
+            await withToken(tenantApi.assignLocationToTenant, id, newLocationId);
+          }
         }
 
         mutateTenants();
@@ -167,115 +148,106 @@ export const useTenants = () => {
 
         return response;
       } catch (err) {
-        const errorMessage = err.response?.data?.message || 'Помилка при редагуванні орендаря';
-        mutateTenants(); 
-        setError(errorMessage);
-        throw new Error(errorMessage);
+        mutateTenants();
+        handleError(err, 'Помилка при редагуванні орендаря');
+        throw err;
       }
     },
-    [tenants, mutateTenants, getToken, isBlocked]
+    [tenants, mutateTenants, withToken]
   );
 
   const removeTenant = useCallback(
     async (id) => {
-      if (isBlocked) throw new Error('User is blocked');
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
       try {
         setError(null);
-
-        await mutateTenants(tenants.filter((t) => t.id !== id), {
+        await mutateTenants(
+          tenants.filter((t) => t.id !== id),
+          {
             optimisticData: tenants.filter((t) => t.id !== id),
             rollbackOnError: true,
             populateCache: true,
-            revalidate: false
-        });
-        
-        await tenantApi.deleteTenant(token, id);
-        
+            revalidate: false,
+          }
+        );
+
+        await withToken(tenantApi.deleteTenant, id);
+
         mutateTenants();
-        ['meters', 'metersTenant', 'deliveries', 'resourceDeliveries', 'payments', 'contracts', 'locations'].forEach(mutate);
+        ['meters', 'metersTenant', 'deliveries', 'resourceDeliveries', 'payments', 'contracts', 'locations'].forEach(
+          mutate
+        );
       } catch (err) {
-        const errorMessage = err.response?.data?.message || 'Помилка при видаленні орендаря';
-        mutateTenants(); 
-        setError(errorMessage);
-        throw new Error(errorMessage);
+        mutateTenants();
+        handleError(err, 'Помилка при видаленні орендаря');
+        throw err;
       }
     },
-    [tenants, mutateTenants, getToken, isBlocked]
+    [tenants, mutateTenants, withToken]
   );
 
-  const assignLocation = useCallback(async (tenantId, locationId) => {
-    if (isBlocked) throw new Error('User is blocked');
-    const token = await getToken();
-    if (!token) throw new Error('No token available');
-    try {
-        await tenantApi.assignLocationToTenant(token, tenantId, locationId); 
-    } catch (err) {
-        const errorMessage = err.response?.data?.message || 'Помилка при призначенні локації орендарю';
-        throw new Error(errorMessage);
-    }
-  }, [getToken, isBlocked]);
+  const assignLocation = useCallback(
+    async (tenantId, locationId) => {
+      try {
+        await withToken(tenantApi.assignLocationToTenant, tenantId, locationId);
+      } catch (err) {
+        handleError(err, 'Помилка при призначенні локації орендарю');
+        throw err;
+      }
+    },
+    [withToken]
+  );
 
-  const unassignLocation = useCallback(async (locationId) => {
-    if (isBlocked) throw new Error('User is blocked');
-    const token = await getToken();
-    if (!token) throw new Error('No token available');
-    try {
-        await tenantApi.unassignLocationFromTenant(token, locationId); 
-    } catch (err) {
-        const errorMessage = err.response?.data?.message || 'Помилка при відкріпленні локації від орендаря';
-        throw new Error(errorMessage);
-    }
-  }, [getToken, isBlocked]);
+  const unassignLocation = useCallback(
+    async (locationId) => {
+      try {
+        await withToken(tenantApi.unassignLocationFromTenant, locationId);
+      } catch (err) {
+        handleError(err, 'Помилка при відкріпленні локації від орендаря');
+        throw err;
+      }
+    },
+    [withToken]
+  );
 
   const updateTenantStatus = useCallback(
     async (id, is_active) => {
-      if (isBlocked) throw new Error('User is blocked');
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
       const tenant = tenants.find((t) => t.id === id);
       if (!tenant) throw new Error('Орендар не знайдений');
-
-      const payload = { ...tenant, is_active };
       try {
         setError(null);
+        const payload = { ...tenant, is_active };
         mutateTenants(
           tenants.map((t) => (t.id === id ? { ...t, isActive: is_active, updatedAt: new Date().toISOString() } : t)),
           false
         );
 
-        const response = await tenantApi.updateTenant(token, id, payload);
+        const response = await withToken(tenantApi.updateTenant, id, payload);
         mutateTenants();
         ['meters', 'metersTenant', 'deliveries'].forEach(mutate);
 
         return response;
       } catch (err) {
-        const errorMessage = err.response?.data?.message || 'Помилка при оновленні статусу орендаря';
         mutateTenants();
-        setError(errorMessage);
-        throw new Error(errorMessage);
+        handleError(err, 'Помилка при оновленні статусу орендаря');
+        throw err;
       }
     },
-    [tenants, mutateTenants, getToken, isBlocked]
+    [tenants, mutateTenants, withToken]
   );
 
   const getTenantDependencies = useCallback(
     async (id) => {
-      if (isBlocked) throw new Error('User is blocked');
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
       try {
-        const response = await tenantApi.getTenantDependencies(token, id);
+        const response = await withToken(tenantApi.getTenantDependencies, id);
         return response;
       } catch (err) {
-        setError('Помилка при завантаженні залежностей орендаря');
+        handleError(err, 'Помилка при завантаженні залежностей орендаря');
         throw err;
       }
     },
-    [getToken, isBlocked]
+    [withToken]
   );
-  
+
   return {
     tenants,
     activeTenants,
@@ -288,10 +260,9 @@ export const useTenants = () => {
     updateTenantStatus,
     getTenantDependencies,
     refreshTenants: mutateTenants,
-    useSimpleTenants,
     getTenantsByLocation: useCallback((locId) => tenants.filter((t) => t.locationId === locId), [tenants]),
     getActiveTenantsByLocation: useCallback((locId) => activeTenants.filter((t) => t.locationId === locId), [activeTenants]),
-    error: error || swrError,
+    error,
     setError,
   };
 };

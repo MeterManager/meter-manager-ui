@@ -12,15 +12,15 @@ const MainContent = ({ selectedMenuItem }) => {
         return <DashboardPage />;
       case '3':
         return <ActsPage />;
-      case '4':
-        return (
-          <Box>
-            <Typography variant="h4" gutterBottom>
-              Налаштування
-            </Typography>
-            <Typography variant="body1">Тут будуть налаштування системи.</Typography>
-          </Box>
-        );
+      // case '4':
+      //   return (
+      //     <Box>
+      //       <Typography variant="h4" gutterBottom>
+      //         Налаштування
+      //       </Typography>
+      //       <Typography variant="body1">Тут будуть налаштування системи.</Typography>
+      //     </Box>
+      //   );
       default:
         return <DashboardPage />;
     }

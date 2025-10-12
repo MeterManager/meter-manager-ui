@@ -1,107 +1,93 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import useSWR, { mutate } from 'swr';
 import * as resourceDeliveriesApi from '../api/resourceDeliveriesApi';
 import * as locationApi from '../api/locationsApi';
 import * as resourceTypesApi from '../api/resourceTypesApi';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthRequest } from './useAuthRequest';
+import { useErrorHandler } from './useErrorHandler';
+
+const fetchDeliveries = async (token, search = '') => {
+  const response = await resourceDeliveriesApi.getResourceDeliveries(token, { search });
+  return (response.data || []).map((delivery) => ({
+    id: delivery.id,
+    location_id: delivery.location_id,
+    energy_resource_type_id: delivery.energy_resource_type_id,
+    delivery_date: delivery.delivery_date,
+    price_per_unit: delivery.price_per_unit,
+    locationName: delivery.location?.name,
+    resourceTypeName: delivery.energyResourceType?.name,
+    deliveryDate: delivery.delivery_date,
+    quantity: delivery.quantity,
+    unit: delivery.unit,
+    pricePerUnit: delivery.price_per_unit,
+    totalCost: delivery.total_cost,
+    supplier: delivery.supplier,
+    createdAt: delivery.created_at,
+    updatedAt: delivery.updated_at,
+  }));
+};
+
+const fetchLocations = async (token) => {
+  const response = await locationApi.getLocations(token);
+  return (response.data || []).filter((location) => location.is_active);
+};
+
+const fetchResourceTypes = async (token) => {
+  const response = await resourceTypesApi.getResourceTypes(token);
+  return (response.data || []).filter((type) => type.is_active);
+};
 
 export const useResourceDeliveries = () => {
-  const { isAuthenticated, isLoading, getToken, isBlocked } = useAuthContext();
-  const [deliveries, setDeliveries] = useState([]);
-  const [locations, setLocations] = useState([]);
-  const [resourceTypes, setResourceTypes] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { canRequest, withToken } = useAuthRequest();
+  const { error, setError, handleError } = useErrorHandler('Помилка при завантаженні даних');
   const [search, setSearch] = useState('');
-  const [error, setError] = useState(null);
 
-  const fetchData = useCallback(async () => {
-    if (!isAuthenticated || isLoading || isBlocked) {
-      setLoading(false);
-      return;
+  const swrKey = canRequest ? ['resourceDeliveries', search] : null;
+
+  const {
+    data: deliveries = [],
+    isLoading: deliveriesLoading,
+    mutate: mutateDeliveries,
+  } = useSWR(
+    swrKey,
+    async ([, search]) => withToken(fetchDeliveries, search),
+    {
+      onError: handleError,
+      revalidateOnFocus: false,
+      dedupingInterval: 5000,
     }
+  );
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      const token = await getToken();
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      const [deliveriesResponse, locationsResponse, resourceTypesResponse] = await Promise.all([
-        resourceDeliveriesApi.getResourceDeliveries(token, { search }),
-        locationApi.getLocations(token),
-        resourceTypesApi.getResourceTypes(token),
-      ]);
-
-      setDeliveries(
-        (deliveriesResponse.data || []).map((delivery) => ({
-          id: delivery.id,
-          location_id: delivery.location_id,
-          energy_resource_type_id: delivery.energy_resource_type_id,
-          delivery_date: delivery.delivery_date,
-          price_per_unit: delivery.price_per_unit,
-          locationName: delivery.location?.name,
-          resourceTypeName: delivery.energyResourceType?.name,
-          deliveryDate: delivery.delivery_date,
-          quantity: delivery.quantity,
-          unit: delivery.unit,
-          pricePerUnit: delivery.price_per_unit,
-          totalCost: delivery.total_cost,
-          supplier: delivery.supplier,
-          createdAt: delivery.created_at,
-          updatedAt: delivery.updated_at,
-        }))
-      );
-
-      setLocations((locationsResponse.data || []).filter((location) => location.is_active));
-
-      setResourceTypes((resourceTypesResponse.data || []).filter((type) => type.is_active));
-    } catch (err) {
-      if (err.response?.status === 403) {
-        return;
-      }
-      setError('Помилка при завантаженні даних');
-      console.error('Fetch data error:', err);
-    } finally {
-      setLoading(false);
+  const {
+    data: locations = [],
+    isLoading: locationsLoading,
+  } = useSWR(
+    canRequest ? ['locations'] : null,
+    async () => withToken(fetchLocations),
+    {
+      onError: (err) => handleError(err, 'Помилка при завантаженні локацій'),
+      revalidateOnFocus: false,
+      dedupingInterval: 5000,
     }
-  }, [search, isAuthenticated, isLoading, getToken, isBlocked]);
+  );
 
-  const fetchFormData = useCallback(async () => {
-    if (!isAuthenticated || isLoading || isBlocked) {
-      return;
+  const {
+    data: resourceTypes = [],
+    isLoading: resourceTypesLoading,
+  } = useSWR(
+    canRequest ? ['resourceTypes'] : null,
+    async () => withToken(fetchResourceTypes),
+    {
+      onError: (err) => handleError(err, 'Помилка при завантаженні типів ресурсів'),
+      revalidateOnFocus: false,
+      dedupingInterval: 5000,
     }
-
-    try {
-      const token = await getToken();
-      if (!token) return;
-
-      const [locationsResponse, resourceTypesResponse] = await Promise.all([
-        locationApi.getLocations(token),
-        resourceTypesApi.getResourceTypes(token),
-      ]);
-
-      setLocations((locationsResponse.data || []).filter((location) => location.is_active));
-      setResourceTypes((resourceTypesResponse.data || []).filter((type) => type.is_active));
-    } catch (err) {
-      console.error('Fetch form data error:', err);
-    }
-  }, [isAuthenticated, isLoading, getToken, isBlocked]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  );
 
   const addDelivery = useCallback(
     async (data) => {
-      if (isBlocked) throw new Error('User is blocked');
-
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-
       try {
+        setError(null);
         const deliveryData = {
           location_id: data.locationId,
           energy_resource_type_id: data.resourceTypeId,
@@ -113,25 +99,21 @@ export const useResourceDeliveries = () => {
           supplier: data.supplier,
         };
 
-        const response = await resourceDeliveriesApi.createResourceDelivery(token, deliveryData);
-        await fetchData();
+        const response = await withToken(resourceDeliveriesApi.createResourceDelivery, deliveryData);
+        mutateDeliveries();
         return response;
       } catch (error) {
-        console.error('Create delivery error:', error.response?.data);
+        handleError(error, 'Помилка при додаванні поставки');
         throw error;
       }
     },
-    [getToken, isBlocked, fetchData]
+    [withToken, mutateDeliveries]
   );
 
   const editDelivery = useCallback(
     async (id, data) => {
-      if (isBlocked) throw new Error('User is blocked');
-
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-
       try {
+        setError(null);
         const deliveryData = {
           location_id: data.locationId,
           energy_resource_type_id: data.resourceTypeId,
@@ -143,40 +125,47 @@ export const useResourceDeliveries = () => {
           supplier: data.supplier,
         };
 
-        const response = await resourceDeliveriesApi.updateResourceDelivery(token, id, deliveryData);
-        await fetchData();
+        const response = await withToken(resourceDeliveriesApi.updateResourceDelivery, id, deliveryData);
+        mutateDeliveries();
         return response;
       } catch (error) {
-        console.error('Update delivery error:', error.response?.data);
+        handleError(error, 'Помилка при редагуванні поставки');
         throw error;
       }
     },
-    [getToken, isBlocked, fetchData]
+    [withToken, mutateDeliveries]
   );
 
   const removeDelivery = useCallback(
     async (id) => {
-      if (isBlocked) throw new Error('User is blocked');
-
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-
       try {
-        await resourceDeliveriesApi.deleteResourceDelivery(token, id);
-        await fetchData();
+        setError(null);
+        await withToken(resourceDeliveriesApi.deleteResourceDelivery, id);
+        mutateDeliveries();
       } catch (error) {
-        console.error('Delete delivery error:', error.response?.data);
+        handleError(error, 'Помилка при видаленні поставки');
         throw error;
       }
     },
-    [getToken, isBlocked, fetchData]
+    [withToken, mutateDeliveries]
   );
+
+  const fetchFormData = useCallback(async () => {
+    try {
+      await Promise.all([
+        mutate('locations'),
+        mutate('resourceTypes'),
+      ]);
+    } catch (err) {
+      handleError(err, 'Помилка при завантаженні даних для форми');
+    }
+  }, []);
 
   return {
     deliveries,
     locations,
     resourceTypes,
-    loading,
+    loading: deliveriesLoading || locationsLoading || resourceTypesLoading,
     search,
     setSearch,
     addDelivery,

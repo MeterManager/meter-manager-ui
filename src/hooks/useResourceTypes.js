@@ -1,9 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import * as resourceTypeApi from '../api/resourceTypesApi';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthRequest } from './useAuthRequest';
+import { useErrorHandler } from './useErrorHandler';
 
-const fetcher = async (url, token, search = '') => {
+const fetcher = async (token, search = '') => {
   const response = await resourceTypeApi.getResourceTypes(token, search);
   return (response.data || []).map((type) => ({
     ...type,
@@ -12,26 +13,22 @@ const fetcher = async (url, token, search = '') => {
 };
 
 export const useResourceTypes = () => {
-  const { isAuthenticated, isLoading: authLoading, getToken } = useAuthContext();
+  const { canRequest, withToken } = useAuthRequest();
+  const { error, setError, handleError } = useErrorHandler('Помилка при завантаженні типів ресурсів');
   const [search, setSearch] = useState('');
-  const [error, setError] = useState(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  const swrKey = isAuthenticated && !authLoading ? ['resourceTypes', search] : null;
+  const swrKey = canRequest ? ['resourceTypes', search] : null;
 
   const {
     data: resourceTypes = [],
-    error: swrError,
     isLoading: loading,
     mutate: mutateResourceTypes,
   } = useSWR(
     swrKey,
-    async ([, search]) => {
-      const token = await getToken();
-      return fetcher('resourceTypes', token, search);
-    },
+    async ([, search]) => withToken(fetcher, search),
     {
-      onError: () => setError('Помилка при завантаженні типів ресурсів'),
+      onError: handleError,
       revalidateOnFocus: false,
       dedupingInterval: 5000,
     }
@@ -41,11 +38,10 @@ export const useResourceTypes = () => {
 
   const addResourceType = useCallback(
     async (data) => {
-      const token = await getToken();
-      const transformedData = { name: data.name, unit: data.unit, is_active: data.isActive ?? true };
       try {
         setError(null);
         setIsActionLoading(true);
+        const transformedData = { name: data.name, unit: data.unit, is_active: data.isActive ?? true };
         const tempId = Date.now();
         const optimistic = {
           id: tempId,
@@ -54,7 +50,7 @@ export const useResourceTypes = () => {
           isOptimistic: true,
         };
         mutateResourceTypes([...resourceTypes, optimistic], false);
-        const response = await resourceTypeApi.createResourceType(token, transformedData);
+        const response = await withToken(resourceTypeApi.createResourceType, transformedData);
         mutateResourceTypes();
         mutate('meters');
         mutate('resources');
@@ -64,27 +60,26 @@ export const useResourceTypes = () => {
         return response;
       } catch (err) {
         mutateResourceTypes();
-        setError('Помилка при додаванні типу ресурсу');
+        handleError(err, 'Помилка при додаванні типу ресурсу');
         throw err;
       } finally {
         setIsActionLoading(false);
       }
     },
-    [resourceTypes, mutateResourceTypes, getToken]
+    [resourceTypes, mutateResourceTypes, withToken]
   );
 
   const editResourceType = useCallback(
     async (id, data) => {
-      const token = await getToken();
-      const transformedData = { name: data.name, unit: data.unit, is_active: data.isActive };
       try {
         setError(null);
         setIsActionLoading(true);
+        const transformedData = { name: data.name, unit: data.unit, is_active: data.isActive };
         mutateResourceTypes(
           resourceTypes.map((t) => (t.id === id ? { ...t, ...transformedData, isActive: transformedData.is_active } : t)),
           false
         );
-        const response = await resourceTypeApi.updateResourceType(token, id, transformedData);
+        const response = await withToken(resourceTypeApi.updateResourceType, id, transformedData);
         mutateResourceTypes();
         mutate('meters');
         mutate('resources');
@@ -92,23 +87,22 @@ export const useResourceTypes = () => {
         return response;
       } catch (err) {
         mutateResourceTypes();
-        setError('Помилка при редагуванні типу ресурсу');
+        handleError(err, 'Помилка при редагуванні типу ресурсу');
         throw err;
       } finally {
         setIsActionLoading(false);
       }
     },
-    [resourceTypes, mutateResourceTypes, getToken]
+    [resourceTypes, mutateResourceTypes, withToken]
   );
 
   const removeResourceType = useCallback(
     async (id) => {
-      const token = await getToken();
       try {
         setError(null);
         setIsActionLoading(true);
         mutateResourceTypes(resourceTypes.filter((t) => t.id !== id), false);
-        await resourceTypeApi.deleteResourceType(token, id);
+        await withToken(resourceTypeApi.deleteResourceType, id);
         mutateResourceTypes();
         mutate('meters');
         mutate('resources');
@@ -117,40 +111,39 @@ export const useResourceTypes = () => {
         mutate('resourceDeliveries');
       } catch (err) {
         mutateResourceTypes();
-        setError('Помилка при видаленні типу ресурсу');
+        handleError(err, 'Помилка при видаленні типу ресурсу');
         throw err;
       } finally {
         setIsActionLoading(false);
       }
     },
-    [resourceTypes, mutateResourceTypes, getToken]
+    [resourceTypes, mutateResourceTypes, withToken]
   );
 
   const updateResourceTypeStatus = useCallback(
     async (id, is_active) => {
-      const token = await getToken();
       const type = resourceTypes.find((t) => t.id === id);
       if (!type) throw new Error('Тип ресурсу не знайдено');
-      const payload = { ...type, is_active };
       try {
         setError(null);
         setIsActionLoading(true);
+        const payload = { ...type, is_active };
         mutateResourceTypes(
           resourceTypes.map((t) => (t.id === id ? { ...t, isActive: is_active } : t)),
           false
         );
-        await resourceTypeApi.updateResourceType(token, id, payload);
+        await withToken(resourceTypeApi.updateResourceType, id, payload);
         mutate('meters');
         mutate('resources');
       } catch (err) {
         mutateResourceTypes();
-        setError('Помилка при оновленні статусу типу ресурсу');
+        handleError(err, 'Помилка при оновленні статусу типу ресурсу');
         throw err;
       } finally {
         setIsActionLoading(false);
       }
     },
-    [resourceTypes, mutateResourceTypes, getToken]
+    [resourceTypes, mutateResourceTypes, withToken]
   );
 
   return {
@@ -164,7 +157,7 @@ export const useResourceTypes = () => {
     removeResourceType,
     updateResourceTypeStatus,
     refreshResourceTypes: mutateResourceTypes,
-    error: error || swrError,
+    error,
     setError,
     isActionLoading,
   };

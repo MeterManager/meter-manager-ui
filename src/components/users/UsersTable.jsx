@@ -17,69 +17,20 @@ import { useMemo } from 'react';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
-import { useAuthContext } from '../../contexts/AuthContext';
+import MobileUserCard from './MobileUserCard';
 
-const UsersTable = ({ users, search, setSearch, updateUserStatus, setLocalError }) => {
+const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:600px)');
   const isTablet = useMediaQuery('(max-width:960px)');
-  const { user, isAdmin } = useAuthContext();
 
   const handleStatusChange = async (u) => {
-    if (u.auth0_user_id === user?.sub && isAdmin) return;
-    try {
-      await updateUserStatus(u.id, !u.isActive);
-    } catch (err) {
-      setLocalError(err.message || 'Помилка при зміні статусу користувача');
-    }
+    await updateUserStatus(u.id, !u.isActive);
   };
 
   const filteredUsers = useMemo(
     () => users.filter((u) => u.full_name.toLowerCase().includes(search.toLowerCase()) && u.role !== 'admin'),
     [users, search]
-  );
-
-  const MobileUserCard = ({ user: userItem }) => (
-    <Card
-      sx={{
-        mb: 2,
-        border: `1px solid ${theme.palette.divider}`,
-        '&:hover': {
-          boxShadow: 2,
-        },
-      }}
-    >
-      <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-            {userItem.full_name}
-          </Typography>
-          <Chip
-            label={userItem.isActive ? 'Активний' : 'Неактивний'}
-            color={userItem.isActive ? 'success' : 'default'}
-            size="small"
-            sx={{ ml: 1, flexShrink: 0 }}
-          />
-        </Box>
-
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          <strong>Роль:</strong> {userItem.role}
-        </Typography>
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Switch
-              checked={userItem.isActive}
-              onChange={() => handleStatusChange(userItem)}
-              color="primary"
-              size="small"
-              disabled={userItem.auth0_user_id === user?.sub && isAdmin}
-            />
-            <Typography variant="body2">{userItem.isActive ? 'Активний' : 'Неактивний'}</Typography>
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
   );
 
   return (
@@ -116,7 +67,14 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, setLocalError 
       {isMobile ? (
         <Box>
           {filteredUsers.length > 0 ? (
-            filteredUsers.map((userItem) => <MobileUserCard key={userItem.id} user={userItem} />)
+            filteredUsers.map((userItem) => (
+              <MobileUserCard
+                key={userItem.id}
+                user={userItem}
+                onToggleStatus={() => handleStatusChange(userItem)}
+                disabled={userItem.auth0_user_id === currentUserId}
+              />
+            ))
           ) : (
             <Card>
               <CardContent>
@@ -132,30 +90,9 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, setLocalError 
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '40%' : '40%',
-                    fontWeight: 600,
-                  }}
-                >
-                  ПІБ
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '30%' : '30%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Роль
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '30%' : '30%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Статус
-                </TableCell>
+                <TableCell sx={{ width: isTablet ? '40%' : '40%', fontWeight: 600 }}>ПІБ</TableCell>
+                <TableCell sx={{ width: isTablet ? '30%' : '30%', fontWeight: 600 }}>Роль</TableCell>
+                <TableCell sx={{ width: isTablet ? '30%' : '30%', fontWeight: 600 }}>Статус</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -186,7 +123,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, setLocalError 
                           onChange={() => handleStatusChange(u)}
                           color="primary"
                           size="small"
-                          disabled={u.auth0_user_id === user?.sub && isAdmin}
+                          disabled={u.auth0_user_id === currentUserId}
                         />
                         <Chip
                           label={u.isActive ? 'Активний' : 'Неактивний'}
