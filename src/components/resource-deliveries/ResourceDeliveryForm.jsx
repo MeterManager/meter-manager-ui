@@ -1,14 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, MenuItem } from '@mui/material';
+import { 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions, 
+  TextField, 
+  Button, 
+  Alert, 
+  MenuItem,
+  IconButton,
+  Box
+} from '@mui/material';
+import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
+import CastomDatePicker from '../ui/DatePicker';
 
 const ResourceDeliveryForm = ({
   open,
   onClose,
   onSubmit,
   initialData = {},
-  error,
   locations = [],
   resourceTypes = [],
 }) => {
@@ -18,6 +30,7 @@ const ResourceDeliveryForm = ({
 
   const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
+  const [submitError, setSubmitError] = useState(null);
 
   useEffect(() => {
     if (open) {
@@ -35,6 +48,7 @@ const ResourceDeliveryForm = ({
       };
       setFormData(mappedData);
       setFormErrors({});
+      setSubmitError(null);
     }
   }, [open, initialData]);
 
@@ -93,15 +107,16 @@ const ResourceDeliveryForm = ({
 
     try {
       await onSubmit(submitData);
-      onClose();
+      handleClose();
     } catch (err) {
-      console.error('Error submitting form:', err);
+      setSubmitError(err.message || 'Помилка при збереженні');
     }
   };
 
   const handleClose = () => {
     setFormData({});
     setFormErrors({});
+    setSubmitError(null);
     onClose();
   };
 
@@ -126,9 +141,25 @@ const ResourceDeliveryForm = ({
           fontWeight: 600,
           px: isMobile ? 2 : 3,
           py: isMobile ? 2 : 2.5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
         }}
       >
-        {initialData.id ? 'Редагувати поставку ресурсу' : 'Додати поставку ресурсу'}
+        <Box component="span">
+          {initialData.id ? 'Редагувати поставку ресурсу' : 'Додати поставку ресурсу'}
+        </Box>
+        <IconButton
+          onClick={handleClose}
+          size="small"
+          sx={{
+            ml: 1,
+            color: 'text.secondary',
+            '&:hover': { color: 'text.primary' },
+          }}
+        >
+          <Close />
+        </IconButton>
       </DialogTitle>
 
       <DialogContent
@@ -137,7 +168,7 @@ const ResourceDeliveryForm = ({
           pb: 1,
         }}
       >
-        {error && (
+        {submitError && (
           <Alert
             severity="error"
             sx={{
@@ -145,7 +176,7 @@ const ResourceDeliveryForm = ({
               fontSize: isMobile ? '0.875rem' : '1rem',
             }}
           >
-            {error}
+            {submitError}
           </Alert>
         )}
 
@@ -157,17 +188,7 @@ const ResourceDeliveryForm = ({
           onChange={handleChange}
           fullWidth
           variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mt: 1,
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          sx={{ mt: 1, mb: 2 }}
           error={!!formErrors.locationId}
           helperText={formErrors.locationId || ' '}
         >
@@ -190,16 +211,7 @@ const ResourceDeliveryForm = ({
           onChange={handleChange}
           fullWidth
           variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          sx={{ mb: 2 }}
           error={!!formErrors.resourceTypeId}
           helperText={formErrors.resourceTypeId || ' '}
         >
@@ -222,16 +234,7 @@ const ResourceDeliveryForm = ({
           onChange={handleChange}
           fullWidth
           variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          sx={{ mb: 2 }}
           error={!!formErrors.quantity}
           helperText={formErrors.quantity || ' '}
           inputProps={{ min: 0, step: 0.01 }}
@@ -244,16 +247,7 @@ const ResourceDeliveryForm = ({
           onChange={handleChange}
           fullWidth
           variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          sx={{ mb: 2 }}
           error={!!formErrors.unit}
           helperText={formErrors.unit || ' '}
         />
@@ -266,43 +260,25 @@ const ResourceDeliveryForm = ({
           onChange={handleChange}
           fullWidth
           variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          sx={{ mb: 2 }}
           error={!!formErrors.pricePerUnit}
           helperText={formErrors.pricePerUnit || ' '}
           inputProps={{ min: 0, step: 0.01 }}
         />
 
-        <TextField
-          name="deliveryDate"
-          label="Дата доставки"
-          type="date"
-          value={formData.deliveryDate || ''}
-          onChange={handleChange}
-          fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
+        <CastomDatePicker
+          value={formData.deliveryDate || null}
+          onChange={(newValue) => {
+            handleChange({
+              target: { name: 'deliveryDate', value: newValue },
+            });
           }}
-          InputLabelProps={{ shrink: true }}
+          label="Дата доставки"
           error={!!formErrors.deliveryDate}
           helperText={formErrors.deliveryDate || ' '}
+          sx={{ mb: 2 }}
         />
+
 
         <TextField
           name="supplier"
@@ -311,15 +287,6 @@ const ResourceDeliveryForm = ({
           onChange={handleChange}
           fullWidth
           variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
           helperText=" "
         />
       </DialogContent>
@@ -341,9 +308,6 @@ const ResourceDeliveryForm = ({
           variant="outlined"
           onClick={handleClose}
           fullWidth={isMobile}
-          sx={{
-            order: isMobile ? 1 : 0,
-          }}
         >
           Скасувати
         </Button>
@@ -351,10 +315,7 @@ const ResourceDeliveryForm = ({
           variant="contained"
           onClick={handleSubmit}
           fullWidth={isMobile}
-          sx={{
-            order: isMobile ? 0 : 1,
-            marginLeft: '0 !important',
-          }}
+          sx={{ marginLeft: '0 !important' }}
         >
           Зберегти
         </Button>

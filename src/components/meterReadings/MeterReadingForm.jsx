@@ -16,6 +16,7 @@ import useMediaQuery from "../../hooks/useMediaQuery";
 import { createMeterReading, updateMeterReading } from "../../api/meterReadings";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useMeterTenants } from "../../hooks/useMeterTenants";
+import CustomDatePicker from "../ui/DatePicker";
 
 const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
   const theme = useTheme();
@@ -282,14 +283,15 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
             sx={{ bgcolor: "#f5f5f5" }}
           />
 
-          <TextField
+          <CustomDatePicker
+            value={formData.reading_date || null}
+            onChange={(newValue) => {
+              handleChange({
+                target: { name: 'reading_date', value: newValue },
+              });
+            }}
             label="Дата показника"
-            type="date"
-            name="reading_date"
-            value={formData.reading_date}
-            onChange={handleChange}
-            InputLabelProps={{ shrink: true }}
-            required
+            sx={{ mb: 2 }}
           />
 
           <TextField
