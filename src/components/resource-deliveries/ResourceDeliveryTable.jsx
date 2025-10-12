@@ -15,13 +15,23 @@ import {
   CardContent,
   Stack,
   Tooltip,
+  Divider,
 } from '@mui/material';
-import { Edit, Delete } from '@mui/icons-material';
+import { Edit, Delete, LocationOn } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 
-const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, removeDelivery, locations = [] }) => {
+const ResourceDeliveryTable = ({
+  deliveries,
+  search,
+  setSearch,
+  onEdit,
+  onAdd,
+  removeDelivery,
+  locations = [],
+  resourceTypes = [],
+}) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
   const isTablet = useMediaQuery('(max-width:960px)');
@@ -31,9 +41,22 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
     return location ? location.name : 'Невідома локація';
   };
 
+  const getResourceTypeName = (resourceTypeId) => {
+    const resourceType = resourceTypes.find((rt) => rt.id === resourceTypeId);
+    return resourceType ? `${resourceType.name} (${resourceType.unit})` : 'Невідомий тип';
+  };
+
+  const getTotalCost = (delivery) => {
+    return delivery.total_cost || delivery.totalCost || delivery.quantity * delivery.price_per_unit || 0;
+  };
+
+  const getPricePerUnit = (delivery) => {
+    return delivery.price_per_unit || delivery.pricePerUnit || 0;
+  };
+
   const filteredDeliveries = deliveries.filter((d) => {
-    const resourceName = (d.resourceTypeName || '').toLowerCase();
-    const locationName = (d.locationName || '').toLowerCase();
+    const locationName = getLocationName(d.location_id).toLowerCase();
+    const resourceName = getResourceTypeName(d.energy_resource_type_id).toLowerCase();
     const supplier = (d.supplier || '').toLowerCase();
     const searchLower = search.toLowerCase();
 
@@ -43,53 +66,224 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
   const MobileDeliveryCard = ({ delivery }) => (
     <Card
       sx={{
-        mb: 2,
-        border: `1px solid ${theme.palette.divider}`,
-        '&:hover': {
-          boxShadow: 2,
-        },
+        mb: 1.5,
+        border: `1px solid ${theme.palette.grey[200]}`,
+        borderRadius: 2,
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+        backgroundColor: 'white',
       }}
     >
-      <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-            {delivery.resourceTypeName}
+      <CardContent sx={{ p: 2, pb: '16px !important' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+          <Typography
+            variant="subtitle1"
+            component="div"
+            sx={{
+              fontWeight: 600,
+              color: 'text.primary',
+              lineHeight: 1.3,
+              fontSize: '1rem',
+            }}
+          >
+            {getResourceTypeName(delivery.energy_resource_type_id)}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {new Date(delivery.deliveryDate).toLocaleDateString('uk-UA')}
+          <Typography 
+            variant="caption" 
+            sx={{ 
+              color: 'text.secondary',
+              fontWeight: 500,
+              fontSize: '0.75rem',
+              whiteSpace: 'nowrap',
+              ml: 1,
+            }}
+          >
+            {new Date(delivery.delivery_date).toLocaleDateString('uk-UA')}
           </Typography>
         </Box>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          <strong>Локація:</strong> {delivery.locationName}
-        </Typography>
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            <strong>Кількість:</strong> {delivery.quantity} {delivery.unit}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            <strong>Сума:</strong> {delivery.totalCost} грн
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+          <LocationOn 
+            sx={{ 
+              fontSize: '16px', 
+              color: 'grey.500', 
+              mr: 0.5,
+            }} 
+          />
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: 'text.secondary',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+            }}
+          >
+            {getLocationName(delivery.location_id)}
           </Typography>
         </Box>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          <strong>Ціна за одиницю:</strong> {delivery.pricePerUnit} грн
-        </Typography>
+        <Divider sx={{ mb: 1.5, borderColor: 'grey.100' }} />
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          <strong>Постачальник:</strong> {delivery.supplier || '-'}
-        </Typography>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 1.5,
+            mb: 1.5,
+          }}
+        >
+          <Box>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: 'text.secondary',
+                fontWeight: 500,
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                display: 'block',
+                mb: 0.5,
+              }}
+            >
+              Кількість
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontWeight: 600,
+                color: 'text.primary',
+                fontSize: '0.875rem',
+              }}
+            >
+              {Number(delivery.quantity).toFixed(2)} {delivery.unit}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: 'text.secondary',
+                fontWeight: 500,
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                display: 'block',
+                mb: 0.5,
+              }}
+            >
+              Загальна сума
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontWeight: 600,
+                color: 'success.main',
+                fontSize: '0.875rem',
+              }}
+            >
+              {getTotalCost(delivery).toLocaleString()} ₴
+            </Typography>
+          </Box>
+          <Box>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: 'text.secondary',
+                fontWeight: 500,
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                display: 'block',
+                mb: 0.5,
+              }}
+            >
+              Ціна за одиницю
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontWeight: 500,
+                color: 'text.primary',
+                fontSize: '0.875rem',
+              }}
+            >
+              {Number(getPricePerUnit(delivery)).toFixed(2).toLocaleString()} ₴
+            </Typography>
+          </Box>
+          <Box>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: 'text.secondary',
+                fontWeight: 500,
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                display: 'block',
+                mb: 0.5,
+              }}
+            >
+              Постачальник
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 500,
+                color: 'text.primary',
+                fontSize: '0.875rem',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {delivery.supplier || 'Не вказано'}
+            </Typography>
+          </Box>
+        </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Divider sx={{ mb: 1.5, borderColor: 'grey.100' }} />
+
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
           <Stack direction="row" spacing={1}>
             <Tooltip title="Редагувати">
-              <IconButton size="small" onClick={() => onEdit(delivery)} color="primary">
+              <IconButton 
+                size="small" 
+                onClick={() => onEdit(delivery)} 
+                color="primary"
+                sx={{
+                  width: 32,
+                  height: 32,
+                  border: `1px solid ${theme.palette.grey[300]}`,
+                  borderRadius: 1,
+                  '&:hover': {
+                    backgroundColor: 'primary.50',
+                    borderColor: 'primary.main',
+                  }
+                }}
+              >
                 <Edit fontSize="small" />
               </IconButton>
             </Tooltip>
             <Tooltip title="Видалити">
-              <IconButton size="small" onClick={() => removeDelivery(delivery.id)} color="error">
+              <IconButton 
+                size="small" 
+                onClick={() => removeDelivery(delivery.id)} 
+                color="error"
+                sx={{
+                  width: 32,
+                  height: 32,
+                  border: `1px solid ${theme.palette.grey[300]}`,
+                  borderRadius: 1,
+                  '&:hover': {
+                    backgroundColor: 'error.50',
+                    borderColor: 'error.main',
+                  }
+                }}
+              >
                 <Delete fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -103,10 +297,11 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
     <Box>
       <Box
         sx={{
-          ...theme.custom?.headerBoxStyles,
-          flexDirection: isMobile ? 'column' : theme.custom?.headerBoxStyles?.flexDirection || 'row',
-          gap: isMobile ? 2 : theme.custom?.headerBoxStyles?.gap || 2,
-          alignItems: isMobile ? 'stretch' : theme.custom?.headerBoxStyles?.alignItems || 'center',
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: 2,
+          alignItems: isMobile ? 'stretch' : 'center',
+          justifyContent: isMobile ? 'stretch' : 'space-between',
           mb: 3,
         }}
       >
@@ -128,6 +323,7 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           fullWidth={isMobile}
+          placeholder="Пошук за ресурсом, локацією або постачальником..."
           sx={{
             width: isMobile ? '100%' : '350px',
             maxWidth: isMobile ? '100%' : '400px',
@@ -143,6 +339,7 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
           sx={{
             mb: 2,
             mt: 0,
+            fontWeight: 500,
           }}
         >
           Знайдено: {filteredDeliveries.length} з {deliveries.length}
@@ -151,16 +348,27 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
 
       {isMobile ? (
         <Box sx={{ mt: 0 }}>
-          {' '}
-          {/* Прибираємо верхній відступ для мобільних карток */}
           {filteredDeliveries.length > 0 ? (
             filteredDeliveries.map((delivery) => <MobileDeliveryCard key={delivery.id} delivery={delivery} />)
           ) : (
-            <Card>
-              <CardContent>
-                <Typography variant="body1" align="center" color="text.secondary">
+            <Card sx={{ border: `1px solid ${theme.palette.grey[300]}`, borderRadius: 1, boxShadow: 'none' }}>
+              <CardContent sx={{ py: 4, textAlign: 'center' }}>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: search ? 0 : 2 }}>
                   {search ? 'За вашим запитом нічого не знайдено' : 'Поставок не знайдено'}
                 </Typography>
+                {!search && (
+                  <Button 
+                    variant="outlined" 
+                    onClick={onAdd}
+                    sx={{ 
+                      borderRadius: 1,
+                      textTransform: 'none',
+                      fontWeight: 500,
+                    }}
+                  >
+                    Додати першу поставку
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}
@@ -197,7 +405,7 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
                 </TableCell>
                 <TableCell
                   sx={{
-                    width: isTablet ? '8%' : '10%',
+                    width: '20%',
                     fontWeight: 600,
                     fontSize: isTablet ? '0.875rem' : '1rem',
                   }}
@@ -224,7 +432,7 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
                 </TableCell>
                 <TableCell
                   sx={{
-                    width: '12%',
+                    width: '11%',
                     fontWeight: 600,
                     fontSize: isTablet ? '0.875rem' : '1rem',
                   }}
@@ -233,7 +441,7 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
                 </TableCell>
                 <TableCell
                   sx={{
-                    width: isTablet ? '10%' : '10%',
+                    width: '20%',
                     fontWeight: 600,
                     fontSize: isTablet ? '0.875rem' : '1rem',
                   }}
@@ -242,9 +450,8 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
                 </TableCell>
                 <TableCell
                   sx={{
-                    width: isTablet ? '15%' : '15%',
+                    width:'10%',
                     fontWeight: 600,
-                    fontSize: isTablet ? '0.875rem' : '1rem',
                   }}
                 >
                   Постачальник
@@ -272,17 +479,17 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
                   >
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {delivery.locationName}
+                        {getLocationName(delivery.location_id)}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {delivery.resourceTypeName}
+                        {getResourceTypeName(delivery.energy_resource_type_id)}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {delivery.quantity}
+                        {Number(delivery.quantity).toFixed(2)}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -292,17 +499,17 @@ const ResourceDeliveryTable = ({ deliveries, search, setSearch, onEdit, onAdd, r
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {new Date(delivery.deliveryDate).toLocaleDateString('uk-UA')}
+                        {new Date(delivery.delivery_date).toLocaleDateString('uk-UA')}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {delivery.pricePerUnit}
+                        {Number(getPricePerUnit(delivery)).toFixed(2)} ₴
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 500, fontSize: isTablet ? '0.8rem' : '0.875rem' }}>
-                        {delivery.totalCost}
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {Number(getTotalCost(delivery)).toFixed(2)} ₴
                       </Typography>
                     </TableCell>
                     <TableCell>

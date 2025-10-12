@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, CircularProgress, IconButton } from '@mui/material';
 import { Close } from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
-import useMediaQuery from '../../hooks/useMediaQuery';
 
-const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locations, isLoading }) => {
+const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locations = [], tenants = [] }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
   const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -19,6 +17,8 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
         address: initialData.address || '',
         isActive: initialData.isActive ?? true,
         id: initialData.id,
+        tenant_id: initialData.tenant ? initialData.tenant.id : initialData.tenant_id ?? null,
+        occupied_area: initialData.occupied_area ?? '',
       });
       setFormErrors({});
     } else {
@@ -36,24 +36,23 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
         error = 'Локація з такою назвою вже існує.';
       }
     }
-    if (name === 'address' && !value) {
-      error = "Адреса обов'язкова.";
-    }
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((s) => ({ ...s, [name]: value }));
     validateField(name, value);
+  };
+
+  const handleTenantChange = (e) => {
+    const value = e.target.value;
+    setFormData((s) => ({ ...s, tenant_id: value }));
   };
 
   const validateForm = () => {
     const errors = {};
     if (!formData.name) errors.name = "Назва обов'язкова.";
-    else if (locations.some((loc) => loc.name.trim() === formData.name.trim() && loc.id !== initialData.id)) {
-      errors.name = 'Локація з такою назвою вже існує.';
-    }
     if (!formData.address) errors.address = "Адреса обов'язкова.";
     return errors;
   };
@@ -68,6 +67,12 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
     onSubmit({
       ...formData,
       isActive: formData.isActive,
+      tenant_id: formData.tenant_id === '' ? null : formData.tenant_id,
+      occupied_area: formData.occupied_area || null, 
+      tenantName:
+        formData.tenant_id === null
+          ? null
+          : tenants.find((t) => t.id === formData.tenant_id)?.name || undefined,
     });
   };
 
@@ -103,20 +108,9 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
         </IconButton>
       </DialogTitle>
 
-      <DialogContent
-        sx={{
-          px: isMobile ? 2 : 3,
-          pb: 1,
-        }}
-      >
+      <DialogContent sx={{ px: isMobile ? 2 : 3, pb: 1 }}>
         {error && (
-          <Alert
-            severity="error"
-            sx={{
-              mb: 2,
-              fontSize: isMobile ? '0.875rem' : '1rem',
-            }}
-          >
+          <Alert severity="error" sx={{ mb: 2, fontSize: isMobile ? '0.875rem' : '1rem' }}>
             {error}
           </Alert>
         )}
@@ -129,16 +123,7 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           fullWidth
           variant="outlined"
           size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mt: 1,
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          sx={{ mt: 1, mb: 2 }}
           error={!!formErrors.name}
           helperText={formErrors.name || ' '}
         />
@@ -153,17 +138,39 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           size={isMobile ? 'medium' : 'medium'}
           multiline={!isMobile}
           rows={isMobile ? 1 : 2}
-          sx={{
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          sx={{ mb: 2 }}
           error={!!formErrors.address}
           helperText={formErrors.address || ' '}
         />
+        <TextField
+          name="occupied_area"
+          label="Площа (м²)"
+          type="number"
+          value={formData.occupied_area || ''}
+          onChange={handleChange}
+          fullWidth
+          variant="outlined"
+          sx={{ mb: 2 }}
+        />
+
+
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel id="tenant-select-label">Орендар</InputLabel>
+          <Select
+            labelId="tenant-select-label"
+            value={formData.tenant_id ?? ''}
+            label="Орендар"
+            onChange={handleTenantChange}
+            name="tenant_id"
+          >
+            <MenuItem value="">— Вільна —</MenuItem>
+            {tenants.map((t) => (
+              <MenuItem key={t.id} value={t.id}>
+                {t.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </DialogContent>
 
       <DialogActions
@@ -172,11 +179,6 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           py: isMobile ? 2 : 2,
           gap: isMobile ? 1 : 1,
           flexDirection: isMobile ? 'column-reverse' : 'row',
-          '& .MuiButton-root': {
-            minWidth: isMobile ? 'auto' : '80px',
-            fontSize: isMobile ? '1rem' : '0.875rem',
-            height: isMobile ? '44px' : '36px',
-          },
         }}
       >
         <Button

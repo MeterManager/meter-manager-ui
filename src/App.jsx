@@ -8,6 +8,7 @@ import theme from './theme';
 
 import SubmitMetricsPage from './pages/SubmitMetricsPage';
 import DashboardPage from './pages/DashboardPage';
+import ActPage from './pages/ActPage';
 
 const App = () => {
   const { isLoading, error, isBlocked, isAuthenticated } = useAuthContext();
@@ -77,6 +78,7 @@ const App = () => {
             <Routes>
               <Route path="/" element={<SubmitMetricsPage />} />
               <Route path="/dashboard/:section?" element={<DashboardPage />} />
+              <Route path="/acts" element={<ActPage />} />
             </Routes>
           </Box>
         </Box>

@@ -5,6 +5,7 @@ import LocationsTable from '../locations/LocationsTable';
 import LocationForm from '../locations/LocationForm';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import { useLocations } from '../../hooks/useLocations';
+import { useTenants } from '../../hooks/useTenants';
 
 const LocationsSection = ({ initialExpanded = true }) => {
   const {
@@ -15,11 +16,13 @@ const LocationsSection = ({ initialExpanded = true }) => {
     editLocation,
     removeLocation,
     updateLocationStatus,
+
     getDependencies,
     error,
     setError,
     loading,
   } = useLocations();
+  const { useSimpleTenants} = useTenants();
 
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
@@ -217,6 +220,7 @@ const LocationsSection = ({ initialExpanded = true }) => {
         error={error}
         locations={locations}
         isLoading={isActionLoading}
+        tenants={simpleTenants}
       />
 
       <ConfirmDialog

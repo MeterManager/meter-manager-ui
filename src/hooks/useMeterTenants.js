@@ -7,11 +7,12 @@ const fetcher = async ([_, getToken, search]) => {
   const token = await getToken();
   if (!token) throw new Error('No token available');
   
-  const response = await meterTenantsApi.getMeterTenants(token);
+  const response = await meterTenantsApi.getAllMeterTenants(token);
+  if (!search) return response.data || [];
   return (response.data || []).filter(
     (mt) =>
-      mt.Tenant?.name.toLowerCase().includes(search.toLowerCase()) ||
-      mt.Meter?.serial_number.toLowerCase().includes(search.toLowerCase())
+      mt.Tenant?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      mt.Meter?.serial_number?.toLowerCase().includes(search.toLowerCase())
   );
 };
 
@@ -37,6 +38,14 @@ export const useMeterTenants = () => {
     revalidateOnFocus: false,
     dedupingInterval: 5000,
   });
+
+  const getAllMeterTenants = useCallback(async () => {
+    const token = await getToken();
+    if (!token) throw new Error("No token available");
+
+    const response = await meterTenantsApi.getAllMeterTenants(token);
+    return response.data || [];
+  }, [getToken]);
 
   const addMeterTenant = useCallback(
     async (data) => {
@@ -159,9 +168,11 @@ export const useMeterTenants = () => {
     editMeterTenant,
     removeMeterTenant,
     refreshMeterTenants,
+    refreshMeterTenants: () => mutateMeterTenants(),
     tenantsMap,
     metersMap,
     error: error || swrError,
     setError,
+    getAllMeterTenants,
   };
 };

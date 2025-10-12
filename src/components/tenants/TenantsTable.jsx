@@ -91,17 +91,21 @@ const TenantsTable = ({
     setLoadingTenantId(null);
   };
 
-  const getLocationName = (locationId) => {
-    const location = locations.find((loc) => loc.id === locationId);
-    return location ? location.name : 'Невідома локація';
-  };
+  const getTenantLocations = (tenant) => {
+    if (!tenant.locations || !Array.isArray(tenant.locations) || tenant.locations.length === 0) {
+      return [];
+    }
+      return tenant.locations.map(loc => loc.name);
+    };
 
   const filteredTenants = tenants.filter(
     (tenant) =>
       tenant.name.toLowerCase().includes(search.toLowerCase()) ||
       (tenant.contactPerson && tenant.contactPerson.toLowerCase().includes(search.toLowerCase())) ||
       (tenant.email && tenant.email.toLowerCase().includes(search.toLowerCase())) ||
-      getLocationName(tenant.locationId).toLowerCase().includes(search.toLowerCase())
+      getTenantLocations(tenant).some(locationName => 
+        locationName.toLowerCase().includes(search.toLowerCase())
+      )
   );
 
   const MobileTenantCard = ({ tenant }) => (
@@ -120,9 +124,10 @@ const TenantsTable = ({
             <Typography variant="h6" component="div" sx={{ fontWeight: 600, mb: 0.5 }}>
               {tenant.name}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              {getLocationName(tenant.locationId)}
+            <Typography variant="body2" color="text.secondary">
+              {getTenantLocations(tenant).join(', ') || '—'}
             </Typography>
+
           </Box>
           <Chip
             label={tenant.isActive ? 'Активний' : 'Неактивний'}
@@ -132,16 +137,11 @@ const TenantsTable = ({
           />
         </Box>
 
-        {(tenant.contactPerson || tenant.occupiedArea) && (
+        {(tenant.contactPerson) && (
           <Box sx={{ mb: 2 }}>
             {tenant.contactPerson && (
               <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                 Контакт: {tenant.contactPerson}
-              </Typography>
-            )}
-            {tenant.occupiedArea && (
-              <Typography variant="body2" color="text.secondary">
-                Площа: {tenant.occupiedArea} м²
               </Typography>
             )}
           </Box>
@@ -287,14 +287,6 @@ const TenantsTable = ({
                 </TableCell>
                 <TableCell
                   sx={{
-                    width: '15%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Площа (м²)
-                </TableCell>
-                <TableCell
-                  sx={{
                     width: '18%',
                     fontWeight: 600,
                   }}
@@ -343,12 +335,17 @@ const TenantsTable = ({
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {getLocationName(tenant.locationId)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{tenant.occupiedArea ? `${tenant.occupiedArea} м²` : '-'}</Typography>
+                      {getTenantLocations(tenant).length === 0 ? (
+                        <Typography variant="body2" color="text.secondary">-</Typography>
+                      ) : (
+                        <ul style={{ paddingLeft: '16px', margin: 0 }}>
+                        {getTenantLocations(tenant).map((loc, idx) => (
+                        <li key={idx}>
+                        <Typography variant="body2" color="text.secondary">{loc}</Typography>
+                          </li>
+                      ))}
+                        </ul>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
