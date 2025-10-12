@@ -25,7 +25,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
   const { getToken, loginWithRedirect, user } = useAuthContext();
   const { getAllMeterTenants } = useMeterTenants();
 
-  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedLocationId, setSelectedLocationId] = useState("");
   const [selectedResource, setSelectedResource] = useState("");
 
   const [formData, setFormData] = useState({
@@ -38,7 +38,8 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
     tenant_representative: "",
     calculation_coefficient: 1,
   });
-  const [allTenants, setAllTenants] = useState([]);
+  const [allMeterTenants, setAllMeterTenants] = useState([]); 
+  const [availableLocations, setAvailableLocations] = useState([]); 
   const [loading, setLoading] = useState(false);
   const [loadingTenants, setLoadingTenants] = useState(true);
   const [error, setError] = useState(null);
@@ -53,7 +54,21 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
           return;
         }
         const list = await getAllMeterTenants(token);
-        setAllTenants(list?.data || list);
+        const mts = list?.data || list;
+        setAllMeterTenants(mts); 
+
+        const uniqueLocationsMap = mts.reduce((map, mt) => {
+          const location = mt.Meter?.Location;
+          if (location && !map.has(location.id)) {
+            map.set(location.id, {
+              id: location.id,
+              name: `${location.name} - ${location.address}`
+            });
+          }
+             return map;
+             }, new Map());
+
+            setAvailableLocations(Array.from(uniqueLocationsMap.values()));
         setLoadingTenants(false);
       } catch (e) {
         setError("Помилка при завантаженні списку лічильників");
@@ -64,6 +79,11 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
 
   useEffect(() => {
     if (initialData) {
+      const initialMt = allMeterTenants.find(mt => mt.id === initialData.meter_tenant_id);
+    if (initialMt?.Meter?.Location) {
+      setSelectedLocationId(initialMt.Meter.Location.id);
+      setSelectedResource(initialMt.Meter.EnergyResourceType?.name || "");
+    }
       setFormData({
         meter_tenant_id: initialData.meter_tenant_id,
         reading_date: initialData.reading_date,
@@ -86,26 +106,30 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
         calculation_coefficient: ""
       });
     }
-  }, [initialData]);
+  }, [initialData, allMeterTenants]);
 
   const handleChange = (e) => {
     let { name, value } = e.target;
-    if (name === "meter_tenant_id" && value !== "") {
-      value = Number(value);
-      const mt = allTenants.find((t) => t.id === value);
-      if (mt?.Meter?.Location) {
-        const loc = mt.Meter.Location;
-        setSelectedLocation(`${loc.name} - ${loc.address}`);
-      } else {
-        setSelectedLocation("");
+    if (name === "selectedLocationId") {
+      const newLocationId = value === "" ? "" : Number(value);
+      setSelectedLocationId(newLocationId);
+      setFormData(prev => ({ ...prev, meter_tenant_id: "" })); 
+      setSelectedResource("");
+       return; 
       }
+    if (name === "meter_tenant_id" && value !== "") {
+      const mtId = Number(value); 
+      const mt = allMeterTenants.find((t) => t.id === mtId);
       if (mt?.Meter?.EnergyResourceType) {
-        const type = mt.Meter.EnergyResourceType;
-        setSelectedResource(`${type.name}`);
-
+      const type = mt.Meter.EnergyResourceType;
+      setSelectedResource(`${type.name}`);
       } else {
         setSelectedResource("");
       }
+      value = mtId;
+      } else if (name === "meter_tenant_id" && value === "") {
+      setSelectedResource("");
+      value = "";
     }
     if (name === "calculation_coefficient") {
       value = Number(value);
@@ -209,6 +233,25 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
       ) : (
         <Box component="form" onSubmit={handleSubmit} sx={{ display: "grid", gap: 2 }}>
           <FormControl fullWidth required>
+            <InputLabel id="location-select-label">Локація</InputLabel> 
+            <Select
+              labelId="location-select-label"
+              name="selectedLocationId"
+              value={selectedLocationId}
+              onChange={handleChange}
+              >
+              <MenuItem value="" disabled>
+                Оберіть локацію
+              </MenuItem>
+              {availableLocations.map((loc) => (
+                <MenuItem key={loc.id} value={loc.id}>
+                  {loc.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
+          <FormControl fullWidth required disabled={!selectedLocationId}>
             <InputLabel id={selectLabelId}>
               Лічильник (зв’язок з орендарем)
             </InputLabel>
@@ -221,21 +264,16 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
               <MenuItem value="" disabled>
                 Оберіть зв’язок (Tenant – Meter)
               </MenuItem>
-              {allTenants.map((mt) => (
-                <MenuItem key={mt.id} value={mt.id}>
-                  {mt.Tenant?.name} – {mt.Meter?.serial_number}
-                </MenuItem>
+              {allMeterTenants
+              .filter(mt => mt.Meter?.location_id === selectedLocationId)
+              .map((mt) => (
+              <MenuItem key={mt.id} value={mt.id}>
+              {mt.Tenant?.name} – {mt.Meter?.serial_number}
+              </MenuItem>
               ))}
             </Select>
           </FormControl>
 
-          <TextField
-            label="Локація"
-            value={selectedLocation}
-            InputProps={{ readOnly: true }}
-            fullWidth
-            sx={{ bgcolor: "#f5f5f5" }}
-          />
           <TextField
             label="Ресурс"
             value={selectedResource}

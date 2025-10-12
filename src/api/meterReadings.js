@@ -28,3 +28,8 @@ export const deleteMeterReading = async (token, id) => {
   const api = createApi(token);
   await api.delete(`/meter-readings/${id}`);
 };
+export const getMeterReadingsSummary = async (token, filters = {}) => {
+  const api = createApi(token);
+  const response = await api.get('/meter-readings/summary', { params: filters });
+  return response.data;
+};

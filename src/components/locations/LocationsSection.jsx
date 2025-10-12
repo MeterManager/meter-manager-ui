@@ -4,6 +4,7 @@ import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import LocationsTable from '../locations/LocationsTable';
 import LocationForm from '../locations/LocationForm';
 import { useLocations } from '../../hooks/useLocations';
+import { useTenants } from '../../hooks/useTenants';
 
 const LocationsSection = ({ initialExpanded = true }) => {
   const {
@@ -14,17 +15,19 @@ const LocationsSection = ({ initialExpanded = true }) => {
     editLocation,
     removeLocation,
     updateLocationStatus,
+
     getDependencies,
     error,
     setError,
   } = useLocations();
+  const { useSimpleTenants} = useTenants();
 
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null, action: null, dependencies: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-
+  const { tenants: simpleTenants } = useSimpleTenants();
   const handleToggle = () => {
     setExpanded(!expanded);
   };
@@ -181,6 +184,7 @@ const LocationsSection = ({ initialExpanded = true }) => {
         initialData={editingLocation || {}}
         error={error}
         locations={locations}
+        tenants={simpleTenants}
       />
 
       <Dialog

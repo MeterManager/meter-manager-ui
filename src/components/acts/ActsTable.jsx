@@ -7,11 +7,26 @@ import {
 import { useMeterReadings } from "../../hooks/useMeterReadings";
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FileTextIcon from '@mui/icons-material/Description';
+import PaymentIcon from '@mui/icons-material/Payment';
+import BoltOutlinedIcon from '@mui/icons-material/BoltOutlined';
+import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
+import { useTheme } from "@mui/material/styles";
+
 
 const ActsTable = () => {
-  const { meterReadings, loading, error, fetchReadings } = useMeterReadings();
+  const { meterReadings, loading, error, fetchReadings, getReadingsSummary } = useMeterReadings();
   const [generating, setGenerating] = useState(false);
   const [selectedResource, setSelectedResource] = useState("Електроенергія");
+  const [summary, setSummary] = useState(null);
+  const theme = useTheme();
+
+  useEffect(() => {
+    fetchReadings();
+    getReadingsSummary()
+      .then((data) => setSummary(data))
+      .catch(() => setSummary(null));
+  }, [fetchReadings, getReadingsSummary, selectedResource]);
+  
 
   useEffect(() => {
     fetchReadings();
@@ -37,34 +52,29 @@ const ActsTable = () => {
 
     return meterReadings.map(reading => {
       const meterInfo = reading?.MeterTenant?.Meter;
-      const tenantInfo = reading?.MeterTenant?.Tenant;
-      const locationInfo = reading?.MeterTenant?.Tenant?.Location;
+      const locationInfo = meterInfo?.Location; 
       const energyInfo = reading?.MeterTenant?.Meter?.EnergyResourceType;
-
 
       const prevValue = reading.previous_reading || '0.00';
       const currValue = reading.current_reading || '0.00';
       const difference = reading.consumption || '0.00';
       const coefficient = reading.calculation_coefficient || 'N/A';
-      const rentedArea = reading.tenant_occupied_area || '0.00';
-      const totalRentedArea = reading.total_rented_area || '0.00';
-      const areaPercentage = reading.area_percentage || '0.00';
+      const occupiedArea = parseFloat(reading.location_occupied_area)?.toFixed(2) || '0.00';
       const consumedKwh = reading.total_consumption || '0.00';
       const calculatedKwh = reading.area_based_consumption || '0.00';
 
       return {
         id: reading.id,
         meterNumber: meterInfo?.serial_number || 'N/A',
-        installationPlace: locationInfo?.name || 'N/A',
+        installationPlace: locationInfo?.name || 'Nевідома локація', 
+        address: locationInfo?.address || '', 
         purpose: energyInfo?.name || 'N/A',
         //group: group,
         prevValue: prevValue,
         currValue: currValue,
         difference: difference,
         coefficient: coefficient,
-        rentedArea: rentedArea,
-        totalArea: totalRentedArea,
-        areaPercent: areaPercentage,
+        locationArea: occupiedArea, 
         consumedKwh: consumedKwh,
         calculatedKwh: calculatedKwh,
       };
@@ -124,9 +134,7 @@ const ActsTable = () => {
                 <TableCell align="right">Поточні</TableCell>
                 <TableCell align="right">Різниця</TableCell>
                 <TableCell align="right">Коеф.</TableCell>
-                <TableCell align="right">Оренд. площа (м²)</TableCell>
-                <TableCell align="right">Заг. площа (м²)</TableCell>
-                <TableCell align="right">Відсоток площі (%)</TableCell>
+                <TableCell align="right">Площа (м²)</TableCell> 
                 <TableCell align="right">
                   {resourceColumnMap[selectedResource]?.consumed}
                 </TableCell>
@@ -145,9 +153,7 @@ const ActsTable = () => {
                   <TableCell align="right">{reading.currValue}</TableCell>
                   <TableCell align="right">{reading.difference}</TableCell>
                   <TableCell align="right">{reading.coefficient}</TableCell>
-                  <TableCell align="right">{reading.rentedArea}</TableCell>
-                  <TableCell align="right">{reading.totalArea}</TableCell>
-                  <TableCell align="right">{reading.areaPercent}</TableCell>
+                  <TableCell align="right">{reading.locationArea}</TableCell>
                   <TableCell align="right">{reading.consumedKwh}</TableCell>
                   <TableCell align="right">{reading.calculatedKwh}</TableCell>
                 </TableRow>
@@ -162,6 +168,44 @@ const ActsTable = () => {
             </TableBody>
           </Table>
         </TableContainer>
+      )}
+    {summary && (
+      <Box mt={3} p={2} component={Paper}>
+        <Typography variant="h6" gutterBottom>
+          Зведена інформація
+        </Typography>
+
+          {summary[selectedResource] ? (
+            <Box mb={2}>
+              <Typography variant="subtitle1" fontWeight="bold">
+                🔹 {selectedResource}
+              </Typography>
+              <Stack direction="row" spacing={4}>
+                <Typography>
+                  <BarChartOutlinedIcon sx={{ verticalAlign: "middle", color:theme.palette.primary.main, mr: 0.5 }} />
+                  Всього записів:{" "}
+                  <strong>{summary[selectedResource].readings?.length || 0}</strong>
+                </Typography>
+                <Typography>
+                  <BoltOutlinedIcon sx={{ verticalAlign: "middle", color:theme.palette.primary.main, mr: 0.5 }} />
+                  Загальне споживання:{" "}
+                  <strong>
+                    {Number(summary[selectedResource].totalConsumption).toFixed(2)}
+                  </strong>
+                </Typography>
+                <Typography>
+                  <PaymentIcon sx={{ verticalAlign: "middle",color:theme.palette.primary.main, mr: 0.5 }} />
+                  Загальна вартість:{" "}
+                  <strong>
+                    {Number(summary[selectedResource].totalCost).toFixed(2)}
+                  </strong>
+                </Typography>
+              </Stack>
+            </Box>
+          ) : (
+            <Typography color="text.secondary">Немає даних для {selectedResource}</Typography>
+          )}
+        </Box>
       )}
     </Box>
   );

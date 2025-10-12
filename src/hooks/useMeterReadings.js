@@ -109,6 +109,22 @@ export const useMeterReadings = () => {
     mutateReadings();
   }, [mutateReadings]);
 
+  const getReadingsSummary = useCallback(async (filters = {}) => {
+    if (isBlocked) throw new Error("User is blocked.");
+    const token = await getToken();
+    if (!token) throw new Error("No token available.");
+  
+    try {
+      const response = await meterReadingsApi.getMeterReadingsSummary(token, filters);
+      return response.data; 
+    } catch (err) {
+      console.error("Failed to fetch readings summary:", err);
+      setError("Помилка при отриманні зведених даних.");
+      throw err;
+    }
+  }, [getToken, isBlocked]);
+  
+
   return {
     meterReadings,
     loading,
@@ -118,5 +134,6 @@ export const useMeterReadings = () => {
     addReading,
     editReading,
     removeReading,
+    getReadingsSummary
   };
 };
