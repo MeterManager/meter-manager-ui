@@ -10,6 +10,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Divider,
+  Grid,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "../../hooks/useMediaQuery";
@@ -31,15 +33,20 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
   const [formData, setFormData] = useState({
     meter_tenant_id: "",
     reading_date: "",
-    current_reading: "",
     area_based_consumption: "",
     calculation_method: "",
     executor_name: "",
     tenant_representative: "",
     calculation_coefficient: 1,
+    distributions: {
+      CA: { current_reading: "", previous_reading: "", area_percentage: 100 },
+      CP: { current_reading: "", previous_reading: "", area_percentage: 100 },
+      GR: { current_reading: "", previous_reading: "", area_percentage: 100 },
+    },
   });
-  const [allMeterTenants, setAllMeterTenants] = useState([]); 
-  const [availableLocations, setAvailableLocations] = useState([]); 
+
+  const [allMeterTenants, setAllMeterTenants] = useState([]);
+  const [availableLocations, setAvailableLocations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingTenants, setLoadingTenants] = useState(true);
   const [error, setError] = useState(null);
@@ -55,20 +62,20 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
         }
         const list = await getAllMeterTenants(token);
         const mts = list?.data || list;
-        setAllMeterTenants(mts); 
+        setAllMeterTenants(mts);
 
         const uniqueLocationsMap = mts.reduce((map, mt) => {
           const location = mt.Meter?.Location;
           if (location && !map.has(location.id)) {
             map.set(location.id, {
               id: location.id,
-              name: `${location.name} - ${location.address}`
+              name: `${location.name} - ${location.address}`,
             });
           }
-             return map;
-             }, new Map());
+          return map;
+        }, new Map());
 
-            setAvailableLocations(Array.from(uniqueLocationsMap.values()));
+        setAvailableLocations(Array.from(uniqueLocationsMap.values()));
         setLoadingTenants(false);
       } catch (e) {
         setError("Помилка при завантаженні списку лічильників");
@@ -79,31 +86,54 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
 
   useEffect(() => {
     if (initialData) {
-      const initialMt = allMeterTenants.find(mt => mt.id === initialData.meter_tenant_id);
-    if (initialMt?.Meter?.Location) {
-      setSelectedLocationId(initialMt.Meter.Location.id);
-      setSelectedResource(initialMt.Meter.EnergyResourceType?.name || "");
-    }
+      const initialMt = allMeterTenants.find((mt) => mt.id === initialData.meter_tenant_id);
+      if (initialMt?.Meter?.Location) {
+        setSelectedLocationId(initialMt.Meter.Location.id);
+        setSelectedResource(initialMt.Meter.EnergyResourceType?.name || "");
+      }
+
+      const loadedDistributions = {
+        CA: { current_reading: "", previous_reading: "", area_percentage: 100 },
+        CP: { current_reading: "", previous_reading: "", area_percentage: 100 },
+        GR: { current_reading: "", previous_reading: "", area_percentage: 100 },
+      };
+
+      if (initialData.distributions && Array.isArray(initialData.distributions)) {
+        initialData.distributions.forEach((dist) => {
+          if (loadedDistributions[dist.category]) {
+            loadedDistributions[dist.category] = {
+              current_reading: dist.current_reading || "",
+              previous_reading: dist.previous_reading || "",
+              area_percentage: dist.area_percentage || 100,
+            };
+          }
+        });
+      }
+
       setFormData({
         meter_tenant_id: initialData.meter_tenant_id,
         reading_date: initialData.reading_date,
-        current_reading: initialData.current_reading,
         area_based_consumption: initialData.area_based_consumption || "",
         calculation_method: initialData.calculation_method || "",
         executor_name: initialData.executor_name || "",
         tenant_representative: initialData.tenant_representative || "",
-        calculation_coefficient: initialData.calculation_coefficient || 1
+        calculation_coefficient: initialData.calculation_coefficient || 1,
+        distributions: loadedDistributions,
       });
     } else {
       setFormData({
         meter_tenant_id: "",
         reading_date: "",
-        current_reading: "",
         area_based_consumption: "",
         calculation_method: "",
         executor_name: "",
         tenant_representative: "",
-        calculation_coefficient: ""
+        calculation_coefficient: 1,
+        distributions: {
+          CA: { current_reading: "", previous_reading: "", area_percentage: 100 },
+          CP: { current_reading: "", previous_reading: "", area_percentage: 100 },
+          GR: { current_reading: "", previous_reading: "", area_percentage: 100 },
+        },
       });
     }
   }, [initialData, allMeterTenants]);
@@ -113,21 +143,21 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
     if (name === "selectedLocationId") {
       const newLocationId = value === "" ? "" : Number(value);
       setSelectedLocationId(newLocationId);
-      setFormData(prev => ({ ...prev, meter_tenant_id: "" })); 
+      setFormData((prev) => ({ ...prev, meter_tenant_id: "" }));
       setSelectedResource("");
-       return; 
-      }
+      return;
+    }
     if (name === "meter_tenant_id" && value !== "") {
-      const mtId = Number(value); 
+      const mtId = Number(value);
       const mt = allMeterTenants.find((t) => t.id === mtId);
       if (mt?.Meter?.EnergyResourceType) {
-      const type = mt.Meter.EnergyResourceType;
-      setSelectedResource(`${type.name}`);
+        const type = mt.Meter.EnergyResourceType;
+        setSelectedResource(`${type.name}`);
       } else {
         setSelectedResource("");
       }
       value = mtId;
-      } else if (name === "meter_tenant_id" && value === "") {
+    } else if (name === "meter_tenant_id" && value === "") {
       setSelectedResource("");
       value = "";
     }
@@ -137,6 +167,19 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  const handleDistributionChange = (category, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      distributions: {
+        ...prev.distributions,
+        [category]: {
+          ...prev.distributions[category],
+          [field]: value === "" ? "" : Number(value),
+        },
+      },
     }));
   };
 
@@ -154,20 +197,46 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
     if (
       !formData.meter_tenant_id ||
       !formData.reading_date ||
-      !formData.current_reading ||
       !formData.calculation_method
     ) {
       setError("Будь ласка, заповніть всі обов'язкові поля.");
       return;
     }
 
+    const hasDistributions = ["CA", "CP", "GR"].some(
+      (cat) => formData.distributions[cat].current_reading !== ""
+    );
+    if (!hasDistributions) {
+      setError("Будь ласка, заповніть хоча б одну підкатегорію (CA, CP або GR).");
+      return;
+    }
+
     try {
       setLoading(true);
-  
+
+      const distributionsArray = [];
+      let totalCurrentReading = 0;
+
+      ["CA", "CP", "GR"].forEach((category) => {
+        const dist = formData.distributions[category];
+        if (dist.current_reading !== "" || dist.previous_reading !== "") {
+          const currentVal = Number(dist.current_reading) || 0;
+          totalCurrentReading += currentVal;
+          
+          distributionsArray.push({
+            category,
+            current_reading: currentVal,
+            previous_reading: dist.previous_reading || 0,
+            calculation_coefficient: formData.calculation_coefficient || 1,
+            area_percentage: dist.area_percentage || 100,
+          });
+        }
+      });
+
       const payload = {
         meter_tenant_id: Number(formData.meter_tenant_id),
         reading_date: formData.reading_date,
-        current_reading: Number(formData.current_reading),
+        current_reading: totalCurrentReading, 
         calculation_method: formData.calculation_method,
         area_based_consumption:
           formData.area_based_consumption !== ""
@@ -177,8 +246,9 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
         executor_name: formData.executor_name || null,
         tenant_representative: formData.tenant_representative || null,
         created_by: user?.id,
+        distributions: distributionsArray,
       };
-  
+
       let response;
       if (initialData?.id) {
         response = await updateMeterReading(token, initialData.id, payload);
@@ -186,22 +256,27 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
         response = await createMeterReading(token, payload);
       }
 
-  
       onSuccess?.(response);
     } catch (err) {
       setError(err.message || "Не вдалося зберегти показники.");
     } finally {
       setLoading(false);
     }
-  };  
+  };
 
   const selectLabelId = "meter-tenant-select-label";
+
+  const categoryLabels = {
+    CA: "СА (Споживання активної)",
+    CP: "СР (Споживання реактивної)",
+    GR: "ГР (Генерація реактивної)",
+  };
 
   return (
     <Paper
       sx={{
         p: isMobile ? 2 : 3,
-        maxWidth: isMobile ? "100%" : isTablet ? "90%" : 600,
+        maxWidth: isMobile ? "100%" : isTablet ? "90%" : 800,
         mx: "auto",
       }}
     >
@@ -233,13 +308,13 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
       ) : (
         <Box component="form" onSubmit={handleSubmit} sx={{ display: "grid", gap: 2 }}>
           <FormControl fullWidth required>
-            <InputLabel id="location-select-label">Локація</InputLabel> 
+            <InputLabel id="location-select-label">Локація</InputLabel>
             <Select
               labelId="location-select-label"
               name="selectedLocationId"
               value={selectedLocationId}
               onChange={handleChange}
-              >
+            >
               <MenuItem value="" disabled>
                 Оберіть локацію
               </MenuItem>
@@ -250,10 +325,10 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
               ))}
             </Select>
           </FormControl>
-          
+
           <FormControl fullWidth required disabled={!selectedLocationId}>
             <InputLabel id={selectLabelId}>
-              Лічильник (зв’язок з орендарем)
+              Лічильник (зв'язок з орендарем)
             </InputLabel>
             <Select
               labelId={selectLabelId}
@@ -262,15 +337,15 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
               onChange={handleChange}
             >
               <MenuItem value="" disabled>
-                Оберіть зв’язок (Tenant – Meter)
+                Оберіть зв'язок (Tenant – Meter)
               </MenuItem>
               {allMeterTenants
-              .filter(mt => mt.Meter?.location_id === selectedLocationId)
-              .map((mt) => (
-              <MenuItem key={mt.id} value={mt.id}>
-              {mt.Tenant?.name} – {mt.Meter?.serial_number}
-              </MenuItem>
-              ))}
+                .filter((mt) => mt.Meter?.location_id === selectedLocationId)
+                .map((mt) => (
+                  <MenuItem key={mt.id} value={mt.id}>
+                    {mt.Tenant?.name} – {mt.Meter?.serial_number}
+                  </MenuItem>
+                ))}
             </Select>
           </FormControl>
 
@@ -289,15 +364,6 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
             value={formData.reading_date}
             onChange={handleChange}
             InputLabelProps={{ shrink: true }}
-            required
-          />
-
-          <TextField
-            label="Поточний показник"
-            type="number"
-            name="current_reading"
-            value={formData.current_reading}
-            onChange={handleChange}
             required
           />
 
@@ -325,8 +391,9 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
               required
             />
           )}
+
           <TextField
-            label="Розрахунковий коефіцієнт"
+            label="Розрахунковий коефіцієнт (для всіх категорій)"
             type="number"
             name="calculation_coefficient"
             value={formData.calculation_coefficient}
@@ -335,8 +402,60 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
             required
           />
 
+          <Divider sx={{ my: 2 }}>
+            <Typography variant="subtitle1" color="textSecondary">
+              Розподіл по підкатегоріях (опціонально)
+            </Typography>
+          </Divider>
+
+          {["CA", "CP", "GR"].map((category) => (
+            <Box
+              key={category}
+              sx={{
+                p: 2,
+                border: "1px solid #e0e0e0",
+                borderRadius: 1,
+                bgcolor: "#fafafa",
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
+                {categoryLabels[category]}
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Поточний показник"
+                    type="number"
+                    value={formData.distributions[category].current_reading}
+                    onChange={(e) =>
+                      handleDistributionChange(category, "current_reading", e.target.value)
+                    }
+                    fullWidth
+                    size="small"
+                    inputProps={{ step: "0.01" }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Попередній показник"
+                    type="number"
+                    value={formData.distributions[category].previous_reading}
+                    onChange={(e) =>
+                      handleDistributionChange(category, "previous_reading", e.target.value)
+                    }
+                    fullWidth
+                    size="small"
+                    inputProps={{ step: "0.01" }}
+                  />
+                </Grid>
+               
+                
+              </Grid>
+            </Box>
+          ))}
+
           <TextField
-            label="Ім’я виконавця"
+            label="Ім'я виконавця"
             name="executor_name"
             value={formData.executor_name}
             onChange={handleChange}
@@ -380,4 +499,3 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
 };
 
 export default MeterReadingForm;
-

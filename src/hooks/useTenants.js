@@ -12,7 +12,6 @@ const fetcher = async (url, token, filters = {}) => {
     return {
       id: tenant.id,
       name: tenant.name,
-      occupiedArea: tenant.occupied_area,
       contactPerson: tenant.contact_person,
       phone: tenant.phone,
       email: tenant.email,
@@ -72,7 +71,6 @@ export const useTenants = () => {
       if (!token) throw new Error('No token available');
       const tenantData = {
         name: data.name,
-        occupied_area: data.occupiedArea || null,
         contact_person: data.contactPerson || null,
         phone: data.phone || null,
         email: data.email || null,
@@ -126,7 +124,6 @@ export const useTenants = () => {
       
       const tenantData = {
         name: data.name,
-        occupied_area: data.occupiedArea || null,
         contact_person: data.contactPerson || null,
         phone: data.phone || null,
         email: data.email || null,

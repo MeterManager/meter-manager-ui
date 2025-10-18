@@ -156,7 +156,7 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
         />
         <TextField
           name="occupied_area"
-          label="Площа (м²)"
+          label="Відсоток зайнятої площі (%)"
           type="number"
           value={formData.occupied_area || ''}
           onChange={handleChange}
