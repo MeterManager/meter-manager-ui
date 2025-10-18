@@ -5,7 +5,10 @@ export const getLocations = async (token, search = '') => {
   const params = {};
   if (search) params.search = search;
   const response = await api.get('/locations', { params });
-  return response.data;
+  const resp = response.data;
+  if (Array.isArray(resp)) return resp;
+  if (Array.isArray(resp.data)) return resp.data;
+  return [];
 };
 
 export const createLocation = async (token, data) => {

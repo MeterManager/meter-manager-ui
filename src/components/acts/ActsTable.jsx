@@ -1,19 +1,37 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from 'react';
 import {
-  Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Paper, Button, Typography,
-  Box, Stack, IconButton, Tooltip, TextField, Dialog,
-  DialogTitle, DialogContent, DialogActions
-} from "@mui/material";
-import { useMeterReadings } from "../../hooks/useMeterReadings";
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+  Typography,
+  Box,
+  Stack,
+  IconButton,
+  Tooltip,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from '@mui/material';
+import { useMeterReadings } from '../../hooks/useMeterReadings';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { generateConsumptionAct } from "../../utils/excelGenerator";
+import PaymentIcon from '@mui/icons-material/Payment';
+import BoltOutlinedIcon from '@mui/icons-material/BoltOutlined';
+import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
+import { useTheme } from '@mui/material/styles';
+import { generateConsumptionAct } from '../../utils/excelGenerator';
 
 const ActsTable = () => {
-  const { meterReadings, loading, error, fetchReadings } = useMeterReadings();
+  const { meterReadings, loading, error, fetchReadings, getReadingsSummary } = useMeterReadings();
   const [generating, setGenerating] = useState(false);
-  const [selectedResource, setSelectedResource] = useState("Електроенергія");
+  const [selectedResource, setSelectedResource] = useState('Електроенергія');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actOptions, setActOptions] = useState({
     period: new Date().toISOString().split('T')[0],
@@ -22,68 +40,71 @@ const ActsTable = () => {
     executorTitle: 'інж.-енергетик',
     tenantCompany: 'ТОВ «ГалФрост»',
     tenantRepresentative: 'Ситнік І.Ю.',
-    address: 'Львівська обл., с. Зимна Вода, вул. Яворівська, 30'
+    address: 'Львівська обл., с. Зимна Вода, вул. Яворівська, 30',
   });
+  const [summary, setSummary] = useState(null);
+  const theme = useTheme();
 
   useEffect(() => {
     fetchReadings();
-  }, [fetchReadings]);
+    getReadingsSummary()
+      .then((data) => setSummary(data))
+      .catch(() => setSummary(null));
+  }, [fetchReadings, getReadingsSummary, selectedResource]);
 
   const resourceColumnMap = {
-    "Електроенергія": {
-      consumed: "Спожита електроенергія (кВт·год)",
-      calculated: "Розрах. споживачу (кВт·год)",
+    Електроенергія: {
+      consumed: 'Спожита електроенергія (кВт·год)',
+      calculated: 'Розрах. споживачу (кВт·год)',
     },
-    "Вода": {
-      consumed: "Спожита вода (м³)",
-      calculated: "Розрах. споживачу (м³)",
+    Вода: {
+      consumed: 'Спожита вода (м³)',
+      calculated: 'Розрах. споживачу (м³)',
     },
-    "Газ": {
-      consumed: "Спожитий газ (м³)",
-      calculated: "Розрах. споживачу (м³)",
+    Газ: {
+      consumed: 'Спожитий газ (м³)',
+      calculated: 'Розрах. споживачу (м³)',
     },
   };
 
   const transformedReadings = useMemo(() => {
     if (!meterReadings) return [];
 
-    return meterReadings.map(reading => {
+    return meterReadings.map((reading) => {
       const meterInfo = reading?.MeterTenant?.Meter;
-      const tenantInfo = reading?.MeterTenant?.Tenant;
-      const locationInfo = reading?.MeterTenant?.Tenant?.Location;
+      const locationInfo = meterInfo?.Location;
       const energyInfo = reading?.MeterTenant?.Meter?.EnergyResourceType;
 
       const prevValue = reading.previous_reading || '0.00';
       const currValue = reading.current_reading || '0.00';
       const difference = reading.consumption || '0.00';
-      const coefficient = reading.calculation_coefficient || '1.00';
-      const rentedArea = reading.tenant_occupied_area || '0.00';
-      const totalRentedArea = reading.total_rented_area || '0.00';
-      const areaPercentage = reading.area_percentage || '0.00';
+      const coefficient = reading.calculation_coefficient ?? '1.00';
+      const locationArea = reading.location_occupied_area
+        ? parseFloat(reading.location_occupied_area).toFixed(2)
+        : reading.tenant_occupied_area || '0.00';
       const consumedKwh = reading.total_consumption || '0.00';
       const calculatedKwh = reading.area_based_consumption || '0.00';
 
       return {
         id: reading.id,
         meterNumber: meterInfo?.serial_number || 'N/A',
-        installationPlace: location?.name || 'N/A',
+        installationPlace: locationInfo?.name || 'Nевідома локація',
+        address: locationInfo?.address || '',
         purpose: energyInfo?.name || 'N/A',
-        prevValue: prevValue,
-        currValue: currValue,
-        difference: difference,
-        coefficient: coefficient,
-        rentedArea: rentedArea,
-        totalArea: totalRentedArea,
-        areaPercent: areaPercentage,
-        consumedKwh: consumedKwh,
-        calculatedKwh: calculatedKwh,
+        prevValue,
+        currValue,
+        difference,
+        coefficient,
+        locationArea,
+        consumedKwh,
+        calculatedKwh,
       };
     });
   }, [meterReadings]);
 
   const filteredReadings = useMemo(() => {
     if (!selectedResource) return transformedReadings;
-    return transformedReadings.filter(r => r.purpose === selectedResource);
+    return transformedReadings.filter((r) => r.purpose === selectedResource);
   }, [selectedResource, transformedReadings]);
 
   const handleGenerateAct = async () => {
@@ -99,7 +120,7 @@ const ActsTable = () => {
       alert('✅ Акт успішно згенеровано!');
     } catch (err) {
       console.error('Помилка при генерації акту:', err);
-      alert('❌ Помилка при генерації акту: ' + err.message);
+      alert('❌ Помилка при генерації акту: ' + (err?.message || err));
     } finally {
       setGenerating(false);
     }
@@ -107,7 +128,7 @@ const ActsTable = () => {
 
   return (
     <Box p={2}>
-      {/* ШАПКА З КНОПКАМИ */}
+      {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6">Акти споживання</Typography>
         <Stack direction="row" spacing={1}>
@@ -116,8 +137,7 @@ const ActsTable = () => {
               <RefreshIcon />
             </IconButton>
           </Tooltip>
-          
-          {/* 🎯 ОСЬ ГОЛОВНА КНОПКА ГЕНЕРАЦІЇ XLSX */}
+
           <Button
             variant="contained"
             color="primary"
@@ -126,17 +146,17 @@ const ActsTable = () => {
             onClick={() => setDialogOpen(true)}
             sx={{ minWidth: 180 }}
           >
-            {generating ? "Генерується..." : "Згенерувати акт XLSX"}
+            {generating ? 'Генерується...' : 'Згенерувати акт XLSX'}
           </Button>
         </Stack>
       </Stack>
 
-      {/* ФІЛЬТРИ ПО РЕСУРСАМ */}
+      {/* Resource filters */}
       <Stack direction="row" spacing={2} mb={2} flexWrap="wrap">
-        {Object.keys(resourceColumnMap).map(resource => (
+        {Object.keys(resourceColumnMap).map((resource) => (
           <Button
             key={resource}
-            variant={selectedResource === resource ? "contained" : "outlined"}
+            variant={selectedResource === resource ? 'contained' : 'outlined'}
             onClick={() => setSelectedResource(resource)}
             size="medium"
           >
@@ -145,33 +165,41 @@ const ActsTable = () => {
         ))}
       </Stack>
 
-      {/* ПОВІДОМЛЕННЯ ПРО ПОМИЛКИ */}
+      {/* Error */}
       {error && (
         <Typography color="error" mb={2} sx={{ bgcolor: '#ffebee', p: 2, borderRadius: 1 }}>
           ⚠️ {error}
         </Typography>
       )}
 
-      {/* ТАБЛИЦЯ */}
+      {/* Table */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
           <Typography>⏳ Завантаження...</Typography>
         </Box>
       ) : (
-        <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+        <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
           <Table size="small" sx={{ minWidth: 1200 }}>
             <TableHead>
               <TableRow sx={{ bgcolor: '#f5f5f5' }}>
                 <TableCell sx={{ fontWeight: 'bold' }}>№ лічильника</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Призначення обліку (назва об'єкта)</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Тип ресурсу</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>Попередні</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>Поточні</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>Різниця</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>Коеф.</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>Оренд. площа (м²)</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>Заг. площа (м²)</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>Відсоток площі (%)</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                  Попередні
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                  Поточні
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                  Різниця
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                  Коеф.
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                  Площа (м²)
+                </TableCell>
                 <TableCell align="right" sx={{ fontWeight: 'bold' }}>
                   {resourceColumnMap[selectedResource]?.consumed}
                 </TableCell>
@@ -181,7 +209,7 @@ const ActsTable = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredReadings.map((reading, index) => (
+              {filteredReadings.map((reading) => (
                 <TableRow key={reading.id} hover sx={{ '&:nth-of-type(odd)': { bgcolor: '#fafafa' } }}>
                   <TableCell>{reading.meterNumber}</TableCell>
                   <TableCell>{reading.installationPlace}</TableCell>
@@ -190,16 +218,14 @@ const ActsTable = () => {
                   <TableCell align="right">{reading.currValue}</TableCell>
                   <TableCell align="right">{reading.difference}</TableCell>
                   <TableCell align="right">{reading.coefficient}</TableCell>
-                  <TableCell align="right">{reading.rentedArea}</TableCell>
-                  <TableCell align="right">{reading.totalArea}</TableCell>
-                  <TableCell align="right">{reading.areaPercent}</TableCell>
+                  <TableCell align="right">{reading.locationArea}</TableCell>
                   <TableCell align="right">{reading.consumedKwh}</TableCell>
                   <TableCell align="right">{reading.calculatedKwh}</TableCell>
                 </TableRow>
               ))}
               {filteredReadings.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
                     <Typography color="text.secondary">
                       📋 Дані відсутні для типу ресурсу "{selectedResource}"
                     </Typography>
@@ -211,16 +237,9 @@ const ActsTable = () => {
         </TableContainer>
       )}
 
-      {/* ДІАЛОГ НАЛАШТУВАНЬ АКТУ */}
-      <Dialog 
-        open={dialogOpen} 
-        onClose={() => setDialogOpen(false)} 
-        maxWidth="sm" 
-        fullWidth
-      >
-        <DialogTitle sx={{ bgcolor: '#f5f5f5', fontWeight: 'bold' }}>
-          📄 Налаштування акту споживання
-        </DialogTitle>
+      {/* Dialog for act options */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ bgcolor: '#f5f5f5', fontWeight: 'bold' }}>📄 Налаштування акту споживання</DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
           <Stack spacing={2.5}>
             <TextField
@@ -232,7 +251,7 @@ const ActsTable = () => {
               fullWidth
               helperText="Виберіть місяць для акту"
             />
-            
+
             <TextField
               label="Організація (власник)"
               value={actOptions.organization}
@@ -240,7 +259,7 @@ const ActsTable = () => {
               fullWidth
               placeholder="ТОВ «Про Тек Вікна Україна»"
             />
-            
+
             <TextField
               label="Компанія орендаря"
               value={actOptions.tenantCompany}
@@ -248,7 +267,7 @@ const ActsTable = () => {
               fullWidth
               placeholder="ТОВ «ГалФрост»"
             />
-            
+
             <TextField
               label="Адреса об'єкту"
               value={actOptions.address}
@@ -258,7 +277,7 @@ const ActsTable = () => {
               rows={2}
               placeholder="Львівська обл., с. Зимна Вода, вул. Яворівська, 30"
             />
-            
+
             <TextField
               label="Посада виконавця"
               value={actOptions.executorTitle}
@@ -266,7 +285,7 @@ const ActsTable = () => {
               fullWidth
               placeholder="інж.-енергетик"
             />
-            
+
             <TextField
               label="ПІБ виконавця"
               value={actOptions.executorName}
@@ -274,7 +293,7 @@ const ActsTable = () => {
               fullWidth
               placeholder="Бенько І. Г."
             />
-            
+
             <TextField
               label="Представник орендаря"
               value={actOptions.tenantRepresentative}
@@ -282,7 +301,7 @@ const ActsTable = () => {
               fullWidth
               placeholder="Ситнік І.Ю."
             />
-            
+
             <Box sx={{ bgcolor: '#f0f7ff', p: 2, borderRadius: 1, border: '1px solid #2196f3' }}>
               <Typography variant="body2" color="primary" gutterBottom>
                 📊 Інформація про звіт:
@@ -303,17 +322,51 @@ const ActsTable = () => {
           <Button onClick={() => setDialogOpen(false)} color="inherit">
             Скасувати
           </Button>
-          <Button 
-            onClick={handleGenerateAct} 
-            variant="contained" 
+          <Button
+            onClick={handleGenerateAct}
+            variant="contained"
             disabled={generating}
             startIcon={<FileDownloadIcon />}
             sx={{ minWidth: 150 }}
           >
-            {generating ? "Генерується..." : "Згенерувати"}
+            {generating ? 'Генерується...' : 'Згенерувати'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Summary box */}
+      {summary && (
+        <Box mt={3} p={2} component={Paper}>
+          <Typography variant="h6" gutterBottom>
+            Зведена інформація
+          </Typography>
+
+          {summary[selectedResource] ? (
+            <Box mb={2}>
+              <Typography variant="subtitle1" fontWeight="bold">
+                🔹 {selectedResource}
+              </Typography>
+              <Stack direction="row" spacing={4}>
+                <Typography>
+                  <BarChartOutlinedIcon sx={{ verticalAlign: 'middle', color: theme.palette.primary.main, mr: 0.5 }} />
+                  Всього записів: <strong>{summary[selectedResource].readings?.length || 0}</strong>
+                </Typography>
+                <Typography>
+                  <BoltOutlinedIcon sx={{ verticalAlign: 'middle', color: theme.palette.primary.main, mr: 0.5 }} />
+                  Загальне споживання:{' '}
+                  <strong>{Number(summary[selectedResource].totalConsumption || 0).toFixed(2)}</strong>
+                </Typography>
+                <Typography>
+                  <PaymentIcon sx={{ verticalAlign: 'middle', color: theme.palette.primary.main, mr: 0.5 }} />
+                  Загальна вартість: <strong>{Number(summary[selectedResource].totalCost || 0).toFixed(2)}</strong>
+                </Typography>
+              </Stack>
+            </Box>
+          ) : (
+            <Typography color="text.secondary">Немає даних для {selectedResource}</Typography>
+          )}
+        </Box>
+      )}
     </Box>
   );
 };

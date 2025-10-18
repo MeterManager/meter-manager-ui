@@ -15,8 +15,6 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
     if (open) {
       setFormData({
         name: initialData.name || '',
-        locationId: initialData.locationId || '',
-        occupiedArea: initialData.occupiedArea || '',
         contactPerson: initialData.contactPerson || '',
         phone: initialData.phone || '',
         email: initialData.email || '',
@@ -36,9 +34,6 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
         error = 'Орендар з такою назвою вже існує.';
       }
     }
-    if (name === 'locationId' && !value) {
-      error = "Локація обов'язкова.";
-    }
     if (name === 'occupiedArea' && value && parseFloat(value) < 0) {
       error = "Площа не може бути від'ємною.";
     }
@@ -52,13 +47,14 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    validateField(name, value);
+    validateField(name, newValue);
   };
+
 
   const validateForm = () => {
     const errors = {};
     if (!formData.name) errors.name = "Назва орендаря обов'язкова.";
-    if (!formData.locationId) errors.locationId = "Локація обов'язкова.";
+   
 
     if (tenants.some((t) => t.name.trim() === formData.name.trim() && t.id !== initialData.id)) {
       errors.name = 'Орендар з такою назвою вже існує.';
@@ -84,8 +80,6 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
 
     onSubmit({
       ...formData,
-      locationId: parseInt(formData.locationId),
-      occupiedArea: formData.occupiedArea ? parseFloat(formData.occupiedArea) : null,
       isActive: formData.isActive ?? true,
     });
 
@@ -164,56 +158,6 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           helperText={formErrors.name || ' '}
         />
 
-        <TextField
-          select
-          name="locationId"
-          label="Локація"
-          value={formData.locationId || ''}
-          onChange={handleChange}
-          fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
-          error={!!formErrors.locationId}
-          helperText={formErrors.locationId || ' '}
-        >
-          {locations.map((loc) => (
-            <MenuItem key={loc.id} value={loc.id}>
-              {loc.name}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          name="occupiedArea"
-          label="Зайнята площа (м²)"
-          type="number"
-          value={formData.occupiedArea || ''}
-          onChange={handleChange}
-          fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
-          error={!!formErrors.occupiedArea}
-          helperText={formErrors.occupiedArea || ' '}
-          inputProps={{ min: 0, step: 0.01 }}
-        />
 
         <TextField
           name="contactPerson"

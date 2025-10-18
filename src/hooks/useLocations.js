@@ -3,14 +3,16 @@ import useSWR, { mutate } from 'swr';
 import * as locationApi from '../api/locationsApi';
 import { useAuthContext } from '../contexts/AuthContext';
 
-const fetcher = async (url, getToken, search = '') => {
+const fetcher = async (getToken, search = '') => {
   const token = await getToken();
   if (!token) throw new Error('No token available');
 
-  const response = await locationApi.getLocations(token, search);
-  return (response.data || []).map((loc) => ({
+  const data = await locationApi.getLocations(token, search);
+
+  return (data || []).map((loc) => ({
     ...loc,
     isActive: loc.is_active === true,
+    tenant: loc.Tenant || null, 
   }));
 };
 
@@ -19,28 +21,31 @@ export const useLocations = () => {
   const [search, setSearch] = useState('');
   const [error, setError] = useState(null);
 
-  const swrKey = isAuthenticated && !isLoading && !isBlocked && getToken ? ['locations', getToken, search] : null;
+  const swrKey =
+    isAuthenticated && !isLoading && !isBlocked && getToken ? ['locations', getToken, search] : null;
 
   const {
     data: locations = [],
     error: swrError,
     isLoading: loading,
     mutate: mutateLocations,
-  } = useSWR(swrKey, ([url, getToken, search]) => fetcher(url, getToken, search), {
-    onError: (err) => {
-      if (err.response?.status === 403) {
-        return;
-      }
-      setError('Помилка при завантаженні локацій');
-      console.error('SWR Error:', err);
-    },
-    revalidateOnFocus: false,
-    dedupingInterval: 5000,
-  });
+  } = useSWR(
+    swrKey,
+    async ([, getTokenRef, searchVal]) => fetcher(getTokenRef, searchVal),
+    {
+      onError: (err) => {
+        if (err.response?.status === 403) {
+          return;
+        }
+        setError('Помилка при завантаженні локацій');
+        console.error('SWR Error:', err);
+      },
+      revalidateOnFocus: false,
+      dedupingInterval: 5000,
+    }
+  );
 
-  const activeLocations = useMemo(() => {
-    return locations.filter((loc) => loc.isActive);
-  }, [locations]);
+  const activeLocations = useMemo(() => locations.filter((loc) => loc.isActive), [locations]);
 
   const addLocation = useCallback(
     async (data) => {
@@ -53,21 +58,25 @@ export const useLocations = () => {
         name: data.name,
         address: data.address,
         is_active: data.isActive ?? true,
+        occupied_area:  data.occupied_area,
+        tenant_id: data.tenant_id ?? null,
       };
 
       try {
         setError(null);
 
-        const tempId = Date.now();
+        const tempId = `temp-${Date.now()}`;
         const optimisticLocation = {
           id: tempId,
           name: transformedData.name,
           address: transformedData.address,
           isActive: transformedData.is_active,
+          occupied_area:   transformedData.occupied_area,
+          tenant: data.tenant_id ? { id: data.tenant_id, name: data.tenantName || '...' } : null,
           isOptimistic: true,
         };
 
-        mutateLocations([...locations, optimisticLocation], false);
+        mutateLocations((prev = []) => [...prev, optimisticLocation], false);
 
         const response = await locationApi.createLocation(token, transformedData);
 
@@ -83,7 +92,7 @@ export const useLocations = () => {
         throw err;
       }
     },
-    [locations, mutateLocations, getToken, isBlocked]
+    [mutateLocations, getToken, isBlocked]
   );
 
   const editLocation = useCallback(
@@ -97,13 +106,24 @@ export const useLocations = () => {
         name: data.name,
         address: data.address,
         is_active: data.isActive,
+        occupied_area:  data.occupied_area,
+        tenant_id: data.tenant_id ?? null,
       };
 
       try {
         setError(null);
 
         const updatedLocations = locations.map((loc) =>
-          loc.id === id ? { ...loc, ...transformedData, isActive: transformedData.is_active } : loc
+          loc.id === id
+            ? {
+                ...loc,
+                name: transformedData.name,
+                address: transformedData.address,
+                isActive: transformedData.is_active,
+                occupied_area: transformedData.occupied_area,
+                tenant: transformedData.tenant_id ? { id: transformedData.tenant_id, name: data.tenantName || loc.tenant?.name } : null,
+              }
+            : loc
         );
         mutateLocations(updatedLocations, false);
 
@@ -163,7 +183,7 @@ export const useLocations = () => {
             if (!confirm) return;
           }
         }
-        const payload = { name: loc.name, address: loc.address, is_active };
+        const payload = { name: loc.name, address: loc.address, is_active, tenant_id: loc.tenant?.id ?? null };
         const updatedLocations = locations.map((location) =>
           location.id === id ? { ...location, isActive: is_active } : location
         );

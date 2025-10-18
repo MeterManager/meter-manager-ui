@@ -24,6 +24,7 @@ import { useTheme } from '@mui/material/styles';
 
 const LocationsTable = ({
   locations,
+  tenants = [],
   search,
   setSearch,
   onEdit,
@@ -54,8 +55,9 @@ const LocationsTable = ({
 
   const filteredLocations = locations.filter(
     (loc) =>
-      loc.name.toLowerCase().includes(search.toLowerCase()) ||
-      loc.address.toLowerCase().includes(search.toLowerCase())
+      (loc.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (loc.address || '').toLowerCase().includes(search.toLowerCase()) ||
+      (loc.tenant?.name || '— вільна —').toLowerCase().includes(search.toLowerCase())
   );
 
   const MobileLocationCard = ({ location }) => (
@@ -70,9 +72,21 @@ const LocationsTable = ({
     >
       <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-            {location.name}
-          </Typography>
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+              {location.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {location.address}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {loc.occupied_area ?? '—'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              Орендар: {location.tenant ? location.tenant.name : '— Вільна —'}
+            </Typography>
+          </Box>
+
           <Chip
             label={location.isActive ? 'Активна' : 'Неактивна'}
             color={location.isActive ? 'success' : 'default'}
@@ -80,10 +94,6 @@ const LocationsTable = ({
             sx={{ ml: 1, flexShrink: 0 }}
           />
         </Box>
-
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {location.address}
-        </Typography>
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -183,40 +193,15 @@ const LocationsTable = ({
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '25%' : '20%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Назва
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '35%' : '40%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Адреса
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '20%' : '20%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Статус
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: '5%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Дії
-                </TableCell>
+                <TableCell sx={{ width: isTablet ? '20%' : '18%', fontWeight: 600 }}>Назва</TableCell>
+                <TableCell sx={{ width: isTablet ? '30%' : '32%', fontWeight: 600 }}>Адреса</TableCell>
+                <TableCell sx={{ width: '10%', fontWeight: 600 }}>Площа (м²)</TableCell>
+                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Орендар</TableCell>
+                <TableCell sx={{ width: isTablet ? '20%' : '20%', fontWeight: 600 }}>Статус</TableCell>
+                <TableCell sx={{ width: '5%', fontWeight: 600 }}>Дії</TableCell>
               </TableRow>
             </TableHead>
+
             <TableBody>
               {filteredLocations.length > 0 ? (
                 filteredLocations.map((loc) => (
@@ -233,9 +218,21 @@ const LocationsTable = ({
                         {loc.name}
                       </Typography>
                     </TableCell>
+
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
                         {loc.address}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {loc.occupied_area ?? '—'}
+                      </Typography>
+                    </TableCell>
+
+                    <TableCell>
+                      <Typography variant="body2">
+                        {loc.tenant ? loc.tenant.name : '— Вільна —'}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -254,6 +251,7 @@ const LocationsTable = ({
                         />
                       </Box>
                     </TableCell>
+
                     <TableCell>
                       <Stack direction="row" spacing={1}>
                         <Tooltip title="Редагувати локацію">
@@ -261,6 +259,7 @@ const LocationsTable = ({
                             <Edit fontSize="small" />
                           </IconButton>
                         </Tooltip>
+
                         <Tooltip title={loc.isActive ? 'Спочатку деактивуйте локацію' : 'Видалити локацію'}>
                           <span>
                             <IconButton
@@ -279,7 +278,7 @@ const LocationsTable = ({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
                       {search ? 'За вашим запитом нічого не знайдено' : 'Локації не знайдено'}
                     </Typography>
