@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, MenuItem } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
+import CustomDatePicker from '../ui/DatePicker';
+
 
 const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants = [], meters = [] }) => {
   const theme = useTheme();
@@ -195,49 +197,31 @@ const MeterTenantForm = ({ open, onClose, onSubmit, initialData = {}, error, ten
           ))}
         </TextField>
 
-        <TextField
-          name="startDate"
-          label="Дата початку"
-          type="date"
-          value={formData.startDate || ''}
-          onChange={handleChange}
-          fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
+        <CustomDatePicker
+          value={formData.startDate || null}
+          onChange={(newValue) => {
+            handleChange({
+              target: { name: 'startDate', value: newValue },
+            });
           }}
+          label="Дата початку"
+          maxDate={formData.endDate || undefined}
           error={!!formErrors.startDate}
           helperText={formErrors.startDate || ' '}
-          InputLabelProps={{ shrink: true }}
+          sx={{ mb: 2 }}
         />
 
-        <TextField
-          name="endDate"
-          label="Дата завершення"
-          type="date"
-          value={formData.endDate || ''}
-          onChange={handleChange}
-          fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
+        <CustomDatePicker
+          value={formData.endDate || null}
+          onChange={(newValue) => {
+            handleChange({
+              target: { name: 'endDate', value: newValue },
+            });
           }}
+          label="Дата завершення"
+          minDate={formData.startDate || undefined}
           error={!!formErrors.endDate}
           helperText={formErrors.endDate || ' '}
-          InputLabelProps={{ shrink: true }}
         />
       </DialogContent>
 

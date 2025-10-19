@@ -9,6 +9,7 @@ import SearchField from "../ui/SearchField";
 import MeterReadingsTable from "./MeterReadingsTable";
 import MeterReadingForm from "./MeterReadingForm";
 import { useMeterReadings } from "../../hooks/useMeterReadings";
+import CustomDatePicker from "../ui/DatePicker";
 
 const MeterReadingsSection = ({ initialExpanded = true }) => {
   const { meterReadings, loading, fetchReadings, removeReading, addReading, editReading, error, setError } =
@@ -22,9 +23,9 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
   const [orderBy, setOrderBy] = useState("reading_date");
   const [order, setOrder] = useState("desc");
 
-  useEffect(() => {
-    fetchReadings();
-  }, [fetchReadings]);
+  // useEffect(() => {
+  //   fetchReadings();
+  // }, [fetchReadings]);
 
   const handleToggle = () => setExpanded(!expanded);
   const handleOpenForm = (reading = null) => {
@@ -49,7 +50,7 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
       setFormOpen(false);
       setReadingToEdit(null);
 
-      await fetchReadings();  
+      // await fetchReadings();  
     } catch (err) {
       console.error("Помилка:", err);
     }
@@ -136,15 +137,11 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
-                <TextField
-                  type="date"
-                  size="small"
+                <CustomDatePicker
+                  value={dateFilter || null}
+                  onChange={(newValue) => setDateFilter(newValue || '')}
                   label="Фільтр по даті"
-                  InputLabelProps={{ shrink: true }}
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  sx={{ ml: "auto", }}
-            
+                  sx={{ ml: "auto", minWidth: 200 }}
                 />
               </Box>
             </Box>

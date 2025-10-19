@@ -1,19 +1,9 @@
 import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Alert,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-} from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, CircularProgress, IconButton, FormControl, InputLabel, Select, MenuItem, } from '@mui/material';
+import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
-import useMediaQuery from '../../hooks/useMediaQuery';
+import { useMediaQuery } from '@mui/material';
+
 
 const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locations = [], tenants = [] }) => {
   const theme = useTheme();
@@ -33,6 +23,9 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
         tenant_id: initialData.tenant ? initialData.tenant.id : initialData.tenant_id ?? null,
         occupied_area: initialData.occupied_area ?? '',
       });
+      setFormErrors({});
+    } else {
+      setFormData({});
       setFormErrors({});
     }
   }, [open, initialData]);
@@ -84,20 +77,12 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           ? null
           : tenants.find((t) => t.id === formData.tenant_id)?.name || undefined,
     });
-
-    setFormData({});
-  };
-
-  const handleClose = () => {
-    setFormData({});
-    setFormErrors({});
-    onClose();
   };
 
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
+      onClose={onClose}
       fullWidth
       maxWidth="sm"
       fullScreen={isMobile}
@@ -115,9 +100,15 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           fontWeight: 600,
           px: isMobile ? 2 : 3,
           py: isMobile ? 2 : 2.5,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
         {initialData.id ? 'Редагувати локацію' : 'Додати локацію'}
+        <IconButton onClick={onClose} size="small">
+          <Close />
+        </IconButton>
       </DialogTitle>
 
       <DialogContent sx={{ px: isMobile ? 2 : 3, pb: 1 }}>
@@ -193,10 +184,25 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           flexDirection: isMobile ? 'column-reverse' : 'row',
         }}
       >
-        <Button variant="outlined" onClick={handleClose} fullWidth={isMobile}>
+        <Button
+          variant="outlined"
+          onClick={onClose}
+          fullWidth={isMobile}
+          sx={{
+            order: isMobile ? 1 : 0,
+          }}
+        >
           Скасувати
         </Button>
-        <Button variant="contained" onClick={handleSubmit} fullWidth={isMobile}>
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          fullWidth={isMobile}
+          sx={{
+            order: isMobile ? 0 : 1,
+            marginLeft: '0 !important',
+          }}
+        >
           Зберегти
         </Button>
       </DialogActions>

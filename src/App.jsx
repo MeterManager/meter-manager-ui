@@ -13,13 +13,6 @@ import ActPage from './pages/ActPage';
 const App = () => {
   const { isLoading, error, isBlocked, isAuthenticated } = useAuthContext();
 
-  console.log('🔍 App render:', {
-    isLoading,
-    error,
-    isBlocked,
-    isAuthenticated,
-  });
-
   if (isLoading) {
     return (
       <ThemeProvider theme={theme}>

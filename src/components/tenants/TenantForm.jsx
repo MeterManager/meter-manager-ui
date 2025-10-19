@@ -1,5 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, MenuItem } from '@mui/material';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  Alert,
+  MenuItem,
+  IconButton,
+  CircularProgress,
+} from '@mui/material';
+import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
 
@@ -13,17 +25,26 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
 
   useEffect(() => {
     if (open) {
-      setFormData({
+      const initialFormData = {
         name: initialData.name || '',
         contactPerson: initialData.contactPerson || '',
         phone: initialData.phone || '',
         email: initialData.email || '',
         isActive: initialData.isActive ?? true,
         id: initialData.id,
-      });
+      };
+      setFormData(initialFormData);
+      validateForm(initialFormData);
+    } else {
+      setFormData({});
       setFormErrors({});
     }
   }, [open, initialData]);
+
+  const validatePhone = (phone) => {
+    const phoneRegex = /^\+380[0-9]{9}$/;
+    return phone ? phoneRegex.test(phone) : true;
+  };
 
   const validateField = (name, value) => {
     let error = '';
@@ -40,10 +61,13 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
     if (name === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       error = 'Невірний формат email.';
     }
+    if (name === 'phone' && value && !validatePhone(value)) {
+      error = 'Номер телефону має бути у форматі +380xxxxxxxxx (лише цифри)';
+    }
 
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
   };
-
+    
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -53,26 +77,42 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.name) errors.name = "Назва орендаря обов'язкова.";
+    if (!data.name) errors.name = "Назва орендаря обов'язкова.";
+    if (!data.locationId) errors.locationId = "Локація обов'язкова.";
+    if (tenants.some((t) => t.name.trim() === data.name.trim() && t.id !== initialData.id)) {
    
 
     if (tenants.some((t) => t.name.trim() === formData.name.trim() && t.id !== initialData.id)) {
       errors.name = 'Орендар з такою назвою вже існує.';
     }
-
-    if (formData.occupiedArea && parseFloat(formData.occupiedArea) < 0) {
+    if (data.occupiedArea && parseFloat(data.occupiedArea) < 0) {
       errors.occupiedArea = "Площа не може бути від'ємною.";
     }
-
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       errors.email = 'Невірний формат email.';
     }
-
+    if (data.phone && !validatePhone(data.phone)) {
+      errors.phone = 'Номер телефону має бути у форматі +380xxxxxxxxx (лише цифри)';
+    }
+    setFormErrors(errors);
     return errors;
   };
 
-  const handleSubmit = () => {
-    const errors = validateForm();
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    // Обмежуємо введення телефону лише цифрами та символом +
+    if (name === 'phone') {
+      const cleanedValue = value.replace(/[^0-9+]/g, '');
+      setFormData({ ...formData, [name]: cleanedValue });
+      validateField(name, cleanedValue);
+    } else {
+      setFormData({ ...formData, [name]: value });
+      validateField(name, value);
+    }
+  };
+
+  const handleSubmit = async () => {
+    const errors = validateForm(formData);
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -80,6 +120,8 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
 
     onSubmit({
       ...formData,
+      locationId: parseInt(formData.locationId),
+      occupiedArea: formData.occupiedArea ? parseFloat(formData.occupiedArea) : null,
       isActive: formData.isActive ?? true,
     });
 
@@ -91,6 +133,8 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
     setFormErrors({});
     onClose();
   };
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
     <Dialog
@@ -113,9 +157,15 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           fontWeight: 600,
           px: isMobile ? 2 : 3,
           py: isMobile ? 2 : 2.5,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
         {initialData.id ? 'Редагувати орендаря' : 'Додати орендаря'}
+        <IconButton onClick={handleClose} size="small">
+          <Close />
+        </IconButton>
       </DialogTitle>
 
       <DialogContent
@@ -196,7 +246,9 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
               fontSize: isMobile ? '1rem' : '1rem',
             },
           }}
-          helperText={formErrors.phone || ' '}
+          error={!!formErrors.phone}
+          helperText={formErrors.phone || 'Формат: +380xxxxxxxxx'}
+          inputProps={{ pattern: '[+0-9]*' }}
         />
 
         <TextField
@@ -238,6 +290,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           variant="outlined"
           onClick={handleClose}
           fullWidth={isMobile}
+          disabled={isSubmitting}
           sx={{
             order: isMobile ? 1 : 0,
           }}
@@ -248,16 +301,18 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           variant="contained"
           onClick={handleSubmit}
           fullWidth={isMobile}
+          disabled={isSubmitting}
           sx={{
             order: isMobile ? 0 : 1,
             marginLeft: '0 !important',
           }}
         >
-          Зберегти
+          {isSubmitting ? <CircularProgress size={24} /> : 'Зберегти'}
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
+}
 
 export default TenantForm;

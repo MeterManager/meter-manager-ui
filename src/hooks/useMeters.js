@@ -1,12 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import * as metersApi from '../api/metersApi';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthRequest } from './useAuthRequest';
+import { useErrorHandler } from './useErrorHandler';
 
-const fetcher = async (url, getToken, search = '') => {
-  const token = await getToken();
-  if (!token) throw new Error('No token available');
-  
+const fetcher = async (token, search = '') => {
   const response = await metersApi.getMeters(token, search);
   return response.data.map((m) => ({
     ...m,
@@ -15,76 +13,64 @@ const fetcher = async (url, getToken, search = '') => {
 };
 
 export const useMeters = () => {
-  const { isAuthenticated, isLoading, getToken, isBlocked } = useAuthContext();
+  const { canRequest, withToken } = useAuthRequest();
+  const { error, setError, handleError } = useErrorHandler('Помилка при завантаженні лічильників');
   const [search, setSearch] = useState('');
-  const [error, setError] = useState(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
-  const swrKey = isAuthenticated && !isLoading && !isBlocked && getToken ? 
-    ['meters', getToken, search] : null;
+  const swrKey = canRequest ? ['meters', search] : null;
 
   const {
     data: meters = [],
-    error: swrError,
     isLoading: loading,
     mutate: mutateMeters,
-  } = useSWR(swrKey, ([url, getToken, search]) => fetcher(url, getToken, search), {
-    onError: (err) => {
-      if (err.response?.status === 403) return;
-      setError('Помилка при завантаженні лічильників');
-      console.error('SWR Error:', err);
-    },
+  } = useSWR(swrKey, ([, search]) => withToken(fetcher, search), {
+    onError: handleError,
     revalidateOnFocus: false,
     dedupingInterval: 5000,
     refreshInterval: 30000,
   });
 
-  const activeMeters = useMemo(() => {
-    return meters.filter((meter) => meter.isActive);
-  }, [meters]);
+  const activeMeters = useMemo(() => meters.filter((meter) => meter.isActive), [meters]);
 
-  const metersByResourceType = useMemo(() => {
-    return meters.reduce((acc, meter) => {
-      const resourceType = meter.resource_type_id || 'other';
-      if (!acc[resourceType]) {
-        acc[resourceType] = [];
-      }
-      acc[resourceType].push(meter);
-      return acc;
-    }, {});
-  }, [meters]);
+  const metersByResourceType = useMemo(
+    () =>
+      meters.reduce((acc, meter) => {
+        const resourceType = meter.resource_type_id || 'other';
+        if (!acc[resourceType]) acc[resourceType] = [];
+        acc[resourceType].push(meter);
+        return acc;
+      }, {}),
+    [meters]
+  );
 
-  const metersByLocation = useMemo(() => {
-    return meters.reduce((acc, meter) => {
-      const locationId = meter.location_id || 'other';
-      if (!acc[locationId]) {
-        acc[locationId] = [];
-      }
-      acc[locationId].push(meter);
-      return acc;
-    }, {});
-  }, [meters]);
+  const metersByLocation = useMemo(
+    () =>
+      meters.reduce((acc, meter) => {
+        const locationId = meter.location_id || 'other';
+        if (!acc[locationId]) acc[locationId] = [];
+        acc[locationId].push(meter);
+        return acc;
+      }, {}),
+    [meters]
+  );
 
-  const metersByTenant = useMemo(() => {
-    return meters.reduce((acc, meter) => {
-      const tenantId = meter.tenant_id || 'unassigned';
-      if (!acc[tenantId]) {
-        acc[tenantId] = [];
-      }
-      acc[tenantId].push(meter);
-      return acc;
-    }, {});
-  }, [meters]);
+  const metersByTenant = useMemo(
+    () =>
+      meters.reduce((acc, meter) => {
+        const tenantId = meter.tenant_id || 'unassigned';
+        if (!acc[tenantId]) acc[tenantId] = [];
+        acc[tenantId].push(meter);
+        return acc;
+      }, {}),
+    [meters]
+  );
 
   const addMeter = useCallback(
     async (data) => {
-      if (isBlocked) throw new Error('User is blocked');
-      
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-
       try {
         setError(null);
-
+        setIsActionLoading(true);
         const tempId = Date.now();
         const optimisticMeter = {
           ...data,
@@ -96,11 +82,9 @@ export const useMeters = () => {
         };
 
         mutateMeters([...meters, optimisticMeter], false);
-
-        const response = await metersApi.createMeter(token, data);
+        const response = await withToken(metersApi.createMeter, data);
 
         mutateMeters();
-
         mutate('metersTenant');
         mutate('deliveries');
         mutate('resourceDeliveries');
@@ -115,23 +99,20 @@ export const useMeters = () => {
         return response;
       } catch (error) {
         mutateMeters();
-        setError('Помилка при додаванні лічільника');
+        handleError(error, 'Помилка при додаванні лічильника');
         throw error;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [meters, mutateMeters, getToken, isBlocked]
+    [meters, mutateMeters, withToken]
   );
 
   const editMeter = useCallback(
     async (id, data) => {
-      if (isBlocked) throw new Error('User is blocked');
-      
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-
       try {
         setError(null);
-
+        setIsActionLoading(true);
         const updatedMeters = meters.map((meter) =>
           meter.id === id
             ? {
@@ -144,7 +125,7 @@ export const useMeters = () => {
         );
         mutateMeters(updatedMeters, false);
 
-        const response = await metersApi.updateMeter(token, id, data);
+        const response = await withToken(metersApi.updateMeter, id, data);
 
         mutateMeters();
         mutate('metersTenant');
@@ -156,27 +137,24 @@ export const useMeters = () => {
         return response;
       } catch (error) {
         mutateMeters();
-        setError('Помилка при редагуванні лічільника');
+        handleError(error, 'Помилка при редагуванні лічильника');
         throw error;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [meters, mutateMeters, getToken, isBlocked]
+    [meters, mutateMeters, withToken]
   );
 
   const removeMeter = useCallback(
     async (id) => {
-      if (isBlocked) throw new Error('User is blocked');
-      
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-
       try {
         setError(null);
-
+        setIsActionLoading(true);
         const filteredMeters = meters.filter((meter) => meter.id !== id);
         mutateMeters(filteredMeters, false);
 
-        await metersApi.deleteMeter(token, id);
+        await withToken(metersApi.deleteMeter, id);
 
         mutateMeters();
         mutate('metersTenant');
@@ -190,27 +168,22 @@ export const useMeters = () => {
         mutate('resourceTypes');
       } catch (error) {
         mutateMeters();
-        setError('Помилка при видаленні лічільника');
+        handleError(error, 'Помилка при видаленні лічильника');
         throw error;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [meters, mutateMeters, getToken, isBlocked]
+    [meters, mutateMeters, withToken]
   );
 
   const updateMeterStatus = useCallback(
     async (id, isActive) => {
-      if (isBlocked) throw new Error('User is blocked');
-      
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-      
       const meter = meters.find((m) => m.id === id);
-
-      if (!meter) throw new Error('Лічільник не знайдено');
-
+      if (!meter) throw new Error('Лічильник не знайдено');
       try {
         setError(null);
-
+        setIsActionLoading(true);
         const updatedMeters = meters.map((m) =>
           m.id === id
             ? {
@@ -223,7 +196,7 @@ export const useMeters = () => {
         );
         mutateMeters(updatedMeters, false);
 
-        const response = await metersApi.updateMeter(token, id, {
+        const response = await withToken(metersApi.updateMeter, id, {
           ...meter,
           is_active: isActive,
         });
@@ -237,11 +210,13 @@ export const useMeters = () => {
         return response;
       } catch (error) {
         mutateMeters();
-        setError('Помилка при оновленні статусу лічільника');
+        handleError(error, 'Помилка при оновленні статусу лічильника');
         throw error;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [meters, mutateMeters, getToken, isBlocked]
+    [meters, mutateMeters, withToken]
   );
 
   const refreshMeters = useCallback(() => {
@@ -249,44 +224,32 @@ export const useMeters = () => {
   }, [mutateMeters]);
 
   const getMetersByLocation = useCallback(
-    (locationId) => {
-      return meters.filter((meter) => meter.location_id === locationId);
-    },
+    (locationId) => meters.filter((meter) => meter.location_id === locationId),
     [meters]
   );
 
   const getMetersByResourceType = useCallback(
-    (resourceTypeId) => {
-      return meters.filter((meter) => meter.resource_type_id === resourceTypeId);
-    },
+    (resourceTypeId) => meters.filter((meter) => meter.resource_type_id === resourceTypeId),
     [meters]
   );
 
   const getMetersByTenant = useCallback(
-    (tenantId) => {
-      return meters.filter((meter) => meter.tenant_id === tenantId);
-    },
+    (tenantId) => meters.filter((meter) => meter.tenant_id === tenantId),
     [meters]
   );
 
   const getActiveMetersByLocation = useCallback(
-    (locationId) => {
-      return activeMeters.filter((meter) => meter.location_id === locationId);
-    },
+    (locationId) => activeMeters.filter((meter) => meter.location_id === locationId),
     [activeMeters]
   );
 
   const getActiveMetersByResourceType = useCallback(
-    (resourceTypeId) => {
-      return activeMeters.filter((meter) => meter.resource_type_id === resourceTypeId);
-    },
+    (resourceTypeId) => activeMeters.filter((meter) => meter.resource_type_id === resourceTypeId),
     [activeMeters]
   );
 
   const getActiveMetersByTenant = useCallback(
-    (tenantId) => {
-      return activeMeters.filter((meter) => meter.tenant_id === tenantId);
-    },
+    (tenantId) => activeMeters.filter((meter) => meter.tenant_id === tenantId),
     [activeMeters]
   );
 
@@ -298,18 +261,18 @@ export const useMeters = () => {
     [meters]
   );
 
-  const getMeterDependencies = useCallback(async (id) => {
-    const token = await getToken();
-    if (!token) throw new Error('No token available');
-
-    try {
-      const response = await metersApi.getMeterDependencies(token, id);
-      return response.data;
-    } catch (err) {
-      setError('Помилка при отриманні залежностей лічільника');
-      throw err;
-    }
-  }, [getToken]);
+  const getMeterDependencies = useCallback(
+    async (id) => {
+      try {
+        const response = await withToken(metersApi.getMeterDependencies, id);
+        return response.data;
+      } catch (err) {
+        handleError(err, 'Помилка при отриманні залежностей лічильника');
+        throw err;
+      }
+    },
+    [withToken]
+  );
 
   return {
     meters,
@@ -317,7 +280,7 @@ export const useMeters = () => {
     metersByResourceType,
     metersByLocation,
     metersByTenant,
-    loading,
+    loading: loading || isActionLoading,
     search,
     getMeterDependencies,
     setSearch,
@@ -333,7 +296,7 @@ export const useMeters = () => {
     getActiveMetersByResourceType,
     getActiveMetersByTenant,
     isAvailableForAssignment,
-    error: error || swrError,
+    error,
     setError,
   };
 };

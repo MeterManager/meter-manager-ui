@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, MenuItem } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
+import CustomDatePicker from '../ui/DatePicker';
 
 const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, locations, resourceTypes }) => {
   const theme = useTheme();
@@ -229,47 +230,28 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
           helperText={formErrors.price || ' '}
         />
 
-        <TextField
-          name="valid_from"
-          label="Діє з"
-          type="date"
-          InputLabelProps={{ shrink: true }}
-          value={formData.valid_from || ''}
-          onChange={handleChange}
-          fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
+        <CustomDatePicker
+          value={formData.valid_from || null}
+          onChange={(newValue) => {
+            handleChange({
+              target: { name: 'valid_from', value: newValue },
+            });
           }}
+          label="Діє з"
           error={!!formErrors.valid_from}
           helperText={formErrors.valid_from || ' '}
+          sx={{ mb: 2 }}
         />
 
-        <TextField
-          name="valid_to"
-          label="Діє до (необов'язково)"
-          type="date"
-          InputLabelProps={{ shrink: true }}
-          value={formData.valid_to || ''}
-          onChange={handleChange}
-          fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
+        <CustomDatePicker
+          value={formData.valid_to || null}
+          onChange={(newValue) => {
+            handleChange({
+              target: { name: 'valid_to', value: newValue },
+            });
           }}
+          label="Діє до (необов'язково)"
+          minDate={formData.valid_from || undefined}
           error={!!formErrors.valid_to}
           helperText={formErrors.valid_to || 'Залиште порожнім для безстрокового тарифу'}
         />

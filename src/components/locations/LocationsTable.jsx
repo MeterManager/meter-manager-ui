@@ -80,7 +80,7 @@ const LocationsTable = ({
               {location.address}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {loc.occupied_area ?? '—'}
+              {location.occupied_area ?? '—'}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
               Орендар: {location.tenant ? location.tenant.name : '— Вільна —'}
