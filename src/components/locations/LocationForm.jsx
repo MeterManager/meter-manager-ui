@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, CircularProgress, IconButton, FormControl, InputLabel, Select, MenuItem, } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, IconButton, FormControl, InputLabel, Select, MenuItem, } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
@@ -32,14 +32,31 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
 
   const validateField = (name, value) => {
     let error = '';
-    if (name === 'name') {
-      if (!value) {
-        error = "Назва обов'язкова.";
-      } else if (locations.some((loc) => loc.name.trim() === value.trim() && loc.id !== initialData.id)) {
-        error = 'Локація з такою назвою вже існує.';
+    switch (name) {
+      case 'name':
+        if (!value) {
+          error = "Назва обов'язкова.";
+        } else if (locations.some((loc) => loc.name.trim() === value.trim() && loc.id !== initialData.id)) {
+          error = 'Локація з такою назвою вже існує.';
+        }
+        break;
+      case 'address':
+        if (!value) {
+          error = "Адреса обов'язкова.";
+        }
+        break;
+      case 'occupied_area':
+        const numValue = value ? parseFloat(String(value).trim()) : null;
+        
+      if (value && (isNaN(numValue) || numValue < 0 || numValue > 100)) {
+        error = 'Має бути числом від 0 до 100.';
       }
+      break;
+    default:
+    break;
     }
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
+      return error;
   };
 
   const handleChange = (e) => {
@@ -53,29 +70,34 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
     setFormData((s) => ({ ...s, tenant_id: value }));
   };
 
-  const validateForm = () => {
-    const errors = {};
-    if (!formData.name) errors.name = "Назва обов'язкова.";
-    if (!formData.address) errors.address = "Адреса обов'язкова.";
-    return errors;
-  };
-
   const handleSubmit = () => {
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
+    // Запускаємо валідацію для всіх полів перед відправкою
+    const fieldsToValidate = ['name', 'address', 'occupied_area'];
+    const errors = {};
+    let hasError = false;
+
+    fieldsToValidate.forEach(field => {
+        const error = validateField(field, formData[field]);
+        if (error) {
+            errors[field] = error;
+            hasError = true;
+        }
+    });
+
+    if (hasError) {
+     setFormErrors(errors);
+     return;
     }
 
     onSubmit({
-      ...formData,
-      isActive: formData.isActive,
-      tenant_id: formData.tenant_id === '' ? null : formData.tenant_id,
-      occupied_area: formData.occupied_area || null, 
-      tenantName:
-        formData.tenant_id === null
-          ? null
-          : tenants.find((t) => t.id === formData.tenant_id)?.name || undefined,
+     ...formData,
+     isActive: formData.isActive,
+     tenant_id: formData.tenant_id === '' ? null : formData.tenant_id,
+     occupied_area: formData.occupied_area ? parseFloat(String(formData.occupied_area).trim()) : null,
+     tenantName:
+       formData.tenant_id === null
+         ? null
+         : tenants.find((t) => t.id === formData.tenant_id)?.name || undefined,
     });
   };
 
@@ -154,6 +176,7 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           fullWidth
           variant="outlined"
           sx={{ mb: 2 }}
+          helperText={formErrors.occupied_area || ' '}
         />
 
 

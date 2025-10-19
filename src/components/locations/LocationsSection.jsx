@@ -6,6 +6,7 @@ import LocationForm from '../locations/LocationForm';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import { useLocations } from '../../hooks/useLocations';
 import { useTenants } from '../../hooks/useTenants';
+import { translateErrorMessage } from '../../utils/translateError';
 
 const LocationsSection = ({ initialExpanded = true }) => {
   const {
@@ -22,7 +23,7 @@ const LocationsSection = ({ initialExpanded = true }) => {
     setError,
     loading,
   } = useLocations();
-const { tenants: simpleTenants } = useTenants();
+  const { tenants: simpleTenants } = useTenants();
 
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
@@ -58,8 +59,9 @@ const { tenants: simpleTenants } = useTenants();
       setFormOpen(false);
       setEditingLocation(null);
     } catch (err) {
-      setError(err.message || 'Помилка при збереженні локації');
-      setSnackbar({ open: true, message: err.message || 'Помилка при збереженні локації', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     } finally {
       setIsActionLoading(false);
     }
@@ -68,13 +70,14 @@ const { tenants: simpleTenants } = useTenants();
   const handleFormClose = () => {
     setFormOpen(false);
     setEditingLocation(null);
+    setError(null);
   };
 
   const handleRemove = async (id) => {
     try {
       setIsActionLoading(true);
       const dependencies = await getDependencies(id);
-      
+
       if (dependencies.active_meters > 0 || dependencies.deliveries > 0 || dependencies.active_tenants > 0) {
         setConfirmDialog({
           open: true,
@@ -87,7 +90,8 @@ const { tenants: simpleTenants } = useTenants();
         setSnackbar({ open: true, message: 'Локацію успішно видалено', severity: 'success' });
       }
     } catch (err) {
-      setSnackbar({ open: true, message: err.message || 'Помилка при видаленні локації', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     } finally {
       setIsActionLoading(false);
     }
@@ -112,8 +116,9 @@ const { tenants: simpleTenants } = useTenants();
         });
       }
     } catch (err) {
-      setError(err.message || 'Помилка при оновленні статусу локації');
-      setSnackbar({ open: true, message: err.message || 'Помилка при оновленні статусу локації', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     } finally {
       setIsActionLoading(false);
     }
@@ -122,6 +127,7 @@ const { tenants: simpleTenants } = useTenants();
   const handleConfirmAction = async () => {
     try {
       setIsActionLoading(true);
+
       if (confirmDialog.action === 'delete') {
         await removeLocation(confirmDialog.id);
         setSnackbar({
@@ -130,26 +136,7 @@ const { tenants: simpleTenants } = useTenants();
           severity: 'success',
         });
       } else if (confirmDialog.action === 'deactivate') {
-        const loc = locations.find((l) => l.id === confirmDialog.id);
-        if (!loc) throw new Error('Локацію не знайдено');
-        
-        const token = await useLocations().getToken();
-        if (!token) throw new Error('Токен недоступний');
-
-        const updatedLocations = locations.map((location) =>
-          location.id === confirmDialog.id ? { ...location, isActive: false } : location
-        );
-        useLocations().mutateLocations(updatedLocations, false);
-
-        const response = await locationApi.updateLocation(token, confirmDialog.id, {
-          name: loc.name,
-          address: loc.address,
-          is_active: false,
-        });
-
-        useLocations().mutateLocations();
-        useLocations().mutate('meters');
-
+        await updateLocationStatus(confirmDialog.id, false, true);
         setSnackbar({
           open: true,
           message: 'Локацію успішно деактивовано',
@@ -158,8 +145,9 @@ const { tenants: simpleTenants } = useTenants();
       }
       setConfirmDialog({ open: false, id: null, action: null, dependencies: null });
     } catch (err) {
-      setError(err.message || 'Помилка при виконанні дії');
-      setSnackbar({ open: true, message: err.message || 'Помилка при виконанні дії', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     } finally {
       setIsActionLoading(false);
     }
@@ -203,7 +191,7 @@ const { tenants: simpleTenants } = useTenants();
               setSearch={setSearch}
               onAdd={handleAdd}
               onEdit={handleEdit}
-              onRemove={handleRemove}          
+              onRemove={handleRemove}
               onStatusChange={handleUpdateStatus}
               setLocalError={setError}
               isLoading={loading || isActionLoading}

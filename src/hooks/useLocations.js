@@ -154,18 +154,19 @@ export const useLocations = () => {
   );
 
   const updateLocationStatus = useCallback(
-    async (id, is_active) => {
+    async (id, is_active, force = false) => {
       const loc = locations.find((l) => l.id === id);
       if (!loc) throw new Error('Локацію не знайдено');
       try {
         setError(null);
-        if (!is_active) {
+        if (!is_active && !force) {
           const dependencies = await withToken(locationApi.getLocationDependencies, id);
-          if (dependencies.data.active_meters > 0) {
-            const confirm = window.confirm(
-              `Ця дія деактивує ${dependencies.data.active_meters} активних лічильників. Продовжити?`
-            );
-            if (!confirm) return;
+          const hasDependencies = dependencies.data.active_meters > 0 || dependencies.data.active_tenants > 0;
+          if (hasDependencies) {
+            return {
+              requiresConfirmation: true,
+              dependencies: dependencies.data,
+            };
           }
         }
         const payload = { name: loc.name, address: loc.address, is_active };
@@ -173,17 +174,26 @@ export const useLocations = () => {
           location.id === id ? { ...location, isActive: is_active } : location
         );
         mutateLocations(updatedLocations, false);
+
         const response = await withToken(locationApi.updateLocation, id, payload);
+
         mutateLocations();
-        mutate('meters');
-        return response;
+        if (!is_active) {
+          mutate('meters');
+          mutate('tenants');
+        }
+        
+        return {
+            requiresConfirmation: false,
+            data: response
+        };
       } catch (err) {
         mutateLocations();
         handleError(err, 'Помилка при оновленні статусу локації');
         throw err;
       }
     },
-    [locations, mutateLocations, withToken]
+    [locations, mutateLocations, withToken, handleError, setError]
   );
 
   const getDependencies = useCallback(
