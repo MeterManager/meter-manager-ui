@@ -1,19 +1,11 @@
 import { useState } from 'react';
-import {
-  Paper,
-  Box,
-  Typography,
-  Collapse,
-  IconButton,
-  Divider,
-  Snackbar,
-  Alert,
-} from '@mui/material';
+import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import ResourceTypesTable from '../resourceTypes/ResourceTypesTable';
 import ResourceTypeForm from '../resourceTypes/ResourceTypeForm';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import { useResourceTypes } from '../../hooks/useResourceTypes';
+import { translateErrorMessage } from '../../utils/translateError';
 
 const ResourceTypesSection = ({ initialExpanded = true }) => {
   const {
@@ -60,14 +52,16 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
       setFormOpen(false);
       setEditingResourceType(null);
     } catch (err) {
-      setError(err.message || 'Помилка при збереженні типу ресурсу');
-      setSnackbar({ open: true, message: err.message || 'Помилка при збереженні типу ресурсу', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     }
   };
 
   const handleFormClose = () => {
     setFormOpen(false);
     setEditingResourceType(null);
+    setError(null);
   };
 
   const handleRemove = (id) => {
@@ -83,8 +77,9 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
         severity: 'success',
       });
     } catch (err) {
-      setError(err.message || 'Помилка при оновленні статусу');
-      setSnackbar({ open: true, message: err.message || 'Помилка при оновленні статусу', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     }
   };
 
@@ -96,8 +91,9 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
       }
       setConfirmDialog({ open: false, id: null, action: null });
     } catch (err) {
-      setError(err.message || 'Помилка при виконанні дії');
-      setSnackbar({ open: true, message: err.message || 'Помилка при виконанні дії', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     }
   };
 

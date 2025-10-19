@@ -37,6 +37,7 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
       error = "Одиниці вимірювання обов'язкові.";
     }
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
+    return error;
   };
 
   const handleChange = (e) => {
@@ -45,19 +46,19 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
     validateField(name, value);
   };
 
-  const validateForm = () => {
-    const errors = {};
-    if (!formData.name) errors.name = "Тип ресурсу обов'язковий.";
-    else if (resourceTypes.some((t) => t.name.trim() === formData.name.trim() && t.id !== initialData.id)) {
-      errors.name = 'Тип ресурсу з такою назвою вже існує.';
-    }
-    if (!formData.unit) errors.unit = "Одиниці вимірювання обов'язкові.";
-    return errors;
-  };
-
   const handleSubmit = () => {
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
+    const fieldsToValidate = ['name', 'unit'];
+    const errors = {};
+    let hasError = false;
+
+    fieldsToValidate.forEach((field) => {
+      const error = validateField(field, formData[field]);
+      if (error) {
+        errors[field] = error;
+        hasError = true;
+      }
+    });
+    if (hasError) {
       setFormErrors(errors);
       return;
     }
@@ -69,8 +70,6 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
   };
 
   const handleClose = () => {
-    setFormData({});
-    setFormErrors({});
     onClose();
   };
 

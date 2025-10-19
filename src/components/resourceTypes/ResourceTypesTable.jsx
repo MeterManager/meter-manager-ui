@@ -21,6 +21,7 @@ import { Edit, Delete } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
+import { translateErrorMessage } from '../../utils/translateError';
 
 const ResourceTypesTable = ({
   resourceTypes,
@@ -41,7 +42,8 @@ const ResourceTypesTable = ({
     try {
       await onStatusChange(type.id, !type.isActive);
     } catch (err) {
-      setLocalError(err.message || 'Помилка при зміні статусу типу ресурсу');
+      const userMessage = translateErrorMessage(err.message);
+      setLocalError(userMessage);
     }
   };
 
@@ -49,7 +51,8 @@ const ResourceTypesTable = ({
     try {
       await onRemove(id);
     } catch (err) {
-      setLocalError(err.message || 'Помилка при видаленні типу ресурсу');
+      const userMessage = translateErrorMessage(err.message);
+      setLocalError(userMessage);
     }
   };
 
@@ -186,27 +189,16 @@ const ResourceTypesTable = ({
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell sx={{ width: isTablet ? '35%' : '30%', fontWeight: 600 }}>
-                  Тип ресурсу
-                </TableCell>
-                <TableCell sx={{ width: isTablet ? '35%' : '30%', fontWeight: 600 }}>
-                  Одиниця вимірювання
-                </TableCell>
-                <TableCell sx={{ width: isTablet ? '20%' : '20%', fontWeight: 600 }}>
-                  Статус
-                </TableCell>
-                <TableCell sx={{ width: '15%', fontWeight: 600 }}>
-                  Дії
-                </TableCell>
+                <TableCell sx={{ width: isTablet ? '35%' : '30%', fontWeight: 600 }}>Тип ресурсу</TableCell>
+                <TableCell sx={{ width: isTablet ? '35%' : '30%', fontWeight: 600 }}>Одиниця вимірювання</TableCell>
+                <TableCell sx={{ width: isTablet ? '20%' : '20%', fontWeight: 600 }}>Статус</TableCell>
+                <TableCell sx={{ width: '15%', fontWeight: 600 }}>Дії</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredTypes.length > 0 ? (
                 filteredTypes.map((type) => (
-                  <TableRow
-                    key={type.id}
-                    sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}
-                  >
+                  <TableRow key={type.id} sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}>
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
                         {type.name}
