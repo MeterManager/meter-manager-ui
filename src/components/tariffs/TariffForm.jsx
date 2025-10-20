@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, MenuItem } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, MenuItem, IconButton } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import CustomDatePicker from '../ui/DatePicker';
+import { Close } from '@mui/icons-material';
 
 const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, locations, resourceTypes }) => {
   const theme = useTheme();
@@ -51,6 +52,7 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
     }
 
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
+    return error;
   };
 
   const handleChange = (e) => {
@@ -64,36 +66,32 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
     validateField(name, value);
   };
 
-  const validateForm = () => {
-    const errors = {};
-    if (!formData.location_id) errors.location_id = "Локація обов'язкова.";
-    if (!formData.energy_resource_type_id) errors.energy_resource_type_id = "Тип ресурсу обов'язковий.";
-    if (!formData.price) {
-      errors.price = "Ціна обов'язкова.";
-    } else if (Number(formData.price) <= 0) {
-      errors.price = 'Ціна має бути більшою за 0.';
-    }
-    if (!formData.valid_from) errors.valid_from = "Дата початку обов'язкова.";
-    if (formData.valid_to && new Date(formData.valid_to) < new Date(formData.valid_from)) {
-      errors.valid_to = 'Дата завершення не може бути раніше дати початку.';
-    }
-    return errors;
-  };
-
   const handleSubmit = () => {
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
+    const fieldsToValidate = ['location_id', 'energy_resource_type_id', 'price', 'valid_from', 'valid_to'];
+    const errors = {};
+    let hasError = false;
+
+    fieldsToValidate.forEach((field) => {
+      const value = formData[field];
+      const error = validateField(field, value);
+      if (error) {
+        errors[field] = error;
+        hasError = true;
+      }
+    });
+
+    if (hasError) {
       setFormErrors(errors);
       return;
     }
-    
+
     const payload = { ...formData };
     if (!payload.valid_to) {
       delete payload.valid_to;
     }
-
-    onSubmit(payload);
-    setFormData({});
+    try {
+      onSubmit(payload);
+    } catch (err) {}
   };
 
   const handleClose = () => {
@@ -123,9 +121,15 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
           fontWeight: 600,
           px: isMobile ? 2 : 3,
           py: isMobile ? 2 : 2.5,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
         {initialData.id ? 'Редагувати тариф' : 'Додати тариф'}
+        <IconButton onClick={handleClose} size="small">
+        <Close />
+       </IconButton>
       </DialogTitle>
 
       <DialogContent

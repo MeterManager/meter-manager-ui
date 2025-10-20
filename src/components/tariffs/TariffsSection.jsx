@@ -6,6 +6,7 @@ import TariffForm from '../tariffs/TariffForm';
 import { useTariffs } from '../../hooks/useTariffs';
 import { useLocations } from '../../hooks/useLocations';
 import { useResourceTypes } from '../../hooks/useResourceTypes';
+import { translateErrorMessage } from '../../utils/translateError';
 
 const TariffsSection = ({ initialExpanded = true }) => {
   const { tariffs, search, setSearch, addTariff, editTariff, removeTariff, error, setError } = useTariffs();
@@ -42,14 +43,16 @@ const TariffsSection = ({ initialExpanded = true }) => {
       setFormOpen(false);
       setEditingTariff(null);
     } catch (err) {
-      setError(err.message || 'Помилка при збереженні тарифу');
-      setSnackbar({ open: true, message: err.message || 'Помилка при збереженні тарифу', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     }
   };
 
   const handleFormClose = () => {
     setFormOpen(false);
     setEditingTariff(null);
+    setError(null);
   };
 
   const handleRemove = async (id) => {
@@ -57,8 +60,9 @@ const TariffsSection = ({ initialExpanded = true }) => {
       await removeTariff(id);
       setSnackbar({ open: true, message: 'Тариф видалено', severity: 'success' });
     } catch (err) {
-      setError(err.message || 'Помилка при видаленні тарифу');
-      setSnackbar({ open: true, message: err.message || 'Помилка при видаленні тарифу', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     }
   };
 
@@ -125,7 +129,7 @@ const TariffsSection = ({ initialExpanded = true }) => {
         resourceTypes={resourceTypes}
       />
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>

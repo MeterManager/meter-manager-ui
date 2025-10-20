@@ -71,7 +71,6 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
   };
 
   const handleSubmit = () => {
-    // Запускаємо валідацію для всіх полів перед відправкою
     const fieldsToValidate = ['name', 'address', 'occupied_area'];
     const errors = {};
     let hasError = false;
