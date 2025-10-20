@@ -17,11 +17,16 @@ import {
   CardContent,
   Stack,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
+import { translateErrorMessage } from '../../utils/translateError';
 
 const MetersTable = ({
   meters,
@@ -37,12 +42,15 @@ const MetersTable = ({
   const isMobile = useMediaQuery('(max-width:600px)');
   const isTablet = useMediaQuery('(max-width:960px)');
   const [search, setSearch] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('');
+  const [selectedResourceType, setSelectedResourceType] = useState('');
 
   const handleStatusChange = async (meter) => {
     try {
       await updateMeterStatus(meter.id, !meter.isActive);
     } catch (err) {
-      setLocalError?.(err.message || 'Помилка при зміні статусу лічільника');
+      const userMessage = translateErrorMessage(err.message);
+      setLocalError?.(userMessage);
     }
   };
   const getLocationName = (locationId) => locations.find((l) => l.id === locationId)?.name || 'Невідома локація';
@@ -55,7 +63,12 @@ const MetersTable = ({
     const locationName = getLocationName(meter.location_id).toLowerCase();
     const resourceName = getResourceName(meter.energy_resource_type_id).toLowerCase();
     const query = search.toLowerCase();
-    return serial.includes(query) || locationName.includes(query) || resourceName.includes(query);
+
+    const locationMatch = !selectedLocation || meter.location_id === selectedLocation;
+    const resourceTypeMatch = !selectedResourceType || meter.energy_resource_type_id === selectedResourceType;
+    const searchMatch = serial.includes(query) || locationName.includes(query) || resourceName.includes(query);
+
+    return locationMatch && resourceTypeMatch && searchMatch;
   });
 
   const MobileMeterCard = ({ meter }) => (
@@ -139,7 +152,40 @@ const MetersTable = ({
         >
           Додати лічільник
         </Button>
-
+          <FormControl size="small" sx={{ minWidth: 150, width: isMobile ? '100%' : 'auto' }}>
+        <InputLabel>Локація</InputLabel>
+        <Select
+          value={selectedLocation}
+          label="Локація"
+          onChange={(e) => setSelectedLocation(e.target.value)}
+        >
+          <MenuItem value="">
+            <em>Всі локації</em>
+          </MenuItem>
+          {locations.map((loc) => (
+            <MenuItem key={loc.id} value={loc.id}>
+              {loc.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+      <FormControl size="small" sx={{ minWidth: 150, width: isMobile ? '100%' : 'auto' }}>
+        <InputLabel>Тип ресурсу</InputLabel>
+        <Select
+          value={selectedResourceType}
+          label="Тип ресурсу"
+          onChange={(e) => setSelectedResourceType(e.target.value)}
+        >
+          <MenuItem value="">
+            <em>Всі типи</em>
+          </MenuItem>
+          {energyResourceTypes.map((rt) => (
+            <MenuItem key={rt.id} value={rt.id}>
+              {rt.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
         <SearchField
           value={search}
           onChange={(e) => setSearch(e.target.value)}

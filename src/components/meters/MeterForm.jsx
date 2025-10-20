@@ -10,9 +10,11 @@ import {
   MenuItem,
   CircularProgress,
   Box,
+  IconButton
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
+import { Close } from '@mui/icons-material';
 
 const MeterForm = ({
   open,
@@ -47,8 +49,14 @@ const MeterForm = ({
 
   const validateField = (name, value) => {
     let error = '';
-    if (name === 'serial_number' && !value) {
-      error = "Серійний номер обов'язковий.";
+    if (name === 'serial_number') {
+      if (!value) {
+        error = "Серійний номер обов'язковий.";
+      } else if (Array.isArray(meters) && !loading) {
+        if (meters.some((m) => m.serial_number === value && m.id !== initialData.id)) {
+          error = 'Лічільник з таким серійним номером вже існує.';
+        }
+      }
     }
     if (name === 'location_id' && !value) {
       error = "Локація обов'язкова.";
@@ -57,6 +65,7 @@ const MeterForm = ({
       error = "Тип ресурсу обов'язковий.";
     }
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
+    return error;
   };
 
   const handleChange = (e) => {
@@ -65,33 +74,27 @@ const MeterForm = ({
     validateField(name, value);
   };
 
-  const validateForm = () => {
-    const errors = {};
-    if (!formData.serial_number) {
-      errors.serial_number = "Серійний номер обов'язковий.";
-    } else if (Array.isArray(meters) && !loading) {
-      if (meters.some((m) => m.serial_number === formData.serial_number && m.id !== initialData.id)) {
-        errors.serial_number = 'Лічільник з таким серійним номером вже існує.';
-      }
-    }
-    if (!formData.location_id) errors.location_id = "Локація обов'язкова.";
-    if (!formData.energy_resource_type_id) errors.energy_resource_type_id = "Тип ресурсу обов'язковий.";
-    return errors;
-  };
-
   const handleSubmit = () => {
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
+    const fieldsToValidate = ['serial_number', 'location_id', 'energy_resource_type_id'];
+    const errors = {};
+    let hasError = false;
+
+    fieldsToValidate.forEach((field) => {
+      const error = validateField(field, formData[field]);
+      if (error) {
+        errors[field] = error;
+        hasError = true;
+      }
+    });
+
+    if (hasError) {
       setFormErrors(errors);
       return;
     }
-
     onSubmit({
       ...formData,
-      isActive: formData.isActive ?? initialData.isActive ?? false,
+      isActive: formData.isActive ?? initialData.isActive ?? false, // Переконайся, що isActive є в formData
     });
-
-    setFormData({});
   };
 
   const handleClose = () => {
@@ -121,9 +124,15 @@ const MeterForm = ({
           fontWeight: 600,
           px: isMobile ? 2 : 3,
           py: isMobile ? 2 : 2.5,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
         {initialData.id ? 'Редагувати лічильник' : 'Додати лічильник'}
+        <IconButton onClick={handleClose} size="small">
+          <Close />
+         </IconButton>
       </DialogTitle>
 
       <DialogContent

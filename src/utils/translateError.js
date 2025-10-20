@@ -1,6 +1,47 @@
 export const translateErrorMessage = (errorMessage) => {
   const error = String(errorMessage || '');
 
+  if (error.includes('Meter with this serial number already exists')) {
+    return 'Лічильник з таким серійним номером вже існує.';
+  }
+  if (error.includes('Meter not found')) {
+    return 'Лічильник не знайдено.';
+  }
+  if (error.includes('Cannot create meter with inactive location')) {
+    return 'Неможливо створити лічильник - локація неактивна.';
+  }
+  if (error.includes('Cannot create meter with inactive energy resource type')) {
+    return 'Неможливо створити лічильник - тип ресурсу неактивний.';
+  }
+  if (error.includes('Cannot update meter with inactive location')) {
+    return 'Неможливо оновити лічильник - локація неактивна.';
+  }
+  if (error.includes('Cannot update meter with inactive energy resource type')) {
+    return 'Неможливо оновити лічильник - тип ресурсу неактивний.';
+  }
+  if (error.includes('Cannot delete active meter')) {
+    return 'Неможливо видалити активний лічильник. Спочатку деактивуйте його.';
+  }
+
+  if (error.includes('Cannot assign inactive meter')) {
+    return 'Неможливо призначити неактивний лічильник.';
+  }
+  if (error.includes('Cannot assign meter with inactive location')) {
+    return 'Неможливо призначити лічильник з неактивною локацією.';
+  }
+  if (error.includes('Cannot assign meter with inactive energy resource type')) {
+    return 'Неможливо призначити лічильник з неактивним типом ресурсу.';
+  }
+  if (error.includes('Cannot assign to inactive tenant')) {
+    return 'Неможливо призначити лічильник неактивному орендарю.';
+  }
+  if (error.includes('Overlapping meter tenant assignment exists')) {
+    return 'Для цього лічильника та орендаря вже існує призначення на цей період.';
+  }
+  if (error.includes('Meter tenant assignment not found')) {
+    return 'Призначення лічильника орендарю не знайдено.';
+  }
+
   if (error.includes('Overlapping tariff period exists') || error.includes('Updated period overlaps')) {
     return 'Тариф для цієї локації та ресурсу на цей період вже існує.';
   }

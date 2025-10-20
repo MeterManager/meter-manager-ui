@@ -6,6 +6,7 @@ import MeterForm from './MeterForm';
 import { useMeters } from '../../hooks/useMeters';
 import { useLocations } from '../../hooks/useLocations';
 import { useResourceTypes } from '../../hooks/useResourceTypes';
+import { translateErrorMessage } from '../../utils/translateError';
 
 const MetersSection = ({ initialExpanded = true }) => {
   const [expanded, setExpanded] = useState(initialExpanded);
@@ -33,6 +34,7 @@ const MetersSection = ({ initialExpanded = true }) => {
   const handleFormClose = () => {
     setFormOpen(false);
     setEditingMeter(null);
+    setError(null);
   };
 
   const handleFormSubmit = async (formData) => {
@@ -49,7 +51,8 @@ const MetersSection = ({ initialExpanded = true }) => {
       setExpanded(true);
     } catch (err) {
       console.error(err);
-      setSnackbar({ open: true, message: err.message || 'Помилка при збереженні лічильника', severity: 'error' });
+    const userMessage = translateErrorMessage(err.message);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     }
   };
 
@@ -64,7 +67,8 @@ const MetersSection = ({ initialExpanded = true }) => {
       }
     } catch (err) {
       console.error(err);
-      setSnackbar({ open: true, message: err.message || 'Помилка при видаленні лічильника', severity: 'error' });
+    const userMessage = translateErrorMessage(err.message);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     }
   };
 
@@ -74,8 +78,9 @@ const MetersSection = ({ initialExpanded = true }) => {
       setSnackbar({ open: true, message: 'Лічильник видалено', severity: 'success' });
       setConfirmDialog({ open: false, id: null, dependencies: null });
     } catch (err) {
-      setSnackbar({ open: true, message: err.message || 'Помилка при видаленні лічильника', severity: 'error' });
-      setConfirmDialog({ open: false, id: null, dependencies: null });
+      const userMessage = translateErrorMessage(err.message);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      setConfirmDialog({ open: false, id: null, dependencies: null });
     }
   };
 
@@ -85,7 +90,8 @@ const MetersSection = ({ initialExpanded = true }) => {
       setSnackbar({ open: true, message: `Лічильник успішно ${isActive ? 'активовано' : 'деактивовано'}`, severity: 'success' });
     } catch (err) {
       console.error(err);
-      setSnackbar({ open: true, message: err.message || 'Помилка при зміні статусу лічильника', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message); // <-- ВИПРАВЛЕНО
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     }
   };
 
@@ -157,7 +163,7 @@ const MetersSection = ({ initialExpanded = true }) => {
       </Dialog>
 
       <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>
