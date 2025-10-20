@@ -7,7 +7,6 @@ import {
   TextField,
   Button,
   Alert,
-  MenuItem,
   IconButton,
   CircularProgress,
 } from '@mui/material';
@@ -25,16 +24,15 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
 
   useEffect(() => {
     if (open) {
-      const initialFormData = {
+      setFormData({
         name: initialData.name || '',
         contactPerson: initialData.contactPerson || '',
         phone: initialData.phone || '',
         email: initialData.email || '',
         isActive: initialData.isActive ?? true,
         id: initialData.id,
-      };
-      setFormData(initialFormData);
-      validateForm(initialFormData);
+      });
+      setFormErrors({});
     } else {
       setFormData({});
       setFormErrors({});
@@ -55,52 +53,19 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
         error = 'Орендар з такою назвою вже існує.';
       }
     }
-    if (name === 'occupiedArea' && value && parseFloat(value) < 0) {
-      error = "Площа не може бути від'ємною.";
-    }
     if (name === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       error = 'Невірний формат email.';
     }
-    if (name === 'phone' && value && !validatePhone(value)) {
-      error = 'Номер телефону має бути у форматі +380xxxxxxxxx (лише цифри)';
+    if (name === 'phone' && value && !/^\+380[0-9]{9}$/.test(value)) {
+      error = 'Номер телефону має бути у форматі +380xxxxxxxxx';
     }
 
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
-  };
-    
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    validateField(name, newValue);
-  };
-
-
-  const validateForm = () => {
-    const errors = {};
-    if (!data.name) errors.name = "Назва орендаря обов'язкова.";
-    if (!data.locationId) errors.locationId = "Локація обов'язкова.";
-    if (tenants.some((t) => t.name.trim() === data.name.trim() && t.id !== initialData.id)) {
-   
-
-    if (tenants.some((t) => t.name.trim() === formData.name.trim() && t.id !== initialData.id)) {
-      errors.name = 'Орендар з такою назвою вже існує.';
-    }
-    if (data.occupiedArea && parseFloat(data.occupiedArea) < 0) {
-      errors.occupiedArea = "Площа не може бути від'ємною.";
-    }
-    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-      errors.email = 'Невірний формат email.';
-    }
-    if (data.phone && !validatePhone(data.phone)) {
-      errors.phone = 'Номер телефону має бути у форматі +380xxxxxxxxx (лише цифри)';
-    }
-    setFormErrors(errors);
-    return errors;
+    return error;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Обмежуємо введення телефону лише цифрами та символом +
     if (name === 'phone') {
       const cleanedValue = value.replace(/[^0-9+]/g, '');
       setFormData({ ...formData, [name]: cleanedValue });
@@ -112,20 +77,36 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
   };
 
   const handleSubmit = async () => {
-    const errors = validateForm(formData);
-    if (Object.keys(errors).length > 0) {
+    const fieldsToValidate = ['name', 'phone', 'email'];
+    const errors = {};
+    let hasError = false;
+
+    fieldsToValidate.forEach((field) => {
+      const error = validateField(field, formData[field]);
+      if (error) {
+        errors[field] = error;
+        hasError = true;
+      }
+    });
+
+    if (hasError) {
       setFormErrors(errors);
       return;
     }
 
-    onSubmit({
-      ...formData,
-      locationId: parseInt(formData.locationId),
-      occupiedArea: formData.occupiedArea ? parseFloat(formData.occupiedArea) : null,
-      isActive: formData.isActive ?? true,
-    });
-
-    setFormData({});
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        ...formData,
+        locationId: null,
+        occupiedArea: null,
+        isActive: formData.isActive ?? true,
+      });
+      setFormData({});
+    } catch (error) {
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
@@ -208,7 +189,6 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           helperText={formErrors.name || ' '}
         />
 
-
         <TextField
           name="contactPerson"
           label="Контактна особа"
@@ -247,7 +227,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
             },
           }}
           error={!!formErrors.phone}
-          helperText={formErrors.phone || 'Формат: +380xxxxxxxxx'}
+          helperText={formErrors.phone || ' '}
           inputProps={{ pattern: '[+0-9]*' }}
         />
 
@@ -313,6 +293,5 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
     </Dialog>
   );
 };
-}
 
 export default TenantForm;

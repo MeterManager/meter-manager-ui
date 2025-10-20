@@ -23,7 +23,7 @@ import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 import { useState } from 'react';
-import ConfirmDialog from '../ui/ConfirmDialog';
+import { translateErrorMessage } from '../../utils/translateError';
 
 const TenantsTable = ({
   tenants,
@@ -38,71 +38,43 @@ const TenantsTable = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
-  const isTablet = useMediaQuery('(max-width:960px)');
   const [loadingTenantId, setLoadingTenantId] = useState(null);
-  const [confirmDialog, setConfirmDialog] = useState({
-    open: false,
-    action: null,
-    tenantId: null,
-    tenantName: '',
-    dependencies: null,
-  });
 
-  const handleStatusChange = (tenant) => {
+  const handleStatusChange = async (tenant) => {
     setLoadingTenantId(tenant.id);
-    setConfirmDialog({
-      open: true,
-      action: 'deactivate',
-      tenantId: tenant.id,
-      tenantName: tenant.name,
-      dependencies: { active_meters: 0 }, // Немає залежностей, оскільки деактивація не впливає на лічильники
-    });
-  };
-
-  const handleRemove = (tenant) => {
-    setLoadingTenantId(tenant.id);
-    setConfirmDialog({
-      open: true,
-      action: 'delete',
-      tenantId: tenant.id,
-      tenantName: tenant.name,
-      dependencies: { active_meters: 0 }, // Тимчасово ставимо 0, оскільки маршрут залежностей видалено
-    });
-  };
-
-  const handleConfirmAction = async () => {
     try {
-      if (confirmDialog.action === 'delete') {
-        await removeTenant(confirmDialog.tenantId);
-      } else if (confirmDialog.action === 'deactivate') {
-        await updateTenantStatus(confirmDialog.tenantId, false);
-      }
-      setConfirmDialog({ open: false, action: null, tenantId: null, tenantName: '', dependencies: null });
+      await updateTenantStatus(tenant.id, !tenant.isActive);
     } catch (err) {
-      setLocalError(err.message || `Помилка при ${confirmDialog.action === 'delete' ? 'видаленні' : 'деактивації'} орендаря`);
+      setLocalError(translateErrorMessage(err.message));
     } finally {
       setLoadingTenantId(null);
     }
   };
 
-  const handleCloseDialog = () => {
-    setConfirmDialog({ open: false, action: null, tenantId: null, tenantName: '', dependencies: null });
-    setLoadingTenantId(null);
+  const handleRemove = async (tenant) => {
+    setLoadingTenantId(tenant.id);
+    try {
+      await removeTenant(tenant.id);
+    } catch (err) {
+      setLocalError(translateErrorMessage(err.message));
+    } finally {
+      setLoadingTenantId(null);
+    }
   };
 
   const getTenantLocations = (tenant) => {
     if (!tenant.locations || !Array.isArray(tenant.locations) || tenant.locations.length === 0) {
       return [];
     }
-      return tenant.locations.map(loc => loc.name);
-    };
+    return tenant.locations.map((loc) => loc.name);
+  };
 
   const filteredTenants = tenants.filter(
     (tenant) =>
       tenant.name.toLowerCase().includes(search.toLowerCase()) ||
       (tenant.contactPerson && tenant.contactPerson.toLowerCase().includes(search.toLowerCase())) ||
       (tenant.email && tenant.email.toLowerCase().includes(search.toLowerCase())) ||
-      getTenantLocations(tenant).some(locationName => 
+      getTenantLocations(tenant).some((locationName) =>
         locationName.toLowerCase().includes(search.toLowerCase())
       )
   );
@@ -126,7 +98,6 @@ const TenantsTable = ({
             <Typography variant="body2" color="text.secondary">
               {getTenantLocations(tenant).join(', ') || '—'}
             </Typography>
-
           </Box>
           <Chip
             label={tenant.isActive ? 'Активний' : 'Неактивний'}
@@ -136,13 +107,11 @@ const TenantsTable = ({
           />
         </Box>
 
-        {(tenant.contactPerson) && (
+        {tenant.contactPerson && (
           <Box sx={{ mb: 2 }}>
-            {tenant.contactPerson && (
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                Контакт: {tenant.contactPerson}
-              </Typography>
-            )}
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              Контакт: {tenant.contactPerson}
+            </Typography>
           </Box>
         )}
 
@@ -268,46 +237,11 @@ const TenantsTable = ({
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell
-                  sx={{
-                    width: '20%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Орендар
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: '20%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Локація
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: '18%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Контакти
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: '17%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Статус
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: '5%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Дії
-                </TableCell>
+                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Орендар</TableCell>
+                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Локація</TableCell>
+                <TableCell sx={{ width: '18%', fontWeight: 600 }}>Контакти</TableCell>
+                <TableCell sx={{ width: '17%', fontWeight: 600 }}>Статус</TableCell>
+                <TableCell sx={{ width: '5%', fontWeight: 600 }}>Дії</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -333,30 +267,36 @@ const TenantsTable = ({
                         )}
                       </Box>
                     </TableCell>
+
                     <TableCell>
                       {getTenantLocations(tenant).length === 0 ? (
-                        <Typography variant="body2" color="text.secondary">-</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          -
+                        </Typography>
                       ) : (
                         <ul style={{ paddingLeft: '16px', margin: 0 }}>
-                        {getTenantLocations(tenant).map((loc, idx) => (
-                        <li key={idx}>
-                        <Typography variant="body2" color="text.secondary">{loc}</Typography>
-                          </li>
-                      ))}
+                          {getTenantLocations(tenant).map((loc, idx) => (
+                            <li key={idx}>
+                              <Typography variant="body2" color="text.secondary">
+                                {loc}
+                              </Typography>
+                            </li>
+                          ))}
                         </ul>
                       )}
                     </TableCell>
+
                     <TableCell>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                         {tenant.phone && (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Phone fontSize="1.1rem" color="action" />
+                            <Phone fontSize="small" color="action" />
                             <Typography variant="caption">{tenant.phone}</Typography>
                           </Box>
                         )}
                         {tenant.email && (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Email fontSize="1.1rem" color="action" />
+                            <Email fontSize="small" color="action" />
                             <Typography variant="caption" color="text.secondary">
                               {tenant.email}
                             </Typography>
@@ -369,6 +309,7 @@ const TenantsTable = ({
                         )}
                       </Box>
                     </TableCell>
+
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         {loadingTenantId === tenant.id ? (
@@ -390,14 +331,22 @@ const TenantsTable = ({
                         />
                       </Box>
                     </TableCell>
+
                     <TableCell>
                       <Stack direction="row" spacing={1}>
                         <Tooltip title="Редагувати орендаря">
-                          <IconButton size="small" onClick={() => onEdit(tenant)} color="primary" disabled={loadingTenantId !== null}>
+                          <IconButton
+                            size="small"
+                            onClick={() => onEdit(tenant)}
+                            color="primary"
+                            disabled={loadingTenantId !== null}
+                          >
                             <Edit fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title={tenant.isActive ? 'Спочатку деактивуйте орендаря' : 'Видалити орендаря'}>
+                        <Tooltip
+                          title={tenant.isActive ? 'Спочатку деактивуйте орендаря' : 'Видалити орендаря'}
+                        >
                           <span>
                             <IconButton
                               size="small"
@@ -405,7 +354,11 @@ const TenantsTable = ({
                               disabled={tenant.isActive || loadingTenantId !== null}
                               color="error"
                             >
-                              {loadingTenantId === tenant.id ? <CircularProgress size={20} /> : <Delete fontSize="small" />}
+                              {loadingTenantId === tenant.id ? (
+                                <CircularProgress size={20} />
+                              ) : (
+                                <Delete fontSize="small" />
+                              )}
                             </IconButton>
                           </span>
                         </Tooltip>
@@ -431,16 +384,6 @@ const TenantsTable = ({
           </Table>
         </TableContainer>
       )}
-
-      <ConfirmDialog
-        open={confirmDialog.open}
-        onClose={handleCloseDialog}
-        onConfirm={handleConfirmAction}
-        action={confirmDialog.action}
-        dependencies={confirmDialog.dependencies}
-        isLoading={loadingTenantId !== null}
-        entity="tenant"
-      />
     </Box>
   );
 };

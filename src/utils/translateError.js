@@ -32,5 +32,15 @@ export const translateErrorMessage = (errorMessage) => {
     return "Помилка мережі. Перевірте з'єднання з Інтернетом.";
   }
 
+  if (error.includes('Tenant with this name already exists')) {
+    return 'Орендар з такою назвою вже існує.';
+  }
+  if (error.includes('Cannot delete active tenant')) {
+    return 'Неможливо видалити активного орендаря. Спочатку деактивуйте його.';
+  }
+  if (error.includes('Tenant not found')) {
+    return 'Орендаря не знайдено.';
+  }
+
   return 'Сталася непередбачена помилка. Будь ласка, спробуйте пізніше.';
 };

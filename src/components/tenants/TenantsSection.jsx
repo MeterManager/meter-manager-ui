@@ -1,19 +1,11 @@
 import { useState } from 'react';
-import {
-  Paper,
-  Box,
-  Typography,
-  Collapse,
-  IconButton,
-  Divider,
-  Snackbar,
-  Alert,
-} from '@mui/material';
+import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import TenantsTable from '../tenants/TenantsTable';
 import TenantForm from '../tenants/TenantForm';
 import { useTenants } from '../../hooks/useTenants';
 import { useLocations } from '../../hooks/useLocations';
+import { translateErrorMessage } from '../../utils/translateError';
 
 const TenantsSection = ({ initialExpanded = true }) => {
   const {
@@ -60,8 +52,9 @@ const TenantsSection = ({ initialExpanded = true }) => {
       setFormOpen(false);
       setEditingTenant(null);
     } catch (err) {
-      setError(err.message || 'Помилка при збереженні орендаря');
-      setSnackbar({ open: true, message: err.message || 'Помилка при збереженні орендаря', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     }
   };
 
@@ -76,8 +69,9 @@ const TenantsSection = ({ initialExpanded = true }) => {
       await removeTenant(id);
       setSnackbar({ open: true, message: 'Орендаря успішно видалено', severity: 'success' });
     } catch (err) {
-      setError(err.message || 'Помилка при видаленні орендаря');
-      setSnackbar({ open: true, message: err.message || 'Помилка при видаленні орендаря', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     }
   };
 
@@ -86,8 +80,9 @@ const TenantsSection = ({ initialExpanded = true }) => {
       await updateTenantStatus(id, statusData);
       setSnackbar({ open: true, message: 'Статус орендаря оновлено', severity: 'success' });
     } catch (err) {
-      setError(err.message || 'Помилка при оновленні статусу');
-      setSnackbar({ open: true, message: err.message || 'Помилка при оновленні статусу', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     }
   };
 
@@ -138,6 +133,7 @@ const TenantsSection = ({ initialExpanded = true }) => {
         onClose={() => {
           setFormOpen(false);
           setEditingTenant(null);
+          setError(null);
         }}
         onSubmit={handleSubmit}
         initialData={editingTenant || {}}
