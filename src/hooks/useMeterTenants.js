@@ -6,11 +6,11 @@ import { useErrorHandler } from './useErrorHandler';
 
 const fetcher = async (token) => {
   const response = await meterTenantsApi.getAllMeterTenants(token);
-  return (response.data || []).map(mt => ({
-      ...mt,
-      tenantName: mt.Tenant?.name,
-      meterSerialNumber: mt.Meter?.serial_number,
-      locationId: mt.Meter?.location_id
+  return (response.data || []).map((mt) => ({
+    ...mt,
+    tenantName: mt.Tenant?.name,
+    meterSerialNumber: mt.Meter?.serial_number,
+    locationId: mt.Meter?.location_id,
   }));
 };
 
@@ -22,21 +22,29 @@ export const useMeterTenants = () => {
   const [locationFilter, setLocationFilter] = useState('');
   const [tenantFilter, setTenantFilter] = useState('');
 
-
   const swrKey = canRequest ? ['metersTenant'] : null;
 
   const {
     data: meterTenants = [],
     isLoading: loadingSWR,
     mutate: mutateMeterTenants,
-  } = useSWR(
-    swrKey,
-    async () => withToken(fetcher),
-    {
-      onError: handleError,
-      revalidateOnFocus: false,
-      dedupingInterval: 5000,
-    }
+  } = useSWR(swrKey, async () => withToken(fetcher), {
+    onError: handleError,
+    revalidateOnFocus: false,
+    dedupingInterval: 5000,
+  });
+
+  const getAllMeterTenants = useCallback(
+    async (token) => {
+      try {
+        const response = await meterTenantsApi.getAllMeterTenants(token);
+        return response;
+      } catch (err) {
+        handleError(err, 'Помилка при завантаженні списку лічильників');
+        throw err;
+      }
+    },
+    [handleError]
   );
 
   const addMeterTenant = useCallback(
@@ -46,16 +54,16 @@ export const useMeterTenants = () => {
         setError(null);
         const tempId = `temp-${Date.now()}`;
         const optimistic = {
-            ...data,
-            id: tempId,
-            isOptimistic: true,
-         };
+          ...data,
+          id: tempId,
+          isOptimistic: true,
+        };
         mutateMeterTenants((currentData = []) => [...currentData, optimistic], false);
 
         const response = await withToken(meterTenantsApi.createMeterTenant, data);
 
         await mutateMeterTenants();
-        ['meters', 'tenants'].forEach(key => mutate(key));
+        ['meters', 'tenants'].forEach((key) => mutate(key));
 
         return response;
       } catch (err) {
@@ -74,14 +82,14 @@ export const useMeterTenants = () => {
       setIsActionLoading(true);
       try {
         setError(null);
-        mutateMeterTenants((currentData = []) =>
-            currentData.map((mt) => (mt.id === id ? { ...mt, ...data } : mt)),
-            false
+        mutateMeterTenants(
+          (currentData = []) => currentData.map((mt) => (mt.id === id ? { ...mt, ...data } : mt)),
+          false
         );
 
         const response = await withToken(meterTenantsApi.updateMeterTenant, id, data);
         await mutateMeterTenants();
-        ['meters', 'tenants'].forEach(key => mutate(key));
+        ['meters', 'tenants'].forEach((key) => mutate(key));
 
         return response;
       } catch (err) {
@@ -103,7 +111,7 @@ export const useMeterTenants = () => {
         mutateMeterTenants((currentData = []) => currentData.filter((mt) => mt.id !== id), false);
         await withToken(meterTenantsApi.deleteMeterTenant, id);
         await mutateMeterTenants();
-        ['meters', 'tenants'].forEach(key => mutate(key));
+        ['meters', 'tenants'].forEach((key) => mutate(key));
       } catch (err) {
         mutateMeterTenants();
         handleError(err, 'Помилка при видаленні призначення лічильника');
@@ -135,6 +143,7 @@ export const useMeterTenants = () => {
     editMeterTenant,
     removeMeterTenant,
     refreshMeterTenants,
+    getAllMeterTenants,
     error,
     setError,
   };
