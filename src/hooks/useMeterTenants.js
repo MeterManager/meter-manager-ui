@@ -4,30 +4,34 @@ import * as meterTenantsApi from '../api/meterTenantsApi';
 import { useAuthRequest } from './useAuthRequest';
 import { useErrorHandler } from './useErrorHandler';
 
-const fetcher = async (token, search) => {
+const fetcher = async (token) => {
   const response = await meterTenantsApi.getAllMeterTenants(token);
-  if (!search) return response.data || [];
-  return (response.data || []).filter(
-    (mt) =>
-      mt.Tenant?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      mt.Meter?.serial_number?.toLowerCase().includes(search.toLowerCase())
-  );
+  return (response.data || []).map(mt => ({
+      ...mt,
+      tenantName: mt.Tenant?.name,
+      meterSerialNumber: mt.Meter?.serial_number,
+      locationId: mt.Meter?.location_id
+  }));
 };
 
 export const useMeterTenants = () => {
   const { canRequest, withToken } = useAuthRequest();
   const { error, setError, handleError } = useErrorHandler('Помилка при завантаженні призначень лічильників');
   const [search, setSearch] = useState('');
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [locationFilter, setLocationFilter] = useState('');
+  const [tenantFilter, setTenantFilter] = useState('');
 
-  const swrKey = canRequest ? ['metersTenant', search] : null;
+
+  const swrKey = canRequest ? ['metersTenant'] : null;
 
   const {
     data: meterTenants = [],
-    isLoading: loading,
+    isLoading: loadingSWR,
     mutate: mutateMeterTenants,
   } = useSWR(
     swrKey,
-    async ([, search]) => withToken(fetcher, search),
+    async () => withToken(fetcher),
     {
       onError: handleError,
       revalidateOnFocus: false,
@@ -35,123 +39,103 @@ export const useMeterTenants = () => {
     }
   );
 
-  const getAllMeterTenants = useCallback(async () => {
-    try {
-      const response = await withToken(meterTenantsApi.getAllMeterTenants);
-      return response.data || [];
-    } catch (err) {
-      handleError(err, 'Помилка при завантаженні всіх призначень лічильників');
-      throw err;
-    }
-  }, [withToken]);
-
   const addMeterTenant = useCallback(
     async (data) => {
+      setIsActionLoading(true);
       try {
         setError(null);
-        const tempId = Date.now();
-        const optimistic = { ...data, id: tempId, isOptimistic: true };
-        mutateMeterTenants([...meterTenants, optimistic], false);
+        const tempId = `temp-${Date.now()}`;
+        const optimistic = {
+            ...data,
+            id: tempId,
+            isOptimistic: true,
+         };
+        mutateMeterTenants((currentData = []) => [...currentData, optimistic], false);
 
         const response = await withToken(meterTenantsApi.createMeterTenant, data);
 
-        mutateMeterTenants();
-        mutate('meters');
-        mutate('deliveries');
-        mutate('resourceDeliveries');
-        mutate('locations');
-        mutate('tenants');
-        mutate('resourceTypes');
+        await mutateMeterTenants();
+        ['meters', 'tenants'].forEach(key => mutate(key));
 
         return response;
       } catch (err) {
         mutateMeterTenants();
         handleError(err, 'Помилка при додаванні призначення лічильника');
         throw err;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [meterTenants, mutateMeterTenants, withToken]
+    [mutateMeterTenants, withToken, handleError, setError]
   );
 
   const editMeterTenant = useCallback(
     async (id, data) => {
+      setIsActionLoading(true);
       try {
         setError(null);
-        const updated = meterTenants.map((mt) => (mt.id === id ? { ...mt, ...data } : mt));
-        mutateMeterTenants(updated, false);
+        mutateMeterTenants((currentData = []) =>
+            currentData.map((mt) => (mt.id === id ? { ...mt, ...data } : mt)),
+            false
+        );
 
         const response = await withToken(meterTenantsApi.updateMeterTenant, id, data);
-        mutateMeterTenants();
-        mutate('meters');
-        mutate('deliveries');
-        mutate('resourceDeliveries');
+        await mutateMeterTenants();
+        ['meters', 'tenants'].forEach(key => mutate(key));
 
         return response;
       } catch (err) {
         mutateMeterTenants();
         handleError(err, 'Помилка при редагуванні призначення лічильника');
         throw err;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [meterTenants, mutateMeterTenants, withToken]
+    [mutateMeterTenants, withToken, handleError, setError]
   );
 
   const removeMeterTenant = useCallback(
     async (id) => {
+      setIsActionLoading(true);
       try {
         setError(null);
-        const filtered = meterTenants.filter((mt) => mt.id !== id);
-        mutateMeterTenants(filtered, false);
-
+        mutateMeterTenants((currentData = []) => currentData.filter((mt) => mt.id !== id), false);
         await withToken(meterTenantsApi.deleteMeterTenant, id);
-        mutateMeterTenants();
-        mutate('meters');
-        mutate('deliveries');
-        mutate('resourceDeliveries');
+        await mutateMeterTenants();
+        ['meters', 'tenants'].forEach(key => mutate(key));
       } catch (err) {
         mutateMeterTenants();
         handleError(err, 'Помилка при видаленні призначення лічильника');
         throw err;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [meterTenants, mutateMeterTenants, withToken]
+    [mutateMeterTenants, withToken, handleError, setError]
   );
-
-  const tenantsMap = useMemo(() => {
-    return meterTenants.reduce((acc, mt) => {
-      const tenantId = mt.Tenant?.id || 'unassigned';
-      if (!acc[tenantId]) acc[tenantId] = [];
-      acc[tenantId].push(mt);
-      return acc;
-    }, {});
-  }, [meterTenants]);
-
-  const metersMap = useMemo(() => {
-    return meterTenants.reduce((acc, mt) => {
-      const meterId = mt.Meter?.id || 'unknown';
-      if (!acc[meterId]) acc[meterId] = [];
-      acc[meterId].push(mt);
-      return acc;
-    }, {});
-  }, [meterTenants]);
 
   const refreshMeterTenants = useCallback(() => {
     mutateMeterTenants();
   }, [mutateMeterTenants]);
 
+  const loading = loadingSWR || isActionLoading;
+
   return {
     meterTenants,
     loading,
+    isActionLoading,
     search,
     setSearch,
+    locationFilter,
+    setLocationFilter,
+    tenantFilter,
+    setTenantFilter,
     addMeterTenant,
     editMeterTenant,
     removeMeterTenant,
     refreshMeterTenants,
-    tenantsMap,
-    metersMap,
     error,
     setError,
-    getAllMeterTenants,
   };
 };
