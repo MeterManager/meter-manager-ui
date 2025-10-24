@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -12,20 +13,31 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress
 } from '@mui/material';
-import { useMemo } from 'react';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 import MobileUserCard from './MobileUserCard';
+import { translateErrorMessage } from '../../utils/translateError';
 
-const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId }) => {
+
+const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId, isLoading, setLocalError }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:600px)');
   const isTablet = useMediaQuery('(max-width:960px)');
+  const [loadingUserId, setLoadingUserId] = useState(null);
 
   const handleStatusChange = async (u) => {
-    await updateUserStatus(u.id, !u.isActive);
+    setLoadingUserId(u.id);
+    try {
+      await updateUserStatus(u.id, !u.isActive);
+    } catch (err) {
+       const userMessage = translateErrorMessage(err.message || 'Помилка зміни статусу');
+       setLocalError?.(userMessage);
+    } finally {
+      setLoadingUserId(null);
+    }
   };
 
   const filteredUsers = useMemo(
@@ -41,7 +53,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId 
           flexDirection: isMobile ? 'column' : 'row',
           gap: 2,
           alignItems: isMobile ? 'stretch' : 'center',
-          justifyContent: isMobile ? 'stretch' : 'flex-end',
+          justifyContent: 'flex-end',
           mb: 3,
         }}
       >
@@ -51,10 +63,10 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId 
           fullWidth={isMobile}
           placeholder="Пошук за ПІБ користувача..."
           sx={{
-            width: '100%',
+            width: isMobile ? '100%' : '350px',
             maxWidth: '100%',
-            flexShrink: 1,
           }}
+          disabled={isLoading}
         />
       </Box>
 
@@ -72,7 +84,8 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId 
                 key={userItem.id}
                 user={userItem}
                 onToggleStatus={() => handleStatusChange(userItem)}
-                disabled={userItem.auth0_user_id === currentUserId}
+                disabled={isLoading || loadingUserId !== null || userItem.auth0_user_id === currentUserId}
+                isLoading={loadingUserId === userItem.id}
               />
             ))
           ) : (
@@ -90,9 +103,9 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId 
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell sx={{ width: isTablet ? '40%' : '40%', fontWeight: 600 }}>ПІБ</TableCell>
-                <TableCell sx={{ width: isTablet ? '30%' : '30%', fontWeight: 600 }}>Роль</TableCell>
-                <TableCell sx={{ width: isTablet ? '30%' : '30%', fontWeight: 600 }}>Статус</TableCell>
+                <TableCell sx={{ width: '40%', fontWeight: 600 }}>ПІБ</TableCell>
+                <TableCell sx={{ width: '30%', fontWeight: 600 }}>Роль</TableCell>
+                <TableCell sx={{ width: '30%', fontWeight: 600 }}>Статус</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -100,11 +113,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId 
                 filteredUsers.map((u) => (
                   <TableRow
                     key={u.id}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: theme.palette.action.hover,
-                      },
-                    }}
+                    sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}
                   >
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
@@ -118,13 +127,15 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId 
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Switch
-                          checked={u.isActive}
-                          onChange={() => handleStatusChange(u)}
-                          color="primary"
-                          size="small"
-                          disabled={u.auth0_user_id === currentUserId}
-                        />
+                        {loadingUserId === u.id ? <CircularProgress size={20} /> : (
+                          <Switch
+                            checked={u.isActive}
+                            onChange={() => handleStatusChange(u)}
+                            color="primary"
+                            size="small"
+                            disabled={isLoading || loadingUserId !== null || u.auth0_user_id === currentUserId}
+                          />
+                        )}
                         <Chip
                           label={u.isActive ? 'Активний' : 'Неактивний'}
                           color={u.isActive ? 'success' : 'default'}

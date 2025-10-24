@@ -11,8 +11,6 @@ import { translateErrorMessage } from '../../utils/translateError';
 const LocationsSection = ({ initialExpanded = true }) => {
   const {
     locations,
-    search,
-    setSearch,
     addLocation,
     editLocation,
     removeLocation,
@@ -30,7 +28,8 @@ const LocationsSection = ({ initialExpanded = true }) => {
   const [editingLocation, setEditingLocation] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null, action: null, dependencies: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [tenantFilter, setTenantFilter] = useState('');
 
   const handleToggle = () => {
     setExpanded(!expanded);
@@ -48,7 +47,6 @@ const LocationsSection = ({ initialExpanded = true }) => {
 
   const handleFormSubmit = async (formData) => {
     try {
-      setIsActionLoading(true);
       if (editingLocation?.id) {
         await editLocation(editingLocation.id, formData);
         setSnackbar({ open: true, message: 'Локацію успішно оновлено', severity: 'success' });
@@ -63,7 +61,6 @@ const LocationsSection = ({ initialExpanded = true }) => {
       setError(userMessage);
       setSnackbar({ open: true, message: userMessage, severity: 'error' });
     } finally {
-      setIsActionLoading(false);
     }
   };
 
@@ -75,7 +72,6 @@ const LocationsSection = ({ initialExpanded = true }) => {
 
   const handleRemove = async (id) => {
     try {
-      setIsActionLoading(true);
       const dependencies = await getDependencies(id);
 
       if (dependencies.active_meters > 0 || dependencies.deliveries > 0 || dependencies.active_tenants > 0) {
@@ -93,13 +89,11 @@ const LocationsSection = ({ initialExpanded = true }) => {
       const userMessage = translateErrorMessage(err.message);
       setSnackbar({ open: true, message: userMessage, severity: 'error' });
     } finally {
-      setIsActionLoading(false);
     }
   };
 
   const handleUpdateStatus = async (id, isActive) => {
     try {
-      setIsActionLoading(true);
       const result = await updateLocationStatus(id, isActive);
       if (result.requiresConfirmation) {
         setConfirmDialog({
@@ -120,14 +114,11 @@ const LocationsSection = ({ initialExpanded = true }) => {
       setError(userMessage);
       setSnackbar({ open: true, message: userMessage, severity: 'error' });
     } finally {
-      setIsActionLoading(false);
     }
   };
 
   const handleConfirmAction = async () => {
     try {
-      setIsActionLoading(true);
-
       if (confirmDialog.action === 'delete') {
         await removeLocation(confirmDialog.id);
         setSnackbar({
@@ -149,7 +140,6 @@ const LocationsSection = ({ initialExpanded = true }) => {
       setError(userMessage);
       setSnackbar({ open: true, message: userMessage, severity: 'error' });
     } finally {
-      setIsActionLoading(false);
     }
   };
 
@@ -189,12 +179,15 @@ const LocationsSection = ({ initialExpanded = true }) => {
               locations={locations}
               search={search}
               setSearch={setSearch}
+              tenantFilter={tenantFilter}
+              setTenantFilter={setTenantFilter}
+              tenants={simpleTenants}
               onAdd={handleAdd}
               onEdit={handleEdit}
               onRemove={handleRemove}
               onStatusChange={handleUpdateStatus}
               setLocalError={setError}
-              isLoading={loading || isActionLoading}
+              isLoading={loading}
             />
           </Box>
         </Collapse>
@@ -207,7 +200,7 @@ const LocationsSection = ({ initialExpanded = true }) => {
         initialData={editingLocation || {}}
         error={error}
         locations={locations}
-        isLoading={isActionLoading}
+        isLoading={loading}
         tenants={simpleTenants}
       />
 
@@ -217,7 +210,7 @@ const LocationsSection = ({ initialExpanded = true }) => {
         onConfirm={handleConfirmAction}
         action={confirmDialog.action}
         dependencies={confirmDialog.dependencies}
-        isLoading={isActionLoading}
+        isLoading={loading}
       />
 
       <Snackbar

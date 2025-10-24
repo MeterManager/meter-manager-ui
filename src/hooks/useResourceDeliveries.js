@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import * as resourceDeliveriesApi from '../api/resourceDeliveriesApi';
 import * as locationApi from '../api/locationsApi';
@@ -6,8 +6,8 @@ import * as resourceTypesApi from '../api/resourceTypesApi';
 import { useAuthRequest } from './useAuthRequest';
 import { useErrorHandler } from './useErrorHandler';
 
-const fetchDeliveries = async (token, search = '') => {
-  const response = await resourceDeliveriesApi.getResourceDeliveries(token, { search });
+const fetchDeliveries = async (token) => {
+  const response = await resourceDeliveriesApi.getResourceDeliveries(token);
   return (response.data || []).map((delivery) => ({
     id: delivery.id,
     location_id: delivery.location_id,
@@ -28,8 +28,8 @@ const fetchDeliveries = async (token, search = '') => {
 };
 
 const fetchLocations = async (token) => {
-  const response = await locationApi.getLocations(token);
-  return (response.data || []).filter((location) => location.is_active);
+  const locationsArray = await locationApi.getLocations(token);
+  return (locationsArray || []).filter((location) => location.is_active);
 };
 
 const fetchResourceTypes = async (token) => {
@@ -41,8 +41,13 @@ export const useResourceDeliveries = () => {
   const { canRequest, withToken } = useAuthRequest();
   const { error, setError, handleError } = useErrorHandler('Помилка при завантаженні даних');
   const [search, setSearch] = useState('');
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [locationFilter, setLocationFilter] = useState('');
+  const [resourceTypeFilter, setResourceTypeFilter] = useState('');
+  const [dateFromFilter, setDateFromFilter] = useState(null);
+  const [dateToFilter, setDateToFilter] = useState(null);
 
-  const swrKey = canRequest ? ['resourceDeliveries', search] : null;
+  const swrKey = canRequest ? ['resourceDeliveries'] : null;
 
   const {
     data: deliveries = [],
@@ -50,7 +55,7 @@ export const useResourceDeliveries = () => {
     mutate: mutateDeliveries,
   } = useSWR(
     swrKey,
-    async ([, search]) => withToken(fetchDeliveries, search),
+    async () => withToken(fetchDeliveries),
     {
       onError: handleError,
       revalidateOnFocus: false,
@@ -86,6 +91,7 @@ export const useResourceDeliveries = () => {
 
   const addDelivery = useCallback(
     async (data) => {
+      setIsActionLoading(true);
       try {
         setError(null);
         const deliveryData = {
@@ -105,13 +111,16 @@ export const useResourceDeliveries = () => {
       } catch (error) {
         handleError(error, 'Помилка при додаванні поставки');
         throw error;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [withToken, mutateDeliveries]
+    [withToken, mutateDeliveries, handleError, setError]
   );
 
   const editDelivery = useCallback(
     async (id, data) => {
+      setIsActionLoading(true);
       try {
         setError(null);
         const deliveryData = {
@@ -131,13 +140,16 @@ export const useResourceDeliveries = () => {
       } catch (error) {
         handleError(error, 'Помилка при редагуванні поставки');
         throw error;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [withToken, mutateDeliveries]
+    [withToken, mutateDeliveries, handleError, setError]
   );
 
   const removeDelivery = useCallback(
     async (id) => {
+      setIsActionLoading(true);
       try {
         setError(null);
         await withToken(resourceDeliveriesApi.deleteResourceDelivery, id);
@@ -145,9 +157,11 @@ export const useResourceDeliveries = () => {
       } catch (error) {
         handleError(error, 'Помилка при видаленні поставки');
         throw error;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [withToken, mutateDeliveries]
+    [withToken, mutateDeliveries, handleError, setError]
   );
 
   const fetchFormData = useCallback(async () => {
@@ -159,15 +173,24 @@ export const useResourceDeliveries = () => {
     } catch (err) {
       handleError(err, 'Помилка при завантаженні даних для форми');
     }
-  }, []);
+  }, [handleError]);
 
   return {
     deliveries,
     locations,
     resourceTypes,
-    loading: deliveriesLoading || locationsLoading || resourceTypesLoading,
+    loading: deliveriesLoading || locationsLoading || resourceTypesLoading || isActionLoading,
+    isActionLoading,
     search,
     setSearch,
+    locationFilter,
+    setLocationFilter,
+    resourceTypeFilter,
+    setResourceTypeFilter,
+    dateFromFilter,
+    setDateFromFilter,
+    dateToFilter,
+    setDateToFilter,
     addDelivery,
     editDelivery,
     removeDelivery,

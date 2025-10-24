@@ -9,7 +9,8 @@ const MobileDeliveryCard = ({
   getLocationName, 
   getResourceTypeName, 
   getTotalCost, 
-  getPricePerUnit 
+  getPricePerUnit,
+  isLoading 
 }) => {
   const theme = useTheme();
 
@@ -195,42 +196,48 @@ const MobileDeliveryCard = ({
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Stack direction="row" spacing={1}>
             <Tooltip title="Редагувати">
-              <IconButton 
-                size="small" 
-                onClick={() => onEdit(delivery)} 
-                color="primary"
-                sx={{
-                  width: 32,
-                  height: 32,
-                  border: `1px solid ${theme.palette.grey[300]}`,
-                  borderRadius: 1,
-                  '&:hover': {
-                    backgroundColor: 'primary.50',
-                    borderColor: 'primary.main',
-                  }
-                }}
-              >
-                <Edit fontSize="small" />
-              </IconButton>
+              <span>
+                <IconButton 
+                  size="small" 
+                  onClick={() => onEdit(delivery)} 
+                  color="primary"
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    border: `1px solid ${theme.palette.grey[300]}`,
+                    borderRadius: 1,
+                    '&:hover': {
+                      backgroundColor: 'primary.50',
+                      borderColor: 'primary.main',
+                    }
+                  }}
+                  disabled={isLoading}
+                >
+                  <Edit fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
             <Tooltip title="Видалити">
-              <IconButton 
-                size="small" 
-                onClick={() => onDelete(delivery.id)} 
-                color="error"
-                sx={{
-                  width: 32,
-                  height: 32,
-                  border: `1px solid ${theme.palette.grey[300]}`,
-                  borderRadius: 1,
-                  '&:hover': {
-                    backgroundColor: 'error.50',
-                    borderColor: 'error.main',
-                  }
-                }}
-              >
-                <Delete fontSize="small" />
-              </IconButton>
+              <span>
+                <IconButton 
+                  size="small" 
+                  onClick={() => onDelete(delivery.id)} 
+                  color="error"
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    border: `1px solid ${theme.palette.grey[300]}`,
+                    borderRadius: 1,
+                    '&:hover': {
+                      backgroundColor: 'error.50',
+                      borderColor: 'error.main',
+                    }
+                  }}
+                  disabled={isLoading}
+                >
+                  <Delete fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
           </Stack>
         </Box>

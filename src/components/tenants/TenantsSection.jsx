@@ -19,6 +19,7 @@ const TenantsSection = ({ initialExpanded = true }) => {
     getTenantDependencies,
     error,
     setError,
+    loading: tenantsLoading,
   } = useTenants();
 
   const { locations, loading: locationsLoading, error: locationsError } = useLocations();
@@ -27,6 +28,7 @@ const TenantsSection = ({ initialExpanded = true }) => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [locationFilter, setLocationFilter] = useState('');
 
   const handleToggle = () => setExpanded(!expanded);
 
@@ -42,6 +44,7 @@ const TenantsSection = ({ initialExpanded = true }) => {
 
   const handleSubmit = async (data) => {
     try {
+      setError(null);
       if (editingTenant) {
         await editTenant(editingTenant.id, data);
         setSnackbar({ open: true, message: 'Орендаря успішно оновлено', severity: 'success' });
@@ -49,12 +52,11 @@ const TenantsSection = ({ initialExpanded = true }) => {
         await addTenant(data);
         setSnackbar({ open: true, message: 'Орендаря успішно додано', severity: 'success' });
       }
-      setFormOpen(false);
-      setEditingTenant(null);
     } catch (err) {
       const userMessage = translateErrorMessage(err.message);
       setError(userMessage);
       setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      throw err;
     }
   };
 
@@ -90,8 +92,9 @@ const TenantsSection = ({ initialExpanded = true }) => {
     setSnackbar({ open: false, message: '', severity: 'success' });
   };
 
-  if (locationsLoading) return <Typography>Завантаження локацій...</Typography>;
-  if (locationsError) return <Typography color="error">Помилка при завантаженні локацій</Typography>;
+  const isLoading = tenantsLoading || locationsLoading;
+
+  if (locationsError) return <Typography color="error">Помилка при завантаженні локацій: {locationsError.message}</Typography>;
 
   return (
     <>
@@ -116,13 +119,16 @@ const TenantsSection = ({ initialExpanded = true }) => {
               tenants={tenants}
               search={search}
               setSearch={setSearch}
+              locationFilter={locationFilter}
+              setLocationFilter={setLocationFilter}
+              locations={locations}
               onAdd={handleAdd}
               onEdit={handleEdit}
               removeTenant={handleRemove}
               updateTenantStatus={handleStatusUpdate}
               getTenantDependencies={getTenantDependencies}
               setLocalError={setError}
-              locations={locations}
+              isLoading={isLoading}
             />
           </Box>
         </Collapse>
@@ -139,7 +145,6 @@ const TenantsSection = ({ initialExpanded = true }) => {
         initialData={editingTenant || {}}
         error={error}
         tenants={tenants}
-        locations={locations}
       />
 
       <Snackbar

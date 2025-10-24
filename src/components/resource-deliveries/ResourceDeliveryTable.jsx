@@ -14,10 +14,15 @@ import {
   CardContent,
   Stack,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
+import CustomDatePicker from '../ui/DatePicker';
 import { useTheme } from '@mui/material/styles';
 import MobileDeliveryCard from './MobileDeliveryCard';
 
@@ -25,11 +30,20 @@ const ResourceDeliveryTable = ({
   deliveries,
   search,
   setSearch,
+  locationFilter,
+  setLocationFilter,
+  resourceTypeFilter,
+  setResourceTypeFilter,
+  dateFromFilter,
+  setDateFromFilter,
+  dateToFilter,
+  setDateToFilter,
   onEdit,
   onAdd,
   removeDelivery,
   locations = [],
   resourceTypes = [],
+  isLoading,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
@@ -55,12 +69,27 @@ const ResourceDeliveryTable = ({
   };
 
   const filteredDeliveries = deliveries.filter((d) => {
+    const deliveryDate = new Date(d.delivery_date);
+    deliveryDate.setHours(0, 0, 0, 0); // Обнуляємо час для коректного порівняння дат
+
+    const dateFrom = dateFromFilter ? new Date(dateFromFilter) : null;
+    if (dateFrom) dateFrom.setHours(0, 0, 0, 0);
+    
+    const dateTo = dateToFilter ? new Date(dateToFilter) : null;
+    if (dateTo) dateTo.setHours(0, 0, 0, 0);
+
+    const locationMatch = locationFilter === '' || d.location_id === locationFilter;
+    const resourceTypeMatch = resourceTypeFilter === '' || d.energy_resource_type_id === resourceTypeFilter;
+    const dateFromMatch = !dateFrom || deliveryDate >= dateFrom;
+    const dateToMatch = !dateTo || deliveryDate <= dateTo;
+
     const locationName = getLocationName(d).toLowerCase();
     const resourceName = getResourceTypeName(d.energy_resource_type_id).toLowerCase();
     const supplier = (d.supplier || '').toLowerCase();
     const searchLower = search.toLowerCase();
+    const searchMatch = searchLower === '' || resourceName.includes(searchLower) || locationName.includes(searchLower) || supplier.includes(searchLower);
 
-    return resourceName.includes(searchLower) || locationName.includes(searchLower) || supplier.includes(searchLower);
+    return locationMatch && resourceTypeMatch && dateFromMatch && dateToMatch && searchMatch;
   });
 
   return (
@@ -68,41 +97,108 @@ const ResourceDeliveryTable = ({
       <Box
         sx={{
           display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
+          flexDirection: 'column',
           gap: 2,
-          alignItems: isMobile ? 'stretch' : 'center',
-          justifyContent: isMobile ? 'stretch' : 'space-between',
           mb: 3,
         }}
       >
-        <Button
-          variant="contained"
-          onClick={onAdd}
-          fullWidth={isMobile}
+        <Box
           sx={{
-            minWidth: isMobile ? 'auto' : '160px',
-            height: '40px',
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: 2,
+            alignItems: isMobile ? 'stretch' : 'center',
+            justifyContent: 'space-between',
           }}
         >
-          Додати поставку
-        </Button>
+          <Button
+            variant="contained"
+            onClick={onAdd}
+            fullWidth={isMobile}
+            sx={{
+              minWidth: isMobile ? 'auto' : '160px',
+              height: '40px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+            disabled={isLoading}
+          >
+            Додати поставку
+          </Button>
 
-        <SearchField
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          fullWidth={isMobile}
-          placeholder="Пошук за ресурсом, локацією або постачальником..."
+          <SearchField
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            fullWidth={isMobile}
+            placeholder="Пошук..."
+            sx={{
+              width: isMobile ? '100%' : '350px',
+              maxWidth: isMobile ? '100%' : '400px',
+              flexShrink: 1,
+            }}
+            disabled={isLoading}
+          />
+        </Box>
+
+        <Box
           sx={{
-            width: isMobile ? '100%' : '350px',
-            maxWidth: isMobile ? '100%' : '400px',
-            flexShrink: 1,
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 2,
+            alignItems: 'center',
           }}
-        />
+        >
+          <FormControl fullWidth size="small" disabled={isLoading}>
+            <InputLabel>Локація</InputLabel>
+            <Select
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+              label="Локація"
+            >
+              <MenuItem value="">— Всі локації —</MenuItem>
+              {locations.map((loc) => (
+                <MenuItem key={loc.id} value={loc.id}>
+                  {loc.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth size="small" disabled={isLoading}>
+            <InputLabel>Тип ресурсу</InputLabel>
+            <Select
+              value={resourceTypeFilter}
+              onChange={(e) => setResourceTypeFilter(e.target.value)}
+              label="Тип ресурсу"
+            >
+              <MenuItem value="">— Всі ресурси —</MenuItem>
+              {resourceTypes.map((res) => (
+                <MenuItem key={res.id} value={res.id}>
+                  {res.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <CustomDatePicker
+            label="Дата з"
+            value={dateFromFilter}
+            onChange={(newValue) => setDateFromFilter(newValue)}
+            disabled={isLoading}
+            slotProps={{ textField: { size: 'small', fullWidth: true } }}
+          />
+
+          <CustomDatePicker
+            label="Дата по"
+            value={dateToFilter}
+            onChange={(newValue) => setDateToFilter(newValue)}
+            disabled={isLoading}
+            slotProps={{ textField: { size: 'small', fullWidth: true } }}
+          />
+        </Box>
       </Box>
 
-      {search && (
+      {(search || locationFilter || resourceTypeFilter || dateFromFilter || dateToFilter) && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, mt: 0, fontWeight: 500 }}>
           Знайдено: {filteredDeliveries.length} з {deliveries.length}
         </Typography>
@@ -121,19 +217,15 @@ const ResourceDeliveryTable = ({
                 getResourceTypeName={getResourceTypeName}
                 getTotalCost={getTotalCost}
                 getPricePerUnit={getPricePerUnit}
+                isLoading={isLoading}
               />
             ))
           ) : (
             <Card sx={{ border: `1px solid ${theme.palette.grey[300]}`, borderRadius: 1, boxShadow: 'none' }}>
               <CardContent sx={{ py: 4, textAlign: 'center' }}>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: search ? 0 : 2 }}>
-                  {search ? 'За вашим запитом нічого не знайдено' : 'Поставок не знайдено'}
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                  За вашими фільтрами нічого не знайдено
                 </Typography>
-                {!search && (
-                  <Button variant="outlined" onClick={onAdd} sx={{ borderRadius: 1, textTransform: 'none', fontWeight: 500 }}>
-                    Додати першу поставку
-                  </Button>
-                )}
               </CardContent>
             </Card>
           )}
@@ -145,13 +237,13 @@ const ResourceDeliveryTable = ({
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
                 <TableCell sx={{ width: isTablet ? '12%' : '15%', fontWeight: 600 }}>Локація</TableCell>
                 <TableCell sx={{ width: isTablet ? '12%' : '15%', fontWeight: 600 }}>Ресурс</TableCell>
-                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Кількість</TableCell>
+                <TableCell sx={{ width: '10%', fontWeight: 600 }}>Кількість</TableCell>
                 <TableCell sx={{ width: isTablet ? '8%' : '10%', fontWeight: 600 }}>Одиниця</TableCell>
                 <TableCell sx={{ width: isTablet ? '12%' : '15%', fontWeight: 600 }}>Дата поставки</TableCell>
                 <TableCell sx={{ width: '11%', fontWeight: 600 }}>Ціна за од.</TableCell>
-                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Сума</TableCell>
+                <TableCell sx={{ width: '12%', fontWeight: 600 }}>Сума</TableCell>
                 <TableCell sx={{ width: '10%', fontWeight: 600 }}>Постачальник</TableCell>
-                <TableCell sx={{ width: '5%', fontWeight: 600 }}>Дії</TableCell>
+                <TableCell sx={{ width: '5%', fontWeight: 600, textAlign: 'center' }}>Дії</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -198,17 +290,21 @@ const ResourceDeliveryTable = ({
                         {delivery.supplier || '-'}
                       </Typography>
                     </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={0.5}>
+                    <TableCell sx={{ textAlign: 'center' }}>
+                      <Stack direction="row" spacing={0} justifyContent="center">
                         <Tooltip title="Редагувати поставку">
-                          <IconButton size="small" onClick={() => onEdit(delivery)} color="primary">
-                            <Edit fontSize="small" />
-                          </IconButton>
+                          <span>
+                            <IconButton size="small" onClick={() => onEdit(delivery)} color="primary" disabled={isLoading}>
+                              <Edit fontSize="small" />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                         <Tooltip title="Видалити поставку">
-                          <IconButton size="small" onClick={() => removeDelivery(delivery.id)} color="error">
-                            <Delete fontSize="small" />
-                          </IconButton>
+                          <span>
+                            <IconButton size="small" onClick={() => removeDelivery(delivery.id)} color="error" disabled={isLoading}>
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                       </Stack>
                     </TableCell>
@@ -218,13 +314,8 @@ const ResourceDeliveryTable = ({
                 <TableRow>
                   <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                      {search ? 'За вашим запитом нічого не знайдено' : 'Поставок не знайдено'}
+                      За вашими фільтрами нічого не знайдено
                     </Typography>
-                    {!search && (
-                      <Button variant="outlined" onClick={onAdd} sx={{ mt: 2 }}>
-                        Додати першу поставку
-                      </Button>
-                    )}
                   </TableCell>
                 </TableRow>
               )}

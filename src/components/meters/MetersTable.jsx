@@ -21,6 +21,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  CircularProgress
 } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
@@ -37,26 +38,34 @@ const MetersTable = ({
   setLocalError,
   locations = [],
   energyResourceTypes = [],
+  isLoading
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:600px)');
+  const isMobile = useMediaQuery('(max-width:800px)');
   const isTablet = useMediaQuery('(max-width:960px)');
   const [search, setSearch] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedResourceType, setSelectedResourceType] = useState('');
+  const [loadingMeterId, setLoadingMeterId] = useState(null);
 
   const handleStatusChange = async (meter) => {
+    setLoadingMeterId(meter.id);
     try {
       await updateMeterStatus(meter.id, !meter.isActive);
     } catch (err) {
-      const userMessage = translateErrorMessage(err.message);
-      setLocalError?.(userMessage);
+      const userMessage = translateErrorMessage(err.message || 'Помилка зміни статусу');
+      setLocalError?.(userMessage);
+    } finally {
+      setLoadingMeterId(null);
     }
   };
-  const getLocationName = (locationId) => locations.find((l) => l.id === locationId)?.name || 'Невідома локація';
 
-  const getResourceName = (resourceId) =>
-    energyResourceTypes.find((rt) => rt.id === resourceId)?.name || 'Невідомий ресурс';
+  const handleRemoveClick = (meterId) => {
+      removeMeter(meterId);
+  };
+
+  const getLocationName = (locationId) => locations.find((l) => l.id === locationId)?.name || 'Невідома локація';
+  const getResourceName = (resourceId) => energyResourceTypes.find((rt) => rt.id === resourceId)?.name || 'Невідомий ресурс';
 
   const filteredMeters = meters.filter((meter) => {
     const serial = (meter.serial_number || '').toLowerCase();
@@ -66,7 +75,7 @@ const MetersTable = ({
 
     const locationMatch = !selectedLocation || meter.location_id === selectedLocation;
     const resourceTypeMatch = !selectedResourceType || meter.energy_resource_type_id === selectedResourceType;
-    const searchMatch = serial.includes(query) || locationName.includes(query) || resourceName.includes(query);
+    const searchMatch = query === '' || serial.includes(query) || locationName.includes(query) || resourceName.includes(query);
 
     return locationMatch && resourceTypeMatch && searchMatch;
   });
@@ -76,9 +85,7 @@ const MetersTable = ({
       sx={{
         mb: 2,
         border: `1px solid ${theme.palette.divider}`,
-        '&:hover': {
-          boxShadow: 2,
-        },
+        '&:hover': { boxShadow: 2 },
       }}
     >
       <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
@@ -104,19 +111,36 @@ const MetersTable = ({
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Switch checked={meter.isActive} onChange={() => handleStatusChange(meter)} color="primary" size="small" />
+             {loadingMeterId === meter.id ? (
+              <CircularProgress size={24} />
+            ) : (
+             <Switch
+                checked={meter.isActive}
+                onChange={() => handleStatusChange(meter)}
+                color="primary"
+                size="small"
+                disabled={isLoading || loadingMeterId !== null}
+              />
+              )}
             <Typography variant="body2">{meter.isActive ? 'Активний' : 'Неактивний'}</Typography>
           </Box>
 
           <Stack direction="row" spacing={1}>
             <Tooltip title="Редагувати">
-              <IconButton size="small" onClick={() => onEdit(meter)} color="primary">
+             <span>
+              <IconButton size="small" onClick={() => onEdit(meter)} color="primary" disabled={isLoading || loadingMeterId !== null}>
                 <Edit fontSize="small" />
               </IconButton>
+             </span>
             </Tooltip>
-            <Tooltip title={meter.isActive ? 'Неможливо видалити активний лічільник' : 'Видалити'}>
+            <Tooltip title={meter.isActive ? 'Неможливо видалити активний лічильник' : 'Видалити'}>
               <span>
-                <IconButton size="small" onClick={() => removeMeter(meter.id)} color="error" disabled={meter.isActive}>
+                <IconButton
+                    size="small"
+                    onClick={() => handleRemoveClick(meter.id)}
+                    color="error"
+                    disabled={meter.isActive || isLoading || loadingMeterId !== null}
+                 >
                   <Delete fontSize="small" />
                 </IconButton>
               </span>
@@ -133,73 +157,72 @@ const MetersTable = ({
         sx={{
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
+          flexWrap: 'wrap',
           gap: 2,
-          alignItems: isMobile ? 'stretch' : 'center',
-          justifyContent: isMobile ? 'stretch' : 'space-between',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           mb: 3,
         }}
       >
         <Button
           variant="contained"
           onClick={onAdd}
-          fullWidth={isMobile}
           sx={{
-            minWidth: isMobile ? 'auto' : '160px',
+            width: isMobile ? '100%' : 'auto',
+            minWidth: '160px',
             height: '40px',
             whiteSpace: 'nowrap',
             flexShrink: 0,
+            order: isMobile ? 1 : 0,
           }}
+          disabled={isLoading}
         >
-          Додати лічільник
+          Додати лічильник
         </Button>
-          <FormControl size="small" sx={{ minWidth: 150, width: isMobile ? '100%' : 'auto' }}>
-        <InputLabel>Локація</InputLabel>
-        <Select
-          value={selectedLocation}
-          label="Локація"
-          onChange={(e) => setSelectedLocation(e.target.value)}
-        >
-          <MenuItem value="">
-            <em>Всі локації</em>
-          </MenuItem>
-          {locations.map((loc) => (
-            <MenuItem key={loc.id} value={loc.id}>
-              {loc.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-      <FormControl size="small" sx={{ minWidth: 150, width: isMobile ? '100%' : 'auto' }}>
-        <InputLabel>Тип ресурсу</InputLabel>
-        <Select
-          value={selectedResourceType}
-          label="Тип ресурсу"
-          onChange={(e) => setSelectedResourceType(e.target.value)}
-        >
-          <MenuItem value="">
-            <em>Всі типи</em>
-          </MenuItem>
-          {energyResourceTypes.map((rt) => (
-            <MenuItem key={rt.id} value={rt.id}>
-              {rt.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto', order: isMobile ? 0 : 1 }}>
+          <FormControl size="small" sx={{ minWidth: 150, flexGrow: 1 }} disabled={isLoading}>
+            <InputLabel>Локація</InputLabel>
+            <Select
+              value={selectedLocation}
+              label="Локація"
+              onChange={(e) => setSelectedLocation(e.target.value)}
+            >
+              <MenuItem value=""><em>Всі локації</em></MenuItem>
+              {locations.filter(l => l.isActive).map((loc) => (
+                <MenuItem key={loc.id} value={loc.id}>{loc.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 150, flexGrow: 1 }} disabled={isLoading}>
+            <InputLabel>Тип ресурсу</InputLabel>
+            <Select
+              value={selectedResourceType}
+              label="Тип ресурсу"
+              onChange={(e) => setSelectedResourceType(e.target.value)}
+            >
+              <MenuItem value=""><em>Всі типи</em></MenuItem>
+              {energyResourceTypes.filter(rt => rt.isActive).map((rt) => (
+                <MenuItem key={rt.id} value={rt.id}>{rt.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+
         <SearchField
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          fullWidth={isMobile}
-          placeholder="Пошук за серійним номером, локацією або ресурсом..."
+          placeholder="Пошук..."
           sx={{
-            width: isMobile ? '100%' : '400px',
-            maxWidth: isMobile ? '100%' : '450px',
-            flexShrink: 1,
+            width: isMobile ? '100%' : '300px',
+            order: isMobile ? 2 : 2,
           }}
+          disabled={isLoading}
         />
       </Box>
 
-      {search && (
+      {(search || selectedLocation || selectedResourceType) && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Знайдено: {filteredMeters.length} з {meters.length}
         </Typography>
@@ -208,12 +231,12 @@ const MetersTable = ({
       {isMobile ? (
         <Box>
           {filteredMeters.length > 0 ? (
-            filteredMeters.map((meter) => <MobileMeterCard key={meter.id} meter={meter} />)
+            filteredMeters.map((meter) => <MobileMeterCard key={meter.id} meter={meter} isLoading={isLoading || loadingMeterId === meter.id}/>)
           ) : (
             <Card>
               <CardContent>
                 <Typography variant="body1" align="center" color="text.secondary">
-                  {search ? 'За вашим запитом нічого не знайдено' : 'Лічільники не знайдено'}
+                 За вашими фільтрами нічого не знайдено
                 </Typography>
               </CardContent>
             </Card>
@@ -224,82 +247,39 @@ const MetersTable = ({
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '20%' : '20%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Серійний номер
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '25%' : '25%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Локація
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '20%' : '20%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Тип ресурсу
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '15%' : '15%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Статус
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: '5%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Дії
-                </TableCell>
+                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Серійний номер</TableCell>
+                <TableCell sx={{ width: '25%', fontWeight: 600 }}>Локація</TableCell>
+                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Тип ресурсу</TableCell>
+                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Статус</TableCell>
+                <TableCell sx={{ width: '15%', fontWeight: 600, textAlign: 'center' }}>Дії</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredMeters.length > 0 ? (
                 filteredMeters.map((meter) => (
-                  <TableRow
-                    key={meter.id}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: theme.palette.action.hover,
-                      },
-                    }}
-                  >
+                  <TableRow key={meter.id} sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {meter.serial_number}
-                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>{meter.serial_number}</Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {getLocationName(meter.location_id)}
-                      </Typography>
+                      <Typography variant="body2" color="text.secondary">{getLocationName(meter.location_id)}</Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {getResourceName(meter.energy_resource_type_id)}
-                      </Typography>
+                      <Typography variant="body2" color="text.secondary">{getResourceName(meter.energy_resource_type_id)}</Typography>
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Switch
-                          checked={meter.isActive}
-                          onChange={() => handleStatusChange(meter)}
-                          color="primary"
-                          size="small"
-                        />
+                         {loadingMeterId === meter.id ? (
+                           <CircularProgress size={24} />
+                          ) : (
+                           <Switch
+                              checked={meter.isActive}
+                              onChange={() => handleStatusChange(meter)}
+                              color="primary"
+                              size="small"
+                              disabled={isLoading || loadingMeterId !== null}
+                            />
+                            )}
                         <Chip
                           label={meter.isActive ? 'Активний' : 'Неактивний'}
                           color={meter.isActive ? 'success' : 'default'}
@@ -308,20 +288,22 @@ const MetersTable = ({
                         />
                       </Box>
                     </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={1}>
-                        <Tooltip title="Редагувати лічільник">
-                          <IconButton size="small" onClick={() => onEdit(meter)} color="primary">
-                            <Edit fontSize="small" />
-                          </IconButton>
+                    <TableCell sx={{ textAlign: 'center' }}>
+                      <Stack direction="row" spacing={0} justifyContent="center">
+                        <Tooltip title="Редагувати лічильник">
+                          <span>
+                            <IconButton size="small" onClick={() => onEdit(meter)} color="primary" disabled={isLoading || loadingMeterId !== null}>
+                              <Edit fontSize="small" />
+                            </IconButton>
+                          </span>
                         </Tooltip>
-                        <Tooltip title={meter.isActive ? 'Спочатку деактивуйте лічільник' : 'Видалити лічільник'}>
+                        <Tooltip title={meter.isActive ? 'Спочатку деактивуйте лічильник' : 'Видалити лічильник'}>
                           <span>
                             <IconButton
-                              size="small"
-                              onClick={() => removeMeter(meter.id)}
-                              disabled={meter.isActive}
-                              color="error"
+                                size="small"
+                                onClick={() => handleRemoveClick(meter.id)}
+                                disabled={meter.isActive || isLoading || loadingMeterId !== null}
+                                color="error"
                             >
                               <Delete fontSize="small" />
                             </IconButton>
@@ -335,13 +317,8 @@ const MetersTable = ({
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                      {search ? 'За вашим запитом нічого не знайдено' : 'Лічільники не знайдено'}
+                       За вашими фільтрами нічого не знайдено
                     </Typography>
-                    {!search && (
-                      <Button variant="outlined" onClick={onAdd} sx={{ mt: 2 }}>
-                        Додати перший лічільник
-                      </Button>
-                    )}
                   </TableCell>
                 </TableRow>
               )}

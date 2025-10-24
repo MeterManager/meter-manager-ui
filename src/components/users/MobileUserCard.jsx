@@ -1,6 +1,6 @@
-import { Card, CardContent, Box, Typography, Chip, Switch } from '@mui/material';
+import { Card, CardContent, Box, Typography, Chip, Switch, CircularProgress } from '@mui/material';
 
-const MobileUserCard = ({ user, onToggleStatus, disabled }) => {
+const MobileUserCard = ({ user, onToggleStatus, disabled, isLoading }) => {
   return (
     <Card
       sx={{
@@ -28,13 +28,15 @@ const MobileUserCard = ({ user, onToggleStatus, disabled }) => {
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Switch
-              checked={user.isActive}
-              onChange={onToggleStatus}
-              color="primary"
-              size="small"
-              disabled={disabled}
-            />
+            {isLoading ? <CircularProgress size={20} /> : (
+                <Switch
+                    checked={user.isActive}
+                    onChange={onToggleStatus}
+                    color="primary"
+                    size="small"
+                    disabled={disabled}
+                 />
+            )}
             <Typography variant="body2">{user.isActive ? 'Активний' : 'Неактивний'}</Typography>
           </Box>
         </Box>

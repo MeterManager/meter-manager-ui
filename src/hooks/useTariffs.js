@@ -4,8 +4,8 @@ import * as tariffApi from '../api/tariffApi';
 import { useAuthRequest } from './useAuthRequest';
 import { useErrorHandler } from './useErrorHandler';
 
-const fetcher = async (token, search = '') => {
-  const response = await tariffApi.getTariffs(token, search);
+const fetcher = async (token) => {
+  const response = await tariffApi.getTariffs(token);
   return (response.data || []).map((t) => ({ ...t, isActive: t.is_active === true }));
 };
 
@@ -13,8 +13,11 @@ export const useTariffs = () => {
   const { canRequest, withToken } = useAuthRequest();
   const { error, setError, handleError } = useErrorHandler('Помилка при завантаженні тарифів');
   const [search, setSearch] = useState('');
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [locationFilter, setLocationFilter] = useState('');
+  const [resourceTypeFilter, setResourceTypeFilter] = useState('');
 
-  const swrKey = canRequest ? ['tariffs', search] : null;
+  const swrKey = canRequest ? ['tariffs'] : null;
 
   const {
     data: tariffs = [],
@@ -22,7 +25,7 @@ export const useTariffs = () => {
     mutate: mutateTariffs,
   } = useSWR(
     swrKey,
-    async ([, search]) => withToken(fetcher, search),
+    async () => withToken(fetcher),
     {
       onError: handleError,
       revalidateOnFocus: false,
@@ -34,7 +37,7 @@ export const useTariffs = () => {
   const tariffsByResourceType = useMemo(
     () =>
       tariffs.reduce((acc, t) => {
-        const type = t.resource_type_id || 'other';
+        const type = t.energy_resource_type_id || 'other';
         acc[type] = acc[type] || [];
         acc[type].push(t);
         return acc;
@@ -44,10 +47,11 @@ export const useTariffs = () => {
 
   const addTariff = useCallback(
     async (payload) => {
+      setIsActionLoading(true);
       try {
         setError(null);
         const tempId = Date.now();
-        const optimisticTariff = { ...payload, id: tempId, isActive: payload.is_active ?? true, isOptimistic: true };
+        const optimisticTariff = { ...payload, id: tempId, isActive: true, isOptimistic: true }; // Assume new tariffs are active
 
         mutateTariffs([...tariffs, optimisticTariff], false);
         const response = await withToken(tariffApi.createTariff, payload);
@@ -60,17 +64,20 @@ export const useTariffs = () => {
         mutateTariffs();
         handleError(err, 'Помилка при додаванні тарифу');
         throw err;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [tariffs, mutateTariffs, withToken]
+    [tariffs, mutateTariffs, withToken, handleError, setError]
   );
 
   const editTariff = useCallback(
     async (id, payload) => {
+      setIsActionLoading(true);
       try {
         setError(null);
         mutateTariffs(
-          tariffs.map((t) => (t.id === id ? { ...t, ...payload, isActive: payload.is_active ?? t.isActive } : t)),
+          tariffs.map((t) => (t.id === id ? { ...t, ...payload, isActive: t.isActive } : t)), // Keep original isActive status during optimistic update
           false
         );
 
@@ -83,13 +90,16 @@ export const useTariffs = () => {
         mutateTariffs();
         handleError(err, 'Помилка при редагуванні тарифу');
         throw err;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [tariffs, mutateTariffs, withToken]
+    [tariffs, mutateTariffs, withToken, handleError, setError]
   );
 
   const removeTariff = useCallback(
     async (id) => {
+      setIsActionLoading(true);
       try {
         setError(null);
         mutateTariffs(tariffs.filter((t) => t.id !== id), false);
@@ -100,48 +110,28 @@ export const useTariffs = () => {
         mutateTariffs();
         handleError(err, 'Помилка при видаленні тарифу');
         throw err;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [tariffs, mutateTariffs, withToken]
-  );
-
-  const updateTariffStatus = useCallback(
-    async (id, is_active) => {
-      const tariff = tariffs.find((t) => t.id === id);
-      if (!tariff) throw new Error('Тариф не знайдено');
-      try {
-        setError(null);
-        const payload = { ...tariff, is_active };
-        mutateTariffs(
-          tariffs.map((t) => (t.id === id ? { ...t, isActive: is_active, is_active } : t)),
-          false
-        );
-
-        const response = await withToken(tariffApi.updateTariff, id, payload);
-        mutateTariffs();
-        ['deliveries', 'resourceDeliveries', 'bills', 'calculations'].forEach(mutate);
-
-        return response;
-      } catch (err) {
-        mutateTariffs();
-        handleError(err, 'Помилка при оновленні статусу тарифу');
-        throw err;
-      }
-    },
-    [tariffs, mutateTariffs, withToken]
+    [tariffs, mutateTariffs, withToken, handleError, setError]
   );
 
   return {
     tariffs,
     activeTariffs,
     tariffsByResourceType,
-    loading,
+    loading: loading || isActionLoading,
+    isActionLoading,
     search,
     setSearch,
+    locationFilter,
+    setLocationFilter,
+    resourceTypeFilter,
+    setResourceTypeFilter,
     addTariff,
     editTariff,
     removeTariff,
-    updateTariffStatus,
     refreshTariffs: mutateTariffs,
     error,
     setError,

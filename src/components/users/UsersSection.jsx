@@ -1,21 +1,13 @@
 import { useState } from 'react';
-import {
-  Paper,
-  Box,
-  Typography,
-  Collapse,
-  IconButton,
-  Divider,
-  Snackbar,
-  Alert,
-} from '@mui/material';
+import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import UsersTable from './UsersTable';
 import { useUsers } from '../../hooks/useUsers';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { translateErrorMessage } from '../../utils/translateError';
 
 const UsersSection = ({ initialExpanded = true }) => {
-  const { users, search, setSearch, updateUserStatus } = useUsers();
+  const { users, search, setSearch, updateUserStatus, loading, isActionLoading, error, setError } = useUsers();
   const { user } = useAuthContext();
   const currentUserId = user?.sub;
 
@@ -33,9 +25,10 @@ const UsersSection = ({ initialExpanded = true }) => {
         severity: 'success',
       });
     } catch (err) {
+      const userMessage = translateErrorMessage(err.message || 'Помилка при оновленні статусу користувача');
       setSnackbar({
         open: true,
-        message: err.message || 'Помилка при оновленні статусу користувача',
+        message: userMessage,
         severity: 'error',
       });
     }
@@ -59,7 +52,7 @@ const UsersSection = ({ initialExpanded = true }) => {
           }}
           onClick={handleToggle}
         >
-          <Typography variant="h5">Користувачі ({users.length})</Typography>
+          <Typography variant="h5">Користувачі ({users.filter(u => u.role !== 'admin').length})</Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
         <Divider />
@@ -71,14 +64,17 @@ const UsersSection = ({ initialExpanded = true }) => {
               setSearch={setSearch}
               updateUserStatus={handleUpdateStatus}
               currentUserId={currentUserId}
+              isLoading={loading}
+              isActionLoadingUserId={null}
+              setLocalError={setError}
             />
           </Box>
         </Collapse>
       </Paper>
 
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={6000} 
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >

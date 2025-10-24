@@ -17,6 +17,10 @@ import {
   Stack,
   Tooltip,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { Edit, Delete, Phone, Email } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
@@ -29,12 +33,15 @@ const TenantsTable = ({
   tenants,
   search,
   setSearch,
+  locationFilter,
+  setLocationFilter,
+  locations = [],
   onEdit,
   onAdd,
   removeTenant,
   updateTenantStatus,
   setLocalError,
-  locations = [],
+  isLoading,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
@@ -69,16 +76,22 @@ const TenantsTable = ({
     return tenant.locations.map((loc) => loc.name);
   };
 
-  const filteredTenants = tenants.filter(
-    (tenant) =>
-      tenant.name.toLowerCase().includes(search.toLowerCase()) ||
-      (tenant.contactPerson && tenant.contactPerson.toLowerCase().includes(search.toLowerCase())) ||
-      (tenant.email && tenant.email.toLowerCase().includes(search.toLowerCase())) ||
-      getTenantLocations(tenant).some((locationName) =>
-        locationName.toLowerCase().includes(search.toLowerCase())
-      )
-  );
-
+  const filteredTenants = tenants
+    .filter((tenant) => {
+      if (locationFilter === '') return true;
+      if (locationFilter === 'null') return !tenant.locations || tenant.locations.length === 0;
+      return tenant.locations.some(loc => loc.id === locationFilter);
+    })
+    .filter(
+      (tenant) =>
+        tenant.name.toLowerCase().includes(search.toLowerCase()) ||
+        (tenant.contactPerson && tenant.contactPerson.toLowerCase().includes(search.toLowerCase())) ||
+        (tenant.email && tenant.email.toLowerCase().includes(search.toLowerCase())) ||
+        getTenantLocations(tenant).some((locationName) =>
+          locationName.toLowerCase().includes(search.toLowerCase())
+        )
+    );
+  
   const MobileTenantCard = ({ tenant }) => (
     <Card
       sx={{
@@ -142,7 +155,7 @@ const TenantsTable = ({
                 onChange={() => handleStatusChange(tenant)}
                 color="primary"
                 size="small"
-                disabled={loadingTenantId !== null}
+                disabled={loadingTenantId !== null || isLoading}
               />
             )}
             <Typography variant="body2">{tenant.isActive ? 'Активний' : 'Неактивний'}</Typography>
@@ -150,7 +163,7 @@ const TenantsTable = ({
 
           <Stack direction="row" spacing={1}>
             <Tooltip title="Редагувати">
-              <IconButton size="small" onClick={() => onEdit(tenant)} color="primary" disabled={loadingTenantId !== null}>
+              <IconButton size="small" onClick={() => onEdit(tenant)} color="primary" disabled={loadingTenantId !== null || isLoading}>
                 <Edit fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -160,7 +173,7 @@ const TenantsTable = ({
                   size="small"
                   onClick={() => handleRemove(tenant)}
                   color="error"
-                  disabled={tenant.isActive || loadingTenantId !== null}
+                  disabled={tenant.isActive || loadingTenantId !== null || isLoading}
                 >
                   {loadingTenantId === tenant.id ? <CircularProgress size={20} /> : <Delete fontSize="small" />}
                 </IconButton>
@@ -194,22 +207,56 @@ const TenantsTable = ({
             whiteSpace: 'nowrap',
             flexShrink: 0,
           }}
-          disabled={loadingTenantId !== null}
+          disabled={loadingTenantId !== null || isLoading}
         >
           Додати орендаря
         </Button>
 
-        <SearchField
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          fullWidth={isMobile}
-          placeholder="Пошук за назвою, контактом або email..."
+        <Box
           sx={{
-            width: isMobile ? '100%' : '350px',
-            maxWidth: isMobile ? '100%' : '400px',
-            flexShrink: 1,
+            display: 'flex',
+            gap: 2,
+            flexDirection: isMobile ? 'column' : 'row',
+            width: '100%',
           }}
-        />
+        >
+          <FormControl
+            variant="outlined"
+            size="small"
+            sx={{
+              width: isMobile ? '100%' : '200px',
+              flexShrink: 0,
+            }}
+            disabled={isLoading}
+          >
+            <InputLabel>Локація</InputLabel>
+            <Select
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+              label="Локація"
+            >
+              <MenuItem value="">— Всі локації —</MenuItem>
+              <MenuItem value="null">— Без локації —</MenuItem>
+              {locations.map((loc) => (
+                <MenuItem key={loc.id} value={loc.id}>
+                  {loc.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <SearchField
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            fullWidth
+            placeholder="Пошук за назвою, контактом..."
+            sx={{
+              width: '100%',
+              maxWidth: '100%',
+            }}
+            disabled={isLoading}
+          />
+        </Box>
       </Box>
 
       {search && (
@@ -238,10 +285,10 @@ const TenantsTable = ({
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
                 <TableCell sx={{ width: '20%', fontWeight: 600 }}>Орендар</TableCell>
-                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Локація</TableCell>
-                <TableCell sx={{ width: '18%', fontWeight: 600 }}>Контакти</TableCell>
-                <TableCell sx={{ width: '17%', fontWeight: 600 }}>Статус</TableCell>
-                <TableCell sx={{ width: '5%', fontWeight: 600 }}>Дії</TableCell>
+                <TableCell sx={{ width: '25%', fontWeight: 600 }}>Локації</TableCell>
+                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Контакти</TableCell>
+                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Статус</TableCell>
+                <TableCell sx={{ width: '15%', fontWeight: 600 }}>Дії</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -271,10 +318,10 @@ const TenantsTable = ({
                     <TableCell>
                       {getTenantLocations(tenant).length === 0 ? (
                         <Typography variant="body2" color="text.secondary">
-                          -
+                          —
                         </Typography>
                       ) : (
-                        <ul style={{ paddingLeft: '16px', margin: 0 }}>
+                        <ul style={{ paddingLeft: '16px', margin: 0, listStyleType: 'disc' }}>
                           {getTenantLocations(tenant).map((loc, idx) => (
                             <li key={idx}>
                               <Typography variant="body2" color="text.secondary">
@@ -304,7 +351,7 @@ const TenantsTable = ({
                         )}
                         {!tenant.phone && !tenant.email && (
                           <Typography variant="body2" color="text.secondary">
-                            -
+                            —
                           </Typography>
                         )}
                       </Box>
@@ -320,7 +367,7 @@ const TenantsTable = ({
                             onChange={() => handleStatusChange(tenant)}
                             color="primary"
                             size="small"
-                            disabled={loadingTenantId !== null}
+                            disabled={loadingTenantId !== null || isLoading}
                           />
                         )}
                         <Chip
@@ -333,13 +380,13 @@ const TenantsTable = ({
                     </TableCell>
 
                     <TableCell>
-                      <Stack direction="row" spacing={1}>
+                      <Stack direction="row" spacing={0.5}>
                         <Tooltip title="Редагувати орендаря">
                           <IconButton
                             size="small"
                             onClick={() => onEdit(tenant)}
                             color="primary"
-                            disabled={loadingTenantId !== null}
+                            disabled={loadingTenantId !== null || isLoading}
                           >
                             <Edit fontSize="small" />
                           </IconButton>
@@ -351,7 +398,7 @@ const TenantsTable = ({
                             <IconButton
                               size="small"
                               onClick={() => handleRemove(tenant)}
-                              disabled={tenant.isActive || loadingTenantId !== null}
+                              disabled={tenant.isActive || loadingTenantId !== null || isLoading}
                               color="error"
                             >
                               {loadingTenantId === tenant.id ? (
@@ -368,12 +415,12 @@ const TenantsTable = ({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                      {search ? 'За вашим запитом нічого не знайдено' : 'Орендарів не знайдено'}
+                      {search || locationFilter ? 'За вашим запитом нічого не знайдено' : 'Орендарів не знайдено'}
                     </Typography>
-                    {!search && (
-                      <Button variant="outlined" onClick={onAdd} sx={{ mt: 2 }}>
+                    {!search && !locationFilter && (
+                      <Button variant="outlined" onClick={onAdd} sx={{ mt: 2 }} disabled={isLoading}>
                         Додати першого орендаря
                       </Button>
                     )}

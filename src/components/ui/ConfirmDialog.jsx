@@ -2,7 +2,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, 
 import { Close } from '@mui/icons-material';
 import { getDialogMessage } from '../../utils/getDialogMessage';
 
-const ConfirmDialog = ({ open, onClose, onConfirm, action, dependencies, isLoading }) => {
+const ConfirmDialog = ({ open, onClose, onConfirm, action, dependencies, isLoading, entity  }) => {
   return (
     <Dialog
       open={open}
@@ -16,7 +16,7 @@ const ConfirmDialog = ({ open, onClose, onConfirm, action, dependencies, isLoadi
         </IconButton>
       </DialogTitle>
       <DialogContent>
-        <Typography>{getDialogMessage(action, dependencies)}</Typography>
+        <Typography>{getDialogMessage(action, dependencies, entity)}</Typography>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={isLoading}>

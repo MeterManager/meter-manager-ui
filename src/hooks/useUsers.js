@@ -1,57 +1,69 @@
-import { useState, useEffect } from 'react';
-import * as userApi from '../api/userApi';
+import { useState, useCallback, useMemo } from 'react';
+import useSWR, { mutate } from 'swr';
+import * as usersApi from '../api/userApi';
 import { useAuthRequest } from './useAuthRequest';
 import { useErrorHandler } from './useErrorHandler';
 
+const fetcher = async (token, search = '') => {
+  const response = await usersApi.getUsers(token, search);
+  return (response.data || []).map(u => ({ ...u, isActive: u.is_active }));
+};
+
 export const useUsers = () => {
   const { canRequest, withToken } = useAuthRequest();
-  const { handleError } = useErrorHandler('Помилка при завантаженні користувачів');
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { error, setError, handleError } = useErrorHandler('Помилка при завантаженні користувачів');
   const [search, setSearch] = useState('');
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!canRequest) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
+  const swrKey = canRequest ? ['users'] : null;
+
+  const {
+    data: users = [],
+    isLoading: loadingSWR,
+    mutate: mutateUsers,
+  } = useSWR(
+    swrKey,
+    async () => withToken(fetcher),
+    {
+      onError: handleError,
+      revalidateOnFocus: false,
+      dedupingInterval: 5000,
+    }
+  );
+
+  const updateUserStatus = useCallback(
+    async (id, isActive) => {
+      setIsActionLoading(true);
       try {
-        const response = await withToken(userApi.getUsers, search);
-        const usersData = Array.isArray(response.data) ? response.data : response.data?.data || [];
-        const newUsers = usersData.map((u) => ({ ...u, isActive: u.is_active === true }));
-        setUsers(newUsers);
+        setError(null);
+        mutateUsers(
+          (currentUsers = []) => currentUsers.map(u => u.id === id ? { ...u, isActive, is_active: isActive } : u),
+          false
+        );
+        await withToken(usersApi.updateUser, id, { is_active: isActive });
+        await mutateUsers();
       } catch (err) {
-        handleError(err);
+        mutateUsers();
+        handleError(err, 'Помилка при оновленні статусу користувача');
+        throw err;
       } finally {
-        setLoading(false);
+        setIsActionLoading(false);
       }
-    };
+    },
+    [withToken, mutateUsers, handleError, setError]
+  );
 
-    fetchData();
-  }, [search, canRequest]);
-
-  const updateUserStatus = async (id, is_active) => {
-    const user = users.find((u) => u.id === id);
-    if (!user) throw new Error('Користувача не знайдено');
-    if (user.role === 'admin') throw new Error('Не можна змінити статус користувача з роллю "admin".');
-    
-    const payload = { is_active };
-    const response = await withToken(userApi.updateUser, id, payload);
-    setUsers(prevUsers => 
-      prevUsers.map(u => 
-        u.id === id ? { ...u, isActive: is_active, is_active } : u
-      )
-    );
-    return response;
-  };
+  const loading = loadingSWR || isActionLoading;
 
   return {
     users,
     loading,
+    isActionLoading,
     search,
     setSearch,
     updateUserStatus,
+    error,
+    setError,
+    refreshUsers: mutateUsers,
   };
 };

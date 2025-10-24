@@ -3,13 +3,30 @@ import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert 
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import TariffsTable from '../tariffs/TariffsTable';
 import TariffForm from '../tariffs/TariffForm';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import { useTariffs } from '../../hooks/useTariffs';
 import { useLocations } from '../../hooks/useLocations';
 import { useResourceTypes } from '../../hooks/useResourceTypes';
 import { translateErrorMessage } from '../../utils/translateError';
 
 const TariffsSection = ({ initialExpanded = true }) => {
-  const { tariffs, search, setSearch, addTariff, editTariff, removeTariff, error, setError } = useTariffs();
+  const {
+    tariffs,
+    search,
+    setSearch,
+    locationFilter,
+    setLocationFilter,
+    resourceTypeFilter,
+    setResourceTypeFilter,
+    addTariff,
+    editTariff,
+    removeTariff,
+    loading: tariffsLoading, 
+    isActionLoading,
+    error,
+    setError
+  } = useTariffs();
+
   const { locations, loading: locationsLoading, error: locationsError } = useLocations();
   const { resourceTypes, loading: typesLoading, error: typesError } = useResourceTypes();
 
@@ -17,6 +34,7 @@ const TariffsSection = ({ initialExpanded = true }) => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingTariff, setEditingTariff] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
 
   const handleToggle = () => setExpanded((prev) => !prev);
 
@@ -44,8 +62,9 @@ const TariffsSection = ({ initialExpanded = true }) => {
       setEditingTariff(null);
     } catch (err) {
       const userMessage = translateErrorMessage(err.message);
-      setError(userMessage);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      throw err;
     }
   };
 
@@ -55,20 +74,31 @@ const TariffsSection = ({ initialExpanded = true }) => {
     setError(null);
   };
 
-  const handleRemove = async (id) => {
+  const handleRemove = (id) => {
+    setConfirmDialog({ open: true, id });
+  };
+
+  const handleConfirmDelete = async () => {
     try {
-      await removeTariff(id);
+      await removeTariff(confirmDialog.id);
       setSnackbar({ open: true, message: 'Тариф видалено', severity: 'success' });
+      handleCloseConfirmDialog();
     } catch (err) {
       const userMessage = translateErrorMessage(err.message);
-      setError(userMessage);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     }
+  };
+
+  const handleCloseConfirmDialog = () => {
+    setConfirmDialog({ open: false, id: null });
   };
 
   const handleCloseSnackbar = () => setSnackbar({ open: false, message: '', severity: 'success' });
 
-  if (locationsLoading || typesLoading) return <Typography>Завантаження...</Typography>;
+  const isLoading = tariffsLoading || locationsLoading || typesLoading;
+
+  if (isLoading && !formOpen) return <Typography>Завантаження...</Typography>;
   if (locationsError) return <Typography color="error">Помилка при завантаженні локацій</Typography>;
   if (typesError) return <Typography color="error">Помилка при завантаженні типів ресурсів</Typography>;
 
@@ -108,12 +138,19 @@ const TariffsSection = ({ initialExpanded = true }) => {
               tariffs={tariffs}
               search={search}
               setSearch={setSearch}
+              locationFilter={locationFilter}
+              setLocationFilter={setLocationFilter}
+              resourceTypeFilter={resourceTypeFilter}
+              setResourceTypeFilter={setResourceTypeFilter}
               onAdd={handleAdd}
               onEdit={handleEdit}
               onDelete={handleRemove}
               setLocalError={setError}
               locationsMap={locationsMap}
               resourceTypesMap={resourceTypesMap}
+              locations={locations}
+              resourceTypes={resourceTypes}
+              isLoading={isLoading || isActionLoading}
             />
           </Box>
         </Collapse>
@@ -127,6 +164,17 @@ const TariffsSection = ({ initialExpanded = true }) => {
         error={error}
         locations={locations}
         resourceTypes={resourceTypes}
+        isLoading={isActionLoading}
+      />
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onClose={handleCloseConfirmDialog}
+        onConfirm={handleConfirmDelete}
+        action="delete"
+        entity="tariff"
+        dependencies={null}
+        isLoading={isActionLoading}
       />
 
       <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>

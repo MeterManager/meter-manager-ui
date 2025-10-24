@@ -9,7 +9,6 @@ import {
   Alert,
   MenuItem,
   CircularProgress,
-  Box,
   IconButton
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
@@ -31,7 +30,7 @@ const MeterForm = ({
   const isMobile = useMediaQuery('(max-width:800px)');
   const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
 
-  const [formData, setFormData] = useState(initialData);
+  const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
@@ -40,7 +39,7 @@ const MeterForm = ({
         serial_number: initialData.serial_number || '',
         location_id: initialData.location_id || '',
         energy_resource_type_id: initialData.energy_resource_type_id || '',
-        isActive: initialData.isActive ?? false,
+        isActive: initialData.isActive ?? true,
         id: initialData.id,
       });
       setFormErrors({});
@@ -48,30 +47,29 @@ const MeterForm = ({
   }, [open, initialData]);
 
   const validateField = (name, value) => {
-    let error = '';
+    let errorMsg = '';
     if (name === 'serial_number') {
       if (!value) {
-        error = "Серійний номер обов'язковий.";
-      } else if (Array.isArray(meters) && !loading) {
-        if (meters.some((m) => m.serial_number === value && m.id !== initialData.id)) {
-          error = 'Лічільник з таким серійним номером вже існує.';
-        }
+        errorMsg = "Серійний номер обов'язковий.";
+      } else if (Array.isArray(meters) && meters.some((m) => m.serial_number === value && m.id !== formData.id)) {
+          errorMsg = 'Лічильник з таким серійним номером вже існує.';
       }
     }
     if (name === 'location_id' && !value) {
-      error = "Локація обов'язкова.";
+      errorMsg = "Локація обов'язкова.";
     }
     if (name === 'energy_resource_type_id' && !value) {
-      error = "Тип ресурсу обов'язковий.";
+      errorMsg = "Тип ресурсу обов'язковий.";
     }
-    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
-    return error;
+    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: errorMsg }));
+    return errorMsg;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    validateField(name, value);
+    const processedValue = (name === 'location_id' || name === 'energy_resource_type_id') && value !== '' ? Number(value) : value;
+    setFormData((prev) => ({ ...prev, [name]: processedValue }));
+    validateField(name, processedValue);
   };
 
   const handleSubmit = () => {
@@ -80,9 +78,9 @@ const MeterForm = ({
     let hasError = false;
 
     fieldsToValidate.forEach((field) => {
-      const error = validateField(field, formData[field]);
-      if (error) {
-        errors[field] = error;
+      const errorMsg = validateField(field, formData[field]);
+      if (errorMsg) {
+        errors[field] = errorMsg;
         hasError = true;
       }
     });
@@ -93,7 +91,7 @@ const MeterForm = ({
     }
     onSubmit({
       ...formData,
-      isActive: formData.isActive ?? initialData.isActive ?? false, // Переконайся, що isActive є в formData
+      isActive: formData.isActive ?? false,
     });
   };
 
@@ -130,9 +128,9 @@ const MeterForm = ({
         }}
       >
         {initialData.id ? 'Редагувати лічильник' : 'Додати лічильник'}
-        <IconButton onClick={handleClose} size="small">
-          <Close />
-         </IconButton>
+        <IconButton onClick={handleClose} size="small" disabled={loading}>
+         <Close />
+        </IconButton>
       </DialogTitle>
 
       <DialogContent
@@ -141,19 +139,11 @@ const MeterForm = ({
           pb: 1,
         }}
       >
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
           <>
             {error && (
               <Alert
                 severity="error"
-                sx={{
-                  mb: 2,
-                  fontSize: isMobile ? '0.875rem' : '1rem',
-                }}
+                sx={{ mb: 2, fontSize: isMobile ? '0.875rem' : '1rem' }}
               >
                 {error}
               </Alert>
@@ -166,19 +156,11 @@ const MeterForm = ({
               onChange={handleChange}
               fullWidth
               variant="outlined"
-              size={isMobile ? 'medium' : 'medium'}
-              sx={{
-                mt: 1,
-                mb: 2,
-                '& .MuiInputBase-input': {
-                  fontSize: isMobile ? '1rem' : '1rem',
-                },
-                '& .MuiInputLabel-root': {
-                  fontSize: isMobile ? '1rem' : '1rem',
-                },
-              }}
+              size="medium"
+              sx={{ mt: 1, mb: 2 }}
               error={!!formErrors.serial_number}
               helperText={formErrors.serial_number || ' '}
+              disabled={loading}
             />
 
             <TextField
@@ -189,20 +171,13 @@ const MeterForm = ({
               onChange={handleChange}
               fullWidth
               variant="outlined"
-              size={isMobile ? 'medium' : 'medium'}
-              sx={{
-                mb: 2,
-                '& .MuiInputBase-input': {
-                  fontSize: isMobile ? '1rem' : '1rem',
-                },
-                '& .MuiInputLabel-root': {
-                  fontSize: isMobile ? '1rem' : '1rem',
-                },
-              }}
+              size="medium"
+              sx={{ mb: 2 }}
               error={!!formErrors.location_id}
               helperText={formErrors.location_id || ' '}
+              disabled={loading}
             >
-              {locations
+              {(locations || [])
                 .filter((l) => l.isActive)
                 .map((loc) => (
                   <MenuItem key={loc.id} value={loc.id}>
@@ -219,28 +194,22 @@ const MeterForm = ({
               onChange={handleChange}
               fullWidth
               variant="outlined"
-              size={isMobile ? 'medium' : 'medium'}
-              sx={{
-                '& .MuiInputBase-input': {
-                  fontSize: isMobile ? '1rem' : '1rem',
-                },
-                '& .MuiInputLabel-root': {
-                  fontSize: isMobile ? '1rem' : '1rem',
-                },
-              }}
+              size="medium"
+              sx={{ mb: 2 }}
               error={!!formErrors.energy_resource_type_id}
               helperText={formErrors.energy_resource_type_id || ' '}
+              disabled={loading}
             >
-              {energyResourceTypes
+              {(energyResourceTypes || [])
                 .filter((rt) => rt.isActive)
                 .map((rt) => (
                   <MenuItem key={rt.id} value={rt.id}>
-                    {rt.name}
+                    {rt.name} ({rt.unit})
                   </MenuItem>
                 ))}
             </TextField>
           </>
-        )}
+
       </DialogContent>
 
       <DialogActions
@@ -260,9 +229,8 @@ const MeterForm = ({
           variant="outlined"
           onClick={handleClose}
           fullWidth={isMobile}
-          sx={{
-            order: isMobile ? 1 : 0,
-          }}
+          sx={{ order: isMobile ? 1 : 0 }}
+          disabled={loading}
         >
           Скасувати
         </Button>
@@ -271,12 +239,9 @@ const MeterForm = ({
           onClick={handleSubmit}
           disabled={loading}
           fullWidth={isMobile}
-          sx={{
-            order: isMobile ? 0 : 1,
-            marginLeft: '0 !important',
-          }}
+          sx={{ order: isMobile ? 0 : 1, marginLeft: '0 !important' }}
         >
-          Зберегти
+          {loading ? <CircularProgress size={24} color="inherit" /> : 'Зберегти'}
         </Button>
       </DialogActions>
     </Dialog>

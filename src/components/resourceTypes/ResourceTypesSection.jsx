@@ -159,6 +159,7 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
         action={confirmDialog.action}
         dependencies={null}
         isLoading={isActionLoading}
+        entity="resourceType"
       />
 
       <Snackbar

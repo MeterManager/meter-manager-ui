@@ -4,24 +4,38 @@ import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import ResourceDeliveryTable from './ResourceDeliveryTable';
 import ResourceDeliveryForm from './ResourceDeliveryForm';
 import { useResourceDeliveries } from '../../hooks/useResourceDeliveries';
+import { translateErrorMessage } from '../../utils/translateError';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 const ResourceDeliverySection = ({ initialExpanded = true }) => {
-  const { 
-    deliveries, 
-    locations, 
-    resourceTypes, 
-    search, 
-    setSearch, 
-    addDelivery, 
-    editDelivery, 
+  const {
+    deliveries,
+    locations,
+    resourceTypes,
+    search,
+    setSearch,
+    locationFilter,
+    setLocationFilter,
+    resourceTypeFilter,
+    setResourceTypeFilter,
+    dateFromFilter,
+    setDateFromFilter,
+    dateToFilter,
+    setDateToFilter,
+    addDelivery,
+    editDelivery,
     removeDelivery,
-    loading 
+    loading,
+    isActionLoading,
+    error,
+    setError
   } = useResourceDeliveries();
 
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [editingDelivery, setEditingDelivery] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
 
   const handleToggle = () => setExpanded(!expanded);
 
@@ -48,27 +62,41 @@ const ResourceDeliverySection = ({ initialExpanded = true }) => {
       setFormOpen(false);
       setEditingDelivery(null);
     } catch (err) {
-      setSnackbar({ open: true, message: err.message || 'Помилка при збереженні поставки', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setError(userMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      throw err;
     }
   };
 
   const handleFormClose = () => {
     setFormOpen(false);
     setEditingDelivery(null);
+    setError(null);
   };
 
-  const handleRemove = async (id) => {
+  const handleRemove = (id) => {
+    setConfirmDialog({ open: true, id });
+  };
+
+  const handleConfirmDelete = async () => {
     try {
-      await removeDelivery(id);
+      await removeDelivery(confirmDialog.id);
       setSnackbar({ open: true, message: 'Поставку видалено', severity: 'success' });
+      handleCloseConfirmDialog();
     } catch (err) {
-      setSnackbar({ open: true, message: err.message || 'Помилка при видаленні поставки', severity: 'error' });
+      const userMessage = translateErrorMessage(err.message);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
     }
+  };
+
+  const handleCloseConfirmDialog = () => {
+    setConfirmDialog({ open: false, id: null });
   };
 
   const handleCloseSnackbar = () => setSnackbar({ open: false, message: '', severity: 'success' });
 
-  if (loading) return <Typography>Завантаження...</Typography>;
+  if (loading && !formOpen) return <Typography>Завантаження...</Typography>;
 
   return (
     <>
@@ -96,9 +124,18 @@ const ResourceDeliverySection = ({ initialExpanded = true }) => {
               resourceTypes={resourceTypes}
               search={search}
               setSearch={setSearch}
+              locationFilter={locationFilter}
+              setLocationFilter={setLocationFilter}
+              resourceTypeFilter={resourceTypeFilter}
+              setResourceTypeFilter={setResourceTypeFilter}
+              dateFromFilter={dateFromFilter}
+              setDateFromFilter={setDateFromFilter}
+              dateToFilter={dateToFilter}
+              setDateToFilter={setDateToFilter}
               onAdd={handleAdd}
               onEdit={handleEdit}
               removeDelivery={handleRemove}
+              isLoading={loading}
             />
           </Box>
         </Collapse>
@@ -111,11 +148,23 @@ const ResourceDeliverySection = ({ initialExpanded = true }) => {
         initialData={editingDelivery || {}}
         locations={locations}
         resourceTypes={resourceTypes}
+        isLoading={isActionLoading}
+        error={error}
       />
 
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={6000} 
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onClose={handleCloseConfirmDialog}
+        onConfirm={handleConfirmDelete}
+        action="delete"
+        entity="delivery"
+        dependencies={null}
+        isLoading={isActionLoading}
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >

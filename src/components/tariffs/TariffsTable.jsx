@@ -16,13 +16,33 @@ import {
   Stack,
   Tooltip,
   Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { Edit, Delete, AttachMoney, LocationOn, Category, CalendarToday } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 
-const TariffsTable = ({ tariffs, onEdit, onAdd, onDelete, locationsMap, resourceTypesMap, search, setSearch }) => {
+const TariffsTable = ({
+  tariffs,
+  onEdit,
+  onAdd,
+  onDelete,
+  locationsMap,
+  resourceTypesMap,
+  locations,
+  resourceTypes,
+  search,
+  setSearch,
+  locationFilter,
+  setLocationFilter,
+  resourceTypeFilter,
+  setResourceTypeFilter,
+  isLoading,
+}) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
   const isTablet = useMediaQuery('(max-width:960px)');
@@ -42,11 +62,14 @@ const TariffsTable = ({ tariffs, onEdit, onAdd, onDelete, locationsMap, resource
     const resourceName = resourceTypesMap[tariff.energy_resource_type_id] || '';
     const searchTerm = search.toLowerCase();
 
-    return (
+    const locationMatch = locationFilter === '' || tariff.location_id === locationFilter;
+    const resourceTypeMatch = resourceTypeFilter === '' || tariff.energy_resource_type_id === resourceTypeFilter;
+    const searchMatch =
+      searchTerm === '' ||
       locationName.toLowerCase().includes(searchTerm) ||
       resourceName.toLowerCase().includes(searchTerm) ||
-      tariff.price.toString().includes(searchTerm)
-    );
+      tariff.price.toString().includes(searchTerm);
+    return locationMatch && resourceTypeMatch && searchMatch;
   });
 
   const formatDate = (dateString) => {
@@ -58,6 +81,10 @@ const TariffsTable = ({ tariffs, onEdit, onAdd, onDelete, locationsMap, resource
     const now = new Date();
     const validFrom = new Date(tariff.valid_from);
     const validTo = tariff.valid_to ? new Date(tariff.valid_to) : null;
+    now.setHours(0,0,0,0);
+    validFrom.setHours(0,0,0,0);
+    if(validTo) validTo.setHours(0,0,0,0);
+
 
     return now >= validFrom && (!validTo || now <= validTo);
   };
@@ -94,20 +121,23 @@ const TariffsTable = ({ tariffs, onEdit, onAdd, onDelete, locationsMap, resource
 
         <Stack spacing={1.5} sx={{ mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+             <LocationOn sx={{ fontSize: '16px', color: 'grey.500' }} />
             <Typography variant="body2" color="text.secondary">
-              <strong>Локація:</strong> {locationsMap[tariff.location_id] || '—'}
+              {locationsMap[tariff.location_id] || '—'}
             </Typography>
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+             <Category sx={{ fontSize: '16px', color: 'grey.500' }} />
             <Typography variant="body2" color="text.secondary">
-              <strong>Ресурс:</strong> {resourceTypesMap[tariff.energy_resource_type_id] || '—'}
+              {resourceTypesMap[tariff.energy_resource_type_id] || '—'}
             </Typography>
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+             <CalendarToday sx={{ fontSize: '16px', color: 'grey.500' }} />
             <Typography variant="body2" color="text.secondary">
-              <strong>Період:</strong> {formatDate(tariff.valid_from)}
+              {formatDate(tariff.valid_from)}
               {tariff.valid_to ? ` - ${formatDate(tariff.valid_to)}` : ' (безстроково)'}
             </Typography>
           </Box>
@@ -117,14 +147,18 @@ const TariffsTable = ({ tariffs, onEdit, onAdd, onDelete, locationsMap, resource
 
         <Stack direction="row" spacing={1} justifyContent="flex-end">
           <Tooltip title="Редагувати тариф">
-            <IconButton size="small" onClick={() => onEdit(tariff)} color="primary">
+           <span>
+            <IconButton size="small" onClick={() => onEdit(tariff)} color="primary" disabled={isLoading}>
               <Edit fontSize="small" />
             </IconButton>
+           </span>
           </Tooltip>
           <Tooltip title="Видалити тариф">
-            <IconButton size="small" onClick={() => onDelete(tariff.id)} color="error">
+           <span>
+            <IconButton size="small" onClick={() => onDelete(tariff.id)} color="error" disabled={isLoading}>
               <Delete fontSize="small" />
             </IconButton>
+            </span>
           </Tooltip>
         </Stack>
       </CardContent>
@@ -136,40 +170,89 @@ const TariffsTable = ({ tariffs, onEdit, onAdd, onDelete, locationsMap, resource
       <Box
         sx={{
           display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
+          flexDirection: 'column',
           gap: 2,
-          alignItems: isMobile ? 'stretch' : 'center',
-          justifyContent: isMobile ? 'stretch' : 'space-between',
           mb: 3,
         }}
       >
-        <Button
-          variant="contained"
-          onClick={onAdd}
-          fullWidth={isMobile}
+        <Box
           sx={{
-            minWidth: isMobile ? 'auto' : '160px',
-            height: '40px',
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: 2,
+            alignItems: isMobile ? 'stretch' : 'center',
+            justifyContent: 'space-between',
           }}
         >
-          Додати тариф
-        </Button>
+          <Button
+            variant="contained"
+            onClick={onAdd}
+            fullWidth={isMobile}
+            sx={{
+              minWidth: isMobile ? 'auto' : '160px',
+              height: '40px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+            disabled={isLoading}
+          >
+            Додати тариф
+          </Button>
 
-        <SearchField
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          fullWidth={isMobile}
-          sx={{
-            width: isMobile ? '100%' : '350px',
-            maxWidth: isMobile ? '100%' : '400px',
-            flexShrink: 1,
-          }}
-        />
+          <SearchField
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            fullWidth={isMobile}
+            placeholder="Пошук за локацією, ресурсом, ціною..."
+            sx={{
+              width: isMobile ? '100%' : '350px',
+              maxWidth: isMobile ? '100%' : '400px',
+              flexShrink: 1,
+            }}
+             disabled={isLoading}
+          />
+        </Box>
+        <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: 2,
+            }}
+        >
+            <FormControl fullWidth size="small" disabled={isLoading}>
+              <InputLabel>Локація</InputLabel>
+              <Select
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+                label="Локація"
+              >
+                <MenuItem value="">— Всі локації —</MenuItem>
+                {locations.filter(l=> l.isActive).map((loc) => (
+                  <MenuItem key={loc.id} value={loc.id}>
+                    {loc.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+             <FormControl fullWidth size="small" disabled={isLoading}>
+              <InputLabel>Тип ресурсу</InputLabel>
+              <Select
+                value={resourceTypeFilter}
+                onChange={(e) => setResourceTypeFilter(e.target.value)}
+                label="Тип ресурсу"
+              >
+                <MenuItem value="">— Всі ресурси —</MenuItem>
+                {resourceTypes.filter(rt => rt.isActive).map((res) => (
+                  <MenuItem key={res.id} value={res.id}>
+                    {res.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+        </Box>
       </Box>
 
-      {search && (
+      {(search || locationFilter || resourceTypeFilter) && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Знайдено: {filteredTariffs.length} з {tariffs.length}
         </Typography>
@@ -178,12 +261,12 @@ const TariffsTable = ({ tariffs, onEdit, onAdd, onDelete, locationsMap, resource
       {isMobile ? (
         <Box>
           {filteredTariffs.length > 0 ? (
-            filteredTariffs.map((tariff) => <MobileTariffCard key={tariff.id} tariff={tariff} />)
+            filteredTariffs.map((tariff) => <MobileTariffCard key={tariff.id} tariff={tariff} isLoading={isLoading} />)
           ) : (
             <Card>
               <CardContent>
                 <Typography variant="body1" align="center" color="text.secondary">
-                  {search ? 'За вашим запитом нічого не знайдено' : 'Тарифів не знайдено'}
+                  За вашими фільтрами нічого не знайдено
                 </Typography>
               </CardContent>
             </Card>
@@ -194,54 +277,12 @@ const TariffsTable = ({ tariffs, onEdit, onAdd, onDelete, locationsMap, resource
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '18%' : '20%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Локація
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '18%' : '20%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Тип ресурсу
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: '18%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Ціна
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: '15%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Діє з
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '15%' : '15%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Діє до
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: '5%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Дії
-                </TableCell>
+                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Локація</TableCell>
+                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Тип ресурсу</TableCell>
+                <TableCell sx={{ width: '18%', fontWeight: 600 }}>Ціна</TableCell>
+                <TableCell sx={{ width: '15%', fontWeight: 600 }}>Діє з</TableCell>
+                <TableCell sx={{ width: '15%', fontWeight: 600 }}>Діє до</TableCell>
+                <TableCell sx={{ width: '12%', fontWeight: 600, textAlign: 'center' }}>Дії</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -286,17 +327,21 @@ const TariffsTable = ({ tariffs, onEdit, onAdd, onDelete, locationsMap, resource
                         <Chip label="Безстроково" color="info" size="small" variant="outlined" />
                       )}
                     </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={1}>
+                    <TableCell sx={{ textAlign: 'center' }}>
+                      <Stack direction="row" spacing={0} justifyContent="center">
                         <Tooltip title="Редагувати тариф">
-                          <IconButton size="small" onClick={() => onEdit(tariff)} color="primary">
-                            <Edit fontSize="small" />
-                          </IconButton>
+                          <span>
+                            <IconButton size="small" onClick={() => onEdit(tariff)} color="primary" disabled={isLoading}>
+                              <Edit fontSize="small" />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                         <Tooltip title="Видалити тариф">
-                          <IconButton size="small" onClick={() => onDelete(tariff.id)} color="error">
+                         <span>
+                          <IconButton size="small" onClick={() => onDelete(tariff.id)} color="error" disabled={isLoading}>
                             <Delete fontSize="small" />
                           </IconButton>
+                         </span>
                         </Tooltip>
                       </Stack>
                     </TableCell>
@@ -306,13 +351,8 @@ const TariffsTable = ({ tariffs, onEdit, onAdd, onDelete, locationsMap, resource
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                      {search ? 'За вашим запитом нічого не знайдено' : 'Тарифів не знайдено'}
+                      За вашими фільтрами нічого не знайдено
                     </Typography>
-                    {!search && (
-                      <Button variant="outlined" onClick={onAdd} sx={{ mt: 2 }}>
-                        Додати перший тариф
-                      </Button>
-                    )}
                   </TableCell>
                 </TableRow>
               )}

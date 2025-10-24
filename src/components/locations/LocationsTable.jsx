@@ -16,6 +16,10 @@ import {
   CardContent,
   Stack,
   Tooltip,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControl,
 } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
@@ -25,7 +29,9 @@ import { useTheme } from '@mui/material/styles';
 const LocationsTable = ({
   locations,
   tenants = [],
+  tenantFilter,
   search,
+  setTenantFilter,
   setSearch,
   onEdit,
   onAdd,
@@ -53,12 +59,18 @@ const LocationsTable = ({
     }
   };
 
-  const filteredLocations = locations.filter(
-    (loc) =>
-      (loc.name || '').toLowerCase().includes(search.toLowerCase()) ||
-      (loc.address || '').toLowerCase().includes(search.toLowerCase()) ||
-      (loc.tenant?.name || '— вільна —').toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredLocations = locations
+    .filter((loc) => {
+      if (tenantFilter === '') return true;
+      if (tenantFilter === 'null') return !loc.tenant;
+      return loc.tenant?.id === tenantFilter;
+    })
+    .filter(
+      (loc) =>
+        (loc.name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (loc.address || '').toLowerCase().includes(search.toLowerCase()) ||
+        (loc.tenant?.name || '— вільна —').toLowerCase().includes(search.toLowerCase())
+    );
 
   const MobileLocationCard = ({ location }) => (
     <Card
@@ -156,16 +168,48 @@ const LocationsTable = ({
           Додати локацію
         </Button>
 
-        <SearchField
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          fullWidth={isMobile}
+        <Box
           sx={{
-            width: isMobile ? '100%' : '350px',
-            maxWidth: isMobile ? '100%' : '400px',
-            flexShrink: 1,
+            display: 'flex',
+            gap: 2,
+            flexDirection: isMobile ? 'column' : 'row',
+            width: '100%',
           }}
-        />
+        >
+          <FormControl
+            variant="outlined"
+            size="small"
+            sx={{
+              width: isMobile ? '100%' : '200px',
+              flexShrink: 0,
+            }}
+          >
+            <InputLabel>Орендар</InputLabel>
+            <Select
+              value={tenantFilter}
+              onChange={(e) => setTenantFilter(e.target.value)}
+              label="Орендар"
+            >
+              <MenuItem value="">— Всі орендарі —</MenuItem>
+              <MenuItem value="null">— Вільні локації —</MenuItem>
+              {tenants.map((t) => (
+                <MenuItem key={t.id} value={t.id}>
+                  {t.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <SearchField
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            fullWidth
+            sx={{
+              width: '100%',
+              maxWidth: '100%',
+            }}
+          />
+        </Box>
       </Box>
 
       {search && (
@@ -225,9 +269,7 @@ const LocationsTable = ({
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">
-                        {loc.occupied_area ?? '—'}
-                      </Typography>
+                      <Typography variant="body2">{loc.occupied_area ?? '—'}</Typography>
                     </TableCell>
 
                     <TableCell>
@@ -278,7 +320,7 @@ const LocationsTable = ({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
                       {search ? 'За вашим запитом нічого не знайдено' : 'Локації не знайдено'}
                     </Typography>

@@ -7,12 +7,11 @@ import { useErrorHandler } from './useErrorHandler';
 export const useLocations = () => {
   const { canRequest, withToken } = useAuthRequest();
   const { error, setError, handleError } = useErrorHandler('Помилка при завантаженні локацій');
-  const [search, setSearch] = useState('');
   const [isActionLoading, setIsActionLoading] = useState(false);
 
   const fetcher = useCallback(
-    async ([, , search]) => {
-      const data = await withToken(locationApi.getLocations, search);
+    async ( ) => {
+      const data = await withToken(locationApi.getLocations);
       return (data || []).map((loc) => ({
         ...loc,
         isActive: loc.is_active === true,
@@ -22,7 +21,7 @@ export const useLocations = () => {
     [withToken]
   );
 
-  const swrKey = canRequest ? ['locations', null, search] : null;
+  const swrKey = canRequest ? ['locations', null] : null;
 
   const {
     data: locations = [],
@@ -218,8 +217,6 @@ export const useLocations = () => {
     locations,
     activeLocations,
     loading: loading || isActionLoading,
-    search,
-    setSearch,
     addLocation,
     editLocation,
     removeLocation,

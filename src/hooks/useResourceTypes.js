@@ -4,8 +4,8 @@ import * as resourceTypeApi from '../api/resourceTypesApi';
 import { useAuthRequest } from './useAuthRequest';
 import { useErrorHandler } from './useErrorHandler';
 
-const fetcher = async (token, search = '') => {
-  const response = await resourceTypeApi.getResourceTypes(token, search);
+const fetcher = async (token = '') => {
+  const response = await resourceTypeApi.getResourceTypes(token);
   return (response.data || []).map((type) => ({
     ...type,
     isActive: type.is_active === true,
@@ -18,7 +18,7 @@ export const useResourceTypes = () => {
   const [search, setSearch] = useState('');
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  const swrKey = canRequest ? ['resourceTypes', search] : null;
+  const swrKey = canRequest ? ['resourceTypes'] : null;
 
   const {
     data: resourceTypes = [],
@@ -26,7 +26,7 @@ export const useResourceTypes = () => {
     mutate: mutateResourceTypes,
   } = useSWR(
     swrKey,
-    async ([, search]) => withToken(fetcher, search),
+    async () => withToken(fetcher),
     {
       onError: handleError,
       revalidateOnFocus: false,

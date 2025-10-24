@@ -9,12 +9,13 @@ import {
   Alert, 
   MenuItem,
   IconButton,
-  Box
+  Box,
+  CircularProgress
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
-import CastomDatePicker from '../ui/DatePicker';
+import CustomDatePicker from '../ui/DatePicker';
 
 const ResourceDeliveryForm = ({
   open,
@@ -23,6 +24,8 @@ const ResourceDeliveryForm = ({
   initialData = {},
   locations = [],
   resourceTypes = [],
+  isLoading,
+  error,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
@@ -30,7 +33,6 @@ const ResourceDeliveryForm = ({
 
   const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
-  const [submitError, setSubmitError] = useState(null);
 
   useEffect(() => {
     if (open) {
@@ -48,7 +50,6 @@ const ResourceDeliveryForm = ({
       };
       setFormData(mappedData);
       setFormErrors({});
-      setSubmitError(null);
     }
   }, [open, initialData]);
 
@@ -109,14 +110,12 @@ const ResourceDeliveryForm = ({
       await onSubmit(submitData);
       handleClose();
     } catch (err) {
-      setSubmitError(err.message || 'Помилка при збереженні');
     }
   };
 
   const handleClose = () => {
     setFormData({});
     setFormErrors({});
-    setSubmitError(null);
     onClose();
   };
 
@@ -157,6 +156,7 @@ const ResourceDeliveryForm = ({
             color: 'text.secondary',
             '&:hover': { color: 'text.primary' },
           }}
+          disabled={isLoading}
         >
           <Close />
         </IconButton>
@@ -168,7 +168,7 @@ const ResourceDeliveryForm = ({
           pb: 1,
         }}
       >
-        {submitError && (
+        {error && (
           <Alert
             severity="error"
             sx={{
@@ -176,7 +176,7 @@ const ResourceDeliveryForm = ({
               fontSize: isMobile ? '0.875rem' : '1rem',
             }}
           >
-            {submitError}
+            {error}
           </Alert>
         )}
 
@@ -191,6 +191,7 @@ const ResourceDeliveryForm = ({
           sx={{ mt: 1, mb: 2 }}
           error={!!formErrors.locationId}
           helperText={formErrors.locationId || ' '}
+          disabled={isLoading}
         >
           {locations.length === 0 ? (
             <MenuItem disabled>Немає доступних локацій</MenuItem>
@@ -214,6 +215,7 @@ const ResourceDeliveryForm = ({
           sx={{ mb: 2 }}
           error={!!formErrors.resourceTypeId}
           helperText={formErrors.resourceTypeId || ' '}
+          disabled={isLoading}
         >
           {resourceTypes.length === 0 ? (
             <MenuItem disabled>Немає доступних типів ресурсів</MenuItem>
@@ -238,6 +240,7 @@ const ResourceDeliveryForm = ({
           error={!!formErrors.quantity}
           helperText={formErrors.quantity || ' '}
           inputProps={{ min: 0, step: 0.01 }}
+          disabled={isLoading}
         />
 
         <TextField
@@ -250,6 +253,7 @@ const ResourceDeliveryForm = ({
           sx={{ mb: 2 }}
           error={!!formErrors.unit}
           helperText={formErrors.unit || ' '}
+          disabled={isLoading}
         />
 
         <TextField
@@ -264,9 +268,10 @@ const ResourceDeliveryForm = ({
           error={!!formErrors.pricePerUnit}
           helperText={formErrors.pricePerUnit || ' '}
           inputProps={{ min: 0, step: 0.01 }}
+          disabled={isLoading}
         />
 
-        <CastomDatePicker
+        <CustomDatePicker
           value={formData.deliveryDate || null}
           onChange={(newValue) => {
             handleChange({
@@ -277,8 +282,8 @@ const ResourceDeliveryForm = ({
           error={!!formErrors.deliveryDate}
           helperText={formErrors.deliveryDate || ' '}
           sx={{ mb: 2 }}
+          disabled={isLoading}
         />
-
 
         <TextField
           name="supplier"
@@ -288,6 +293,7 @@ const ResourceDeliveryForm = ({
           fullWidth
           variant="outlined"
           helperText=" "
+          disabled={isLoading}
         />
       </DialogContent>
 
@@ -308,6 +314,7 @@ const ResourceDeliveryForm = ({
           variant="outlined"
           onClick={handleClose}
           fullWidth={isMobile}
+          disabled={isLoading}
         >
           Скасувати
         </Button>
@@ -316,8 +323,9 @@ const ResourceDeliveryForm = ({
           onClick={handleSubmit}
           fullWidth={isMobile}
           sx={{ marginLeft: '0 !important' }}
+          disabled={isLoading}
         >
-          Зберегти
+          {isLoading ? <CircularProgress size={24} /> : 'Зберегти'}
         </Button>
       </DialogActions>
     </Dialog>

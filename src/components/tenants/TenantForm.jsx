@@ -98,12 +98,12 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
     try {
       await onSubmit({
         ...formData,
-        locationId: null,
-        occupiedArea: null,
         isActive: formData.isActive ?? true,
       });
       setFormData({});
+      onClose(); 
     } catch (error) {
+      console.error('Submit error:', error);
     } finally {
       setIsSubmitting(false);
     }
