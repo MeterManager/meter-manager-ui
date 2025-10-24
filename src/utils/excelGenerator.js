@@ -2,16 +2,6 @@ import ExcelJS from 'exceljs';
 
 /**
  * Генерує Excel акт фіксації показників та розрахунок споживання
- * @param {Array<{id: string, meterNumber: string, installationPlace: string, purpose: string, currValue: string, prevValue: string, coefficient: string, areaPercent: string}>} readings - Масив показників лічильників
- * @param {string} resourceType - Тип ресурсу (Електроенергія, Вода, Газ)
- * @param {Object} options - Опції акту
- * @param {string} [options.organization] - Назва організації
- * @param {string} [options.tenantCompany] - Назва компанії орендаря
- * @param {string} [options.address] - Адреса
- * @param {Date} [options.period] - Період
- * @param {string} [options.executorName] - Ім'я виконавця
- * @param {string} [options.executorTitle] - Посада виконавця
- * @param {string} [options.tenantRepresentative] - Представник орендаря
  */
 export const generateConsumptionAct = async (readings, resourceType, options = {}) => {
   const workbook = new ExcelJS.Workbook();
@@ -113,48 +103,80 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   currentRow++;
 
   // === ДАНІ ТАБЛИЦІ ===
-  let totalConsumedSA = 0;
-  let totalConsumedSR = 0;
+  let totalConsumedCA = 0;
+  let totalConsumedCP = 0;
   let totalConsumedGR = 0;
 
   readings.forEach((reading, index) => {
     const startRow = currentRow;
 
-    const saValue = parseFloat(reading.currValue) || 0;
-    const saPrev = parseFloat(reading.prevValue) || 0;
-    const saDiff = saValue - saPrev;
-    const coefficient = parseFloat(reading.coefficient) || 1;
-    const areaPercent = parseFloat(reading.areaPercent) || 100;
-    const saConsumed = saDiff * coefficient;
+    // Отримуємо дані
+    const rawReading = reading.rawReading || reading;
+    const distributions = rawReading.distributions || [];
 
+    // Знаходимо розподіли по категоріях
+    const caDistribution = distributions.find((d) => d.category === 'CA');
+    const cpDistribution = distributions.find((d) => d.category === 'CP');
+    const grDistribution = distributions.find((d) => d.category === 'GR');
+
+    const coefficient = parseFloat(reading.coefficient) || 1;
+    const areaPercent = parseFloat(reading.locationArea) || 100;
+
+    // Функція для отримання значень з розподілу
+    const getDistData = (dist, coefficient, areaPercent) => {
+      if (!dist) return { current: 0, previous: 0, diff: 0, consumed: 0 };
+
+      const current = parseFloat(dist.current_reading) || 0;
+      const previous = parseFloat(dist.previous_reading) || 0;
+
+      let diff = parseFloat(dist.difference);
+      if (!isFinite(diff)) {
+        diff = current - previous;
+      }
+
+      // ✅ Використовуємо поля з distribution
+      const coef = parseFloat(dist.calculation_coefficient) || 1;
+      const area = parseFloat(dist.area_percentage) || 100;
+
+      // ✅ ЗАВЖДИ перераховуємо (ігноруємо dist.consumed_energy)
+      let consumed = diff * coef * (area / 100);
+
+      if (!isFinite(diff)) diff = 0;
+      if (!isFinite(consumed)) consumed = 0;
+
+      return { current, previous, diff, consumed };
+    };
+    const caData = getDistData(caDistribution, coefficient, areaPercent);
+    const cpData = getDistData(cpDistribution, coefficient, areaPercent);
+    const grData = getDistData(grDistribution, coefficient, areaPercent);
     // Рядок СА
-    const rowSA = worksheet.getRow(currentRow);
-    rowSA.values = [
+    const rowCA = worksheet.getRow(currentRow);
+    rowCA.values = [
       index + 1,
       `${reading.installationPlace}\n${reading.meterNumber}`,
       reading.purpose,
       'СА',
-      saValue,
-      saPrev,
-      saDiff,
+      caData.current,
+      caData.previous,
+      caData.diff,
       coefficient,
       areaPercent,
-      saConsumed,
+      caData.consumed,
     ];
     currentRow++;
 
     // Рядок СР
-    const rowSR = worksheet.getRow(currentRow);
-    rowSR.values = ['', '', '', 'СР', 0, 0, 0, '', '', 0];
+    const rowCP = worksheet.getRow(currentRow);
+    rowCP.values = ['', '', '', 'СР', cpData.current, cpData.previous, cpData.diff, '', '', cpData.consumed];
     currentRow++;
 
     // Рядок ГР
     const rowGR = worksheet.getRow(currentRow);
-    rowGR.values = ['', '', '', 'ГР', 0, 0, 0, '', '', 0];
+    rowGR.values = ['', '', '', 'ГР', grData.current, grData.previous, grData.diff, '', '', grData.consumed];
     currentRow++;
 
     // Форматування всіх трьох рядків
-    [rowSA, rowSR, rowGR].forEach((row, idx) => {
+    [rowCA, rowCP, rowGR].forEach((row, idx) => {
       row.eachCell((cell, colNum) => {
         cell.border = getBorders();
         cell.alignment = {
@@ -162,10 +184,7 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
           vertical: 'middle',
           wrapText: idx === 0 && (colNum === 2 || colNum === 3),
         };
-        if (colNum >= 5 && colNum <= 7 && cell.value !== '') {
-          cell.numFmt = '0.000';
-        }
-        if (colNum === 10 && cell.value !== '') {
+        if (colNum >= 5 && colNum <= 10 && cell.value !== '') {
           cell.numFmt = '0.000';
         }
       });
@@ -179,12 +198,15 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
     worksheet.mergeCells(startRow, 8, startRow + 2, 8); // Коефіцієнт
     worksheet.mergeCells(startRow, 9, startRow + 2, 9); // % площі
 
-    totalConsumedSA += saConsumed;
+    // Додаємо до загальної суми
+    totalConsumedCA += caData.consumed;
+    totalConsumedCP += cpData.consumed;
+    totalConsumedGR += grData.consumed;
   });
 
   // === ПІДСУМКОВІ РЯДКИ ===
   currentRow++;
-  
+
   // Заголовок підсумків
   worksheet.mergeCells(currentRow, 1, currentRow, 10);
   const totalHeaderCell = worksheet.getCell(currentRow, 1);
@@ -195,16 +217,16 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   currentRow++;
 
   // Рядок CA
-  const totalRowSA = worksheet.getRow(currentRow);
-  totalRowSA.values = ['', 'СА', '', '', '', '', '', '', '', totalConsumedSA];
-  totalRowSA.getCell(2).font = { bold: true };
-  totalRowSA.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
-  totalRowSA.getCell(2).border = getBorders();
-  totalRowSA.getCell(10).font = { bold: true, size: 11 };
-  totalRowSA.getCell(10).numFmt = '0.000';
-  totalRowSA.getCell(10).alignment = { horizontal: 'center', vertical: 'middle' };
-  totalRowSA.getCell(10).border = getBorders();
-  totalRowSA.getCell(10).fill = {
+  const totalRowCA = worksheet.getRow(currentRow);
+  totalRowCA.values = ['', 'СА', '', '', '', '', '', '', '', totalConsumedCA];
+  totalRowCA.getCell(2).font = { bold: true };
+  totalRowCA.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+  totalRowCA.getCell(2).border = getBorders();
+  totalRowCA.getCell(10).font = { bold: true, size: 11 };
+  totalRowCA.getCell(10).numFmt = '0.000';
+  totalRowCA.getCell(10).alignment = { horizontal: 'center', vertical: 'middle' };
+  totalRowCA.getCell(10).border = getBorders();
+  totalRowCA.getCell(10).fill = {
     type: 'pattern',
     pattern: 'solid',
     fgColor: { argb: 'FFFFF2CC' },
@@ -214,16 +236,16 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   currentRow++;
 
   // Рядок CP
-  const totalRowSR = worksheet.getRow(currentRow);
-  totalRowSR.values = ['', 'СР', '', '', '', '', '', '', '', totalConsumedSR];
-  totalRowSR.getCell(2).font = { bold: true };
-  totalRowSR.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
-  totalRowSR.getCell(2).border = getBorders();
-  totalRowSR.getCell(10).font = { bold: true, size: 11 };
-  totalRowSR.getCell(10).numFmt = '0.000';
-  totalRowSR.getCell(10).alignment = { horizontal: 'center', vertical: 'middle' };
-  totalRowSR.getCell(10).border = getBorders();
-  totalRowSR.getCell(10).fill = {
+  const totalRowCP = worksheet.getRow(currentRow);
+  totalRowCP.values = ['', 'СР', '', '', '', '', '', '', '', totalConsumedCP];
+  totalRowCP.getCell(2).font = { bold: true };
+  totalRowCP.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+  totalRowCP.getCell(2).border = getBorders();
+  totalRowCP.getCell(10).font = { bold: true, size: 11 };
+  totalRowCP.getCell(10).numFmt = '0.000';
+  totalRowCP.getCell(10).alignment = { horizontal: 'center', vertical: 'middle' };
+  totalRowCP.getCell(10).border = getBorders();
+  totalRowCP.getCell(10).fill = {
     type: 'pattern',
     pattern: 'solid',
     fgColor: { argb: 'FFFFF2CC' },
@@ -249,7 +271,7 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   };
   worksheet.mergeCells(currentRow, 1, currentRow, 1);
   worksheet.mergeCells(currentRow, 3, currentRow, 9);
-  
+
   currentRow += 3;
 
   // === ПІДПИСИ ===
