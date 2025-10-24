@@ -7,9 +7,8 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Акт');
 
-  // Налаштування сторінки
   worksheet.pageSetup = {
-    paperSize: 9, // A4
+    paperSize: 9,
     orientation: 'landscape',
     fitToPage: true,
     margins: {
@@ -24,7 +23,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
 
   let currentRow = 1;
 
-  // === ЗАГОЛОВОК ===
   worksheet.getRow(currentRow).values = [
     `Акт фіксації показників та розрахунок споживання ${getResourceGenitive(resourceType)}`,
   ];
@@ -35,7 +33,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   worksheet.getRow(currentRow).height = 25;
   currentRow++;
 
-  // === НАЗВА КОМПАНІЇ ===
   worksheet.getRow(currentRow).values = [options.tenantCompany || 'ТОВ "ГалФрост"'];
   worksheet.mergeCells(currentRow, 1, currentRow, 12);
   const companyCell = worksheet.getCell(currentRow, 1);
@@ -44,7 +41,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   worksheet.getRow(currentRow).height = 20;
   currentRow += 2;
 
-  // === ВСТУПНИЙ ТЕКСТ ===
   const introText = `${options.organization || 'ТОВ «Про Тек Вікна Україна»'}, в особі ${
     options.executorName || 'головного енергетика'
   }, та\n${options.tenantCompany || 'ТОВ "ГалФрост"'}, в особі ${
@@ -61,7 +57,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   worksheet.getRow(currentRow).height = 60;
   currentRow += 4;
 
-  // === ПЕРІОД ===
   const [startDate, endDate] = getPeriodDates(options.period);
   worksheet.getRow(currentRow).values = [`за період ${startDate} - ${endDate}`];
   worksheet.mergeCells(currentRow, 1, currentRow, 12);
@@ -71,7 +66,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   worksheet.getRow(currentRow).height = 20;
   currentRow += 2;
 
-  // === ЗАГОЛОВКИ ТАБЛИЦІ ===
   const headers = [
     { text: '№\nп/п', width: 5 },
     { text: '№ лічильника, місце\nвстановлення', width: 18 },
@@ -102,7 +96,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   headerRow.height = 35;
   currentRow++;
 
-  // === ДАНІ ТАБЛИЦІ ===
   let totalConsumedCA = 0;
   let totalConsumedCP = 0;
   let totalConsumedGR = 0;
@@ -110,11 +103,9 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   readings.forEach((reading, index) => {
     const startRow = currentRow;
 
-    // Отримуємо дані
     const rawReading = reading.rawReading || reading;
     const distributions = rawReading.distributions || [];
 
-    // Знаходимо розподіли по категоріях
     const caDistribution = distributions.find((d) => d.category === 'CA');
     const cpDistribution = distributions.find((d) => d.category === 'CP');
     const grDistribution = distributions.find((d) => d.category === 'GR');
@@ -122,7 +113,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
     const coefficient = parseFloat(reading.coefficient) || 1;
     const areaPercent = parseFloat(reading.locationArea) || 100;
 
-    // Функція для отримання значень з розподілу
     const getDistData = (dist, coefficient, areaPercent) => {
       if (!dist) return { current: 0, previous: 0, diff: 0, consumed: 0 };
 
@@ -134,12 +124,7 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
         diff = current - previous;
       }
 
-      // ✅ Використовуємо поля з distribution
-      const coef = parseFloat(dist.calculation_coefficient) || 1;
-      const area = parseFloat(dist.area_percentage) || 100;
-
-      // ✅ ЗАВЖДИ перераховуємо (ігноруємо dist.consumed_energy)
-      let consumed = diff * coef * (area / 100);
+      let consumed = parseFloat(dist.consumed_energy) || 0;
 
       if (!isFinite(diff)) diff = 0;
       if (!isFinite(consumed)) consumed = 0;
@@ -149,7 +134,7 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
     const caData = getDistData(caDistribution, coefficient, areaPercent);
     const cpData = getDistData(cpDistribution, coefficient, areaPercent);
     const grData = getDistData(grDistribution, coefficient, areaPercent);
-    // Рядок СА
+    
     const rowCA = worksheet.getRow(currentRow);
     rowCA.values = [
       index + 1,
@@ -165,17 +150,14 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
     ];
     currentRow++;
 
-    // Рядок СР
     const rowCP = worksheet.getRow(currentRow);
     rowCP.values = ['', '', '', 'СР', cpData.current, cpData.previous, cpData.diff, '', '', cpData.consumed];
     currentRow++;
 
-    // Рядок ГР
     const rowGR = worksheet.getRow(currentRow);
     rowGR.values = ['', '', '', 'ГР', grData.current, grData.previous, grData.diff, '', '', grData.consumed];
     currentRow++;
 
-    // Форматування всіх трьох рядків
     [rowCA, rowCP, rowGR].forEach((row, idx) => {
       row.eachCell((cell, colNum) => {
         cell.border = getBorders();
@@ -191,23 +173,19 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
       row.height = 20;
     });
 
-    // Об'єднуємо клітинки
-    worksheet.mergeCells(startRow, 1, startRow + 2, 1); // Номер
-    worksheet.mergeCells(startRow, 2, startRow + 2, 2); // Лічильник
-    worksheet.mergeCells(startRow, 3, startRow + 2, 3); // Призначення
-    worksheet.mergeCells(startRow, 8, startRow + 2, 8); // Коефіцієнт
-    worksheet.mergeCells(startRow, 9, startRow + 2, 9); // % площі
+    worksheet.mergeCells(startRow, 1, startRow + 2, 1);
+    worksheet.mergeCells(startRow, 2, startRow + 2, 2);
+    worksheet.mergeCells(startRow, 3, startRow + 2, 3);
+    worksheet.mergeCells(startRow, 8, startRow + 2, 8);
+    worksheet.mergeCells(startRow, 9, startRow + 2, 9);
 
-    // Додаємо до загальної суми
     totalConsumedCA += caData.consumed;
     totalConsumedCP += cpData.consumed;
     totalConsumedGR += grData.consumed;
   });
 
-  // === ПІДСУМКОВІ РЯДКИ ===
   currentRow++;
 
-  // Заголовок підсумків
   worksheet.mergeCells(currentRow, 1, currentRow, 10);
   const totalHeaderCell = worksheet.getCell(currentRow, 1);
   totalHeaderCell.value = `Загальна спожита потужність ${options.tenantCompany || 'орендаря'}, ${getResourceUnit(resourceType)}`;
@@ -216,7 +194,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   totalHeaderCell.border = getBorders();
   currentRow++;
 
-  // Рядок CA
   const totalRowCA = worksheet.getRow(currentRow);
   totalRowCA.values = ['', 'СА', '', '', '', '', '', '', '', totalConsumedCA];
   totalRowCA.getCell(2).font = { bold: true };
@@ -235,7 +212,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   worksheet.mergeCells(currentRow, 3, currentRow, 9);
   currentRow++;
 
-  // Рядок CP
   const totalRowCP = worksheet.getRow(currentRow);
   totalRowCP.values = ['', 'СР', '', '', '', '', '', '', '', totalConsumedCP];
   totalRowCP.getCell(2).font = { bold: true };
@@ -254,7 +230,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   worksheet.mergeCells(currentRow, 3, currentRow, 9);
   currentRow++;
 
-  // Рядок ГР
   const totalRowGR = worksheet.getRow(currentRow);
   totalRowGR.values = ['', 'ГР', '', '', '', '', '', '', '', totalConsumedGR];
   totalRowGR.getCell(2).font = { bold: true };
@@ -274,7 +249,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
 
   currentRow += 3;
 
-  // === ПІДПИСИ ===
   worksheet.getRow(currentRow).values = [
     '2. Сторони підтверджують правильність вказаних приладів обліку і їх показників, та не мають жодних заперечень до цього акту.',
   ];
@@ -291,7 +265,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   worksheet.getCell(currentRow, 1).alignment = { horizontal: 'left', vertical: 'middle' };
   currentRow += 2;
 
-  // Підпис організації
   const orgRow = worksheet.getRow(currentRow);
   orgRow.values = [
     options.organization || 'ТОВ «Про Тек Вікна Україна»',
@@ -307,7 +280,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   orgRow.height = 20;
   currentRow += 2;
 
-  // Підпис орендаря
   const tenantRow = worksheet.getRow(currentRow);
   tenantRow.values = [
     options.tenantCompany || 'ТОВ «ГалФрост»',
@@ -323,7 +295,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   tenantRow.height = 20;
   currentRow += 3;
 
-  // Виконавець
   const execRow = worksheet.getRow(currentRow);
   execRow.values = [
     `Виконав: ${options.executorTitle || 'інж.-енергетик'}`,
@@ -335,7 +306,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
     options.executorName || '',
   ];
 
-  // === ГЕНЕРАЦІЯ ФАЙЛУ ===
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -353,7 +323,6 @@ export const generateConsumptionAct = async (readings, resourceType, options = {
   return { success: true, fileName };
 };
 
-// === ДОПОМІЖНІ ФУНКЦІЇ ===
 function getBorders() {
   return {
     top: { style: 'thin', color: { argb: 'FF000000' } },
