@@ -411,55 +411,105 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
             required
           />
 
-          <Divider sx={{ my: 2 }}>
-            <Typography variant="subtitle1" color="textSecondary">
-              Розподіл по підкатегоріях (опціонально)
-            </Typography>
-          </Divider>
+          {selectedResource === "Електроенергія" ? (
+            <>
+              <Divider sx={{ my: 2 }}>
+                <Typography variant="subtitle1" color="textSecondary">
+                  Розподіл по підкатегоріях (опціонально)
+                </Typography>
+              </Divider>
 
-          {["CA", "CP", "GR"].map((category) => (
-            <Box
-              key={category}
-              sx={{
-                p: 2,
-                border: "1px solid #e0e0e0",
-                borderRadius: 1,
-                bgcolor: "#fafafa",
-              }}
-            >
-              <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
-                {categoryLabels[category]}
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Поточний показник"
-                    type="number"
-                    value={formData.distributions[category].current_reading}
-                    onChange={(e) =>
-                      handleDistributionChange(category, "current_reading", e.target.value)
-                    }
-                    fullWidth
-                    size="small"
-                    inputProps={{ step: "0.01" }}
-                  />
+              {["CA", "CP", "GR"].map((category) => (
+                <Box
+                  key={category}
+                  sx={{
+                    p: 2,
+                    border: "1px solid #e0e0e0",
+                    borderRadius: 1,
+                    bgcolor: "#fafafa",
+                  }}
+                >
+                  <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
+                    {categoryLabels[category]}
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Поточний показник"
+                        type="number"
+                        value={formData.distributions[category].current_reading}
+                        onChange={(e) =>
+                          handleDistributionChange(category, "current_reading", e.target.value)
+                        }
+                        fullWidth
+                        size="small"
+                        inputProps={{ step: "0.01" }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Попередній показник"
+                        type="number"
+                        value={formData.distributions[category].previous_reading}
+                        onChange={(e) =>
+                          handleDistributionChange(category, "previous_reading", e.target.value)
+                        }
+                        fullWidth
+                        size="small"
+                        inputProps={{ step: "0.01" }}
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              ))}
+            </>
+          ) : (
+            <>
+              <Divider sx={{ my: 2 }}>
+                <Typography variant="subtitle1" color="textSecondary">
+                  Показники
+                </Typography>
+              </Divider>
+
+              <Box
+                sx={{
+                  p: 2,
+                  border: "1px solid #e0e0e0",
+                  borderRadius: 1,
+                  bgcolor: "#fafafa",
+                }}
+              >
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Поточний показник"
+                      type="number"
+                      value={formData.distributions.CA.current_reading}
+                      onChange={(e) =>
+                        handleDistributionChange("CA", "current_reading", e.target.value)
+                      }
+                      fullWidth
+                      size="small"
+                      inputProps={{ step: "0.01" }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Попередній показник"
+                      type="number"
+                      value={formData.distributions.CA.previous_reading}
+                      onChange={(e) =>
+                        handleDistributionChange("CA", "previous_reading", e.target.value)
+                      }
+                      fullWidth
+                      size="small"
+                      inputProps={{ step: "0.01" }}
+                    />
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Попередній показник"
-                    type="number"
-                    value={formData.distributions[category].previous_reading}
-                    onChange={(e) =>
-                      handleDistributionChange(category, "previous_reading", e.target.value)
-                    }
-                    fullWidth
-                    size="small"
-                    inputProps={{ step: "0.01" }}
-                  />
-                </Grid>
-              </Grid>
-            </Box>
-          ))}
+              </Box>
+            </>
+          )}
 
           <TextField
             label="Ім'я виконавця"

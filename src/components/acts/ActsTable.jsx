@@ -144,8 +144,26 @@ const ActsTable = () => {
     let filtered = transformedReadings;
 
     if (selectedResource) {
-      filtered = filtered.filter((r) => r.purpose === selectedResource);
+      filtered = filtered.filter((r) => {
+        const purpose = (r.purpose || '').toLowerCase();
+        const resource = selectedResource.toLowerCase();
+    
+        if (resource === 'вода (всі)') {
+          return purpose.includes('вода');
+        }
+    
+        if (resource === 'холодна вода') {
+          return purpose.includes('холод');
+        }
+    
+        if (resource === 'гаряча вода') {
+          return purpose.includes('гаряч');
+        }
+    
+        return purpose === resource;
+      });
     }
+    
     if (selectedMonth) {
       filtered = filtered.filter((r) => getMonthFromDate(r.readingDate) === selectedMonth);
     }
@@ -207,6 +225,13 @@ const ActsTable = () => {
       setGenerating(false);
     }
   };
+  
+  const isWater = ['вода (всі)', 'холодна вода', 'гаряча вода'].includes(selectedResource.toLowerCase());
+  const isGas = selectedResource.toLowerCase() === 'газ';
+
+  let consumptionLabel = 'Спожита електроенергія (кВт·год)';
+  if (isWater) consumptionLabel = 'Спожита вода, куб. м.';
+  if (isGas) consumptionLabel = 'Спожита теплова енергія, Гкал';
 
   return (
     <Box p={2}>
@@ -230,7 +255,14 @@ const ActsTable = () => {
       </Stack>
 
       <Stack direction="row" spacing={2} mb={2} alignItems="center">
-        {Object.keys(resourceColumnMap).map((resource) => (
+      <Stack direction="row" spacing={1}>
+        {[
+          'Електроенергія',
+          'Вода (всі)',
+          'Холодна вода',
+          'Гаряча вода',
+          'Газ',
+        ].map((resource) => (
           <Button
             key={resource}
             variant={selectedResource === resource ? 'contained' : 'outlined'}
@@ -240,6 +272,8 @@ const ActsTable = () => {
             {resource}
           </Button>
         ))}
+      </Stack>
+
         <FormControl sx={{ minWidth: 120 }} size="small">
           <InputLabel id="month-select-label">Місяць</InputLabel>
           <Select
@@ -281,9 +315,12 @@ const ActsTable = () => {
                 <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
                   Тип ресурсу
                 </TableCell>
-                <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
-                  Категорія
-                </TableCell>
+                {!isWater && !isGas && (
+                  <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
+                    Категорія
+                  </TableCell>
+                )}
+
                 <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
                   Коеф.
                 </TableCell>
@@ -305,8 +342,9 @@ const ActsTable = () => {
                   Різниця
                 </TableCell>
                 <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                  {resourceColumnMap[selectedResource]?.consumed}
+                  {consumptionLabel}
                 </TableCell>
+
                 <TableCell align="right" sx={{ fontWeight: 'bold', bgcolor: theme.palette.action.hover }}>
                   Вартість (грн)
                 </TableCell>
@@ -346,21 +384,24 @@ const ActsTable = () => {
                         </>
                       )}
                       {/* Категорія */}
-                      <TableCell align="center">
-                        {dist.category === 'General' ? (
-                          '—'
-                        ) : (
-                          <Chip
-                            label={categoryLabels[dist.category] || dist.category}
-                            size="small"
-                            sx={{
-                              backgroundColor: 'transparent',
-                              border: `1.5px solid ${theme.palette.primary.main}`,
-                              fontWeight: 'bold',
-                            }}
-                          />
-                        )}
-                      </TableCell>
+                      {!isWater && !isGas && (
+                        <TableCell align="center">
+                          {dist.category === 'General' ? (
+                            '—'
+                          ) : (
+                            <Chip
+                              label={categoryLabels[dist.category] || dist.category}
+                              size="small"
+                              sx={{
+                                backgroundColor: 'transparent',
+                                border: `1.5px solid ${theme.palette.primary.main}`,
+                                fontWeight: 'bold',
+                              }}
+                            />
+                          )}
+                        </TableCell>
+                      )}
+
 
                       {distIndex === 0 && (
                         <>
