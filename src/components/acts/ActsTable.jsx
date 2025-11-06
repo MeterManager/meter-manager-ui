@@ -23,6 +23,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Card,
+  CardContent,
+  Divider,
+  useMediaQuery,
+  Grid,
 } from '@mui/material';
 import { useMeterReadings } from '../../hooks/useMeterReadings';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -53,6 +58,7 @@ const monthLabels = [
   { value: '11', label: 'Листопад' },
   { value: '12', label: 'Грудень' },
 ];
+
 const getDistributionByCategory = (reading, category) => {
   if (!reading.distributions || !Array.isArray(reading.distributions)) return null;
   return reading.distributions.find((d) => d.category === category);
@@ -67,6 +73,115 @@ const getMonthFromDate = (dateString) => {
   return null;
 };
 
+const MobileReadingCard = ({ reading, isWater, isGas, theme }) => {
+  const distributions = ['CA', 'CP', 'GR']
+    .map((cat) => getDistributionByCategory(reading.rawReading, cat))
+    .filter(Boolean);
+
+  const rowsToRender =
+    distributions.length > 0
+      ? distributions
+      : [
+          {
+            category: 'General',
+            previous_reading: reading.rawReading.previous_reading,
+            current_reading: reading.rawReading.current_reading,
+            difference: reading.rawReading.consumption,
+            consumed_energy: reading.rawReading.total_consumption,
+            cost: reading.rawReading.total_cost,
+          },
+        ];
+
+  return (
+    <Card sx={{ mb: 2, boxShadow: 2 }}>
+      <CardContent>
+        <Typography variant="subtitle2" color="primary" gutterBottom>
+          № лічильника: <strong>{reading.meterNumber}</strong>
+        </Typography>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          {reading.installationPlace}
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 1 }}>
+          Тип: {reading.purpose}
+        </Typography>
+
+        <Divider sx={{ my: 1.5 }} />
+
+        <Grid container spacing={1}>
+          <Grid item xs={6}>
+            <Typography variant="caption" color="text.secondary">
+              Коефіцієнт
+            </Typography>
+            <Typography variant="body2" fontWeight="bold">
+              {reading.coefficient}
+            </Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="caption" color="text.secondary">
+              % площі
+            </Typography>
+            <Typography variant="body2" fontWeight="bold">
+              {reading.locationArea}
+            </Typography>
+          </Grid>
+        </Grid>
+
+        <Divider sx={{ my: 1.5 }} />
+
+        {rowsToRender.map((dist, idx) => (
+          <Box key={idx} sx={{ mb: idx < rowsToRender.length - 1 ? 2 : 0 }}>
+            {!isWater && !isGas && dist.category !== 'General' && (
+              <Chip
+                label={categoryLabels[dist.category] || dist.category}
+                size="small"
+                color="primary"
+                sx={{ mb: 1 }}
+              />
+            )}
+            <Grid container spacing={1}>
+              <Grid item xs={4}>
+                <Typography variant="caption" color="text.secondary">
+                  Попередні
+                </Typography>
+                <Typography variant="body2">{dist.previous_reading || '0.00'}</Typography>
+              </Grid>
+              <Grid item xs={4}>
+                <Typography variant="caption" color="text.secondary">
+                  Поточні
+                </Typography>
+                <Typography variant="body2">{dist.current_reading || '0.00'}</Typography>
+              </Grid>
+              <Grid item xs={4}>
+                <Typography variant="caption" color="text.secondary">
+                  Різниця
+                </Typography>
+                <Typography variant="body2">{dist.difference || '0.00'}</Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="caption" color="text.secondary">
+                  Споживання
+                </Typography>
+                <Typography variant="body2" fontWeight="bold">
+                  {dist.consumed_energy || '0.00'}
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="caption" color="text.secondary">
+                  Вартість (грн)
+                </Typography>
+                <Typography variant="body2" fontWeight="bold" color="primary">
+                  {dist.total_cost || dist.cost || '0.00'}
+                </Typography>
+              </Grid>
+            </Grid>
+            {idx < rowsToRender.length - 1 && <Divider sx={{ mt: 1.5 }} />}
+          </Box>
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
+
 const ActsTable = () => {
   const { meterReadings, loading, error, fetchReadings, getReadingsSummary } = useMeterReadings();
   const [generating, setGenerating] = useState(false);
@@ -74,6 +189,8 @@ const ActsTable = () => {
   const [selectedMonth, setSelectedMonth] = useState('');
   const [summary, setSummary] = useState(null);
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actOptions, setActOptions] = useState({
@@ -85,27 +202,13 @@ const ActsTable = () => {
     tenantRepresentative: 'Ситнік І.Ю.',
     address: 'Львівська обл., с. Зимна Вода, вул. Яворівська, 30',
   });
+
   useEffect(() => {
     fetchReadings();
     getReadingsSummary()
       .then((data) => setSummary(data))
       .catch(() => setSummary(null));
   }, [fetchReadings, getReadingsSummary, selectedResource]);
-
-  const resourceColumnMap = {
-    Електроенергія: {
-      consumed: 'Спожита електроенергія (кВт·год)',
-      calculated: 'Розрах. споживачу (кВт·год)',
-    },
-    Вода: {
-      consumed: 'Спожита вода (м³)',
-      calculated: 'Розрах. споживачу (м³)',
-    },
-    Газ: {
-      consumed: 'Спожитий газ (м³)',
-      calculated: 'Розрах. споживачу (м³)',
-    },
-  };
 
   const transformedReadings = useMemo(() => {
     if (!meterReadings) return [];
@@ -126,10 +229,9 @@ const ActsTable = () => {
         id: reading.id,
         rawReading: reading,
         meterNumber: meterInfo?.serial_number || 'N/A',
-        installationPlace: locationInfo?.name || 'Nевідома локація',
+        installationPlace: locationInfo?.name || 'Невідома локація',
         address: locationInfo?.address || '',
         purpose: energyInfo?.name || 'N/A',
-        //group: group,
         prevValue: prevValue,
         currValue: currValue,
         difference: difference,
@@ -147,23 +249,23 @@ const ActsTable = () => {
       filtered = filtered.filter((r) => {
         const purpose = (r.purpose || '').toLowerCase();
         const resource = selectedResource.toLowerCase();
-    
+
         if (resource === 'вода (всі)') {
           return purpose.includes('вода');
         }
-    
+
         if (resource === 'холодна вода') {
           return purpose.includes('холод');
         }
-    
+
         if (resource === 'гаряча вода') {
           return purpose.includes('гаряч');
         }
-    
+
         return purpose === resource;
       });
     }
-    
+
     if (selectedMonth) {
       filtered = filtered.filter((r) => getMonthFromDate(r.readingDate) === selectedMonth);
     }
@@ -225,7 +327,7 @@ const ActsTable = () => {
       setGenerating(false);
     }
   };
-  
+
   const isWater = ['вода (всі)', 'холодна вода', 'гаряча вода'].includes(selectedResource.toLowerCase());
   const isGas = selectedResource.toLowerCase() === 'газ';
 
@@ -234,10 +336,16 @@ const ActsTable = () => {
   if (isGas) consumptionLabel = 'Спожита теплова енергія, Гкал';
 
   return (
-    <Box p={2}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h6">Акти споживання</Typography>
-        <Stack direction="row" spacing={1}>
+    <Box sx={{ p: { xs: 1, sm: 2 } }}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        spacing={2}
+        mb={2}
+      >
+        <Typography variant={isMobile ? 'h5' : 'h4'}>Акти споживання</Typography>
+        <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-end', sm: 'flex-start' }}>
           <Tooltip title="Оновити">
             <IconButton onClick={fetchReadings} disabled={loading}>
               <RefreshIcon />
@@ -245,36 +353,33 @@ const ActsTable = () => {
           </Tooltip>
           <Button
             variant="contained"
-            startIcon={<FileDownloadIcon />}
+            startIcon={!isMobile && <FileDownloadIcon />}
             disabled={generating || filteredReadings.length === 0}
             onClick={() => setDialogOpen(true)}
+            size={isMobile ? 'small' : 'medium'}
           >
-            {generating ? 'Генерується...' : 'Згенерувати акт'}
+            {isMobile ? 'Акт' : generating ? 'Генерується...' : 'Згенерувати акт'}
           </Button>
         </Stack>
       </Stack>
 
-      <Stack direction="row" spacing={2} mb={2} alignItems="center">
-      <Stack direction="row" spacing={1}>
-        {[
-          'Електроенергія',
-          'Вода (всі)',
-          'Холодна вода',
-          'Гаряча вода',
-          'Газ',
-        ].map((resource) => (
-          <Button
-            key={resource}
-            variant={selectedResource === resource ? 'contained' : 'outlined'}
-            onClick={() => setSelectedResource(resource)}
-            size="medium"
-          >
-            {resource}
-          </Button>
-        ))}
-      </Stack>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
+        <Box sx={{ overflowX: 'auto', pb: 1 }}>
+          <Stack direction="row" spacing={1} sx={{ minWidth: 'max-content' }}>
+            {['Електроенергія', 'Вода (всі)', 'Холодна вода', 'Гаряча вода', 'Газ'].map((resource) => (
+              <Button
+                key={resource}
+                variant={selectedResource === resource ? 'contained' : 'outlined'}
+                onClick={() => setSelectedResource(resource)}
+                size={isMobile ? 'small' : 'medium'}
+              >
+                {resource}
+              </Button>
+            ))}
+          </Stack>
+        </Box>
 
-        <FormControl sx={{ minWidth: 120 }} size="small">
+        <FormControl sx={{ minWidth: { xs: '100%', sm: 120 } }} size="small">
           <InputLabel id="month-select-label">Місяць</InputLabel>
           <Select
             labelId="month-select-label"
@@ -297,55 +402,69 @@ const ActsTable = () => {
           {error}
         </Typography>
       )}
+
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
           <Typography>⏳ Завантаження...</Typography>
         </Box>
+      ) : isMobile ? (
+        <Box>
+          {filteredReadings.length > 0 ? (
+            filteredReadings.map((r) => (
+              <MobileReadingCard key={r.id} reading={r} isWater={isWater} isGas={isGas} theme={theme} />
+            ))
+          ) : (
+            <Paper sx={{ p: 3, textAlign: 'center' }}>
+              <Typography color="text.secondary">Дані відсутні за обраними фільтрами</Typography>
+            </Paper>
+          )}
+        </Box>
       ) : (
         <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
-          <Table size="small" sx={{ minWidth: 1500 }}>
+          <Table size={isTablet ? 'small' : 'small'} sx={{ minWidth: isTablet ? 1200 : 1500 }}>
             <TableHead>
               <TableRow>
-                <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
+                <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold', minWidth: 100 }}>
                   № лічильника
                 </TableCell>
-                <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
-                  Призначення обліку(назва об'єкта)
+                <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold', minWidth: 150 }}>
+                  Призначення обліку
                 </TableCell>
-                <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
+                <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold', minWidth: 120 }}>
                   Тип ресурсу
                 </TableCell>
                 {!isWater && !isGas && (
-                  <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
+                  <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold', minWidth: 80 }}>
                     Категорія
                   </TableCell>
                 )}
-
-                <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
+                <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold', minWidth: 60 }}>
                   Коеф.
                 </TableCell>
-                <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
-                  Відсоток площі (%)
+                <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold', minWidth: 80 }}>
+                  % площі
                 </TableCell>
-                <TableCell colSpan={6} align="center" sx={{ fontWeight: 'bold', borderBottom: 0 }}>
+                <TableCell colSpan={5} align="center" sx={{ fontWeight: 'bold', borderBottom: 0 }}>
                   Показники та розрахунок
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                <TableCell align="right" sx={{ fontWeight: 'bold', minWidth: 90 }}>
                   Попередні
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                <TableCell align="right" sx={{ fontWeight: 'bold', minWidth: 90 }}>
                   Поточні
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                <TableCell align="right" sx={{ fontWeight: 'bold', minWidth: 80 }}>
                   Різниця
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                <TableCell align="right" sx={{ fontWeight: 'bold', minWidth: 120 }}>
                   {consumptionLabel}
                 </TableCell>
-
-                <TableCell align="right" sx={{ fontWeight: 'bold', bgcolor: theme.palette.action.hover }}>
+                <TableCell
+                  align="right"
+                  sx={{ fontWeight: 'bold', bgcolor: theme.palette.action.hover, minWidth: 100 }}
+                >
                   Вартість (грн)
                 </TableCell>
               </TableRow>
@@ -367,7 +486,6 @@ const ActsTable = () => {
                             current_reading: r.rawReading.current_reading,
                             difference: r.rawReading.consumption,
                             consumed_energy: r.rawReading.total_consumption,
-                            calculated_energy: r.rawReading.area_based_consumption,
                             cost: r.rawReading.total_cost,
                           },
                         ];
@@ -383,7 +501,6 @@ const ActsTable = () => {
                           <TableCell rowSpan={rowCount}>{r.purpose}</TableCell>
                         </>
                       )}
-                      {/* Категорія */}
                       {!isWater && !isGas && (
                         <TableCell align="center">
                           {dist.category === 'General' ? (
@@ -401,8 +518,6 @@ const ActsTable = () => {
                           )}
                         </TableCell>
                       )}
-
-
                       {distIndex === 0 && (
                         <>
                           <TableCell rowSpan={rowCount} align="right">
@@ -413,7 +528,6 @@ const ActsTable = () => {
                           </TableCell>
                         </>
                       )}
-
                       <TableCell align="right">{dist.previous_reading || '0.00'}</TableCell>
                       <TableCell align="right">{dist.current_reading || '0.00'}</TableCell>
                       <TableCell align="right">{dist.difference || '0.00'}</TableCell>
@@ -436,8 +550,8 @@ const ActsTable = () => {
         </TableContainer>
       )}
 
-      {/* Dialog for act options */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+      {/* Dialog */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth fullScreen={isMobile}>
         <DialogTitle sx={{ bgcolor: '#f5f5f5', fontWeight: 'bold' }}>📄 Налаштування акту споживання</DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
           <Stack spacing={2.5}>
@@ -450,7 +564,6 @@ const ActsTable = () => {
               fullWidth
               helperText="Виберіть місяць для акту"
             />
-
             <TextField
               label="Організація (власник)"
               value={actOptions.organization}
@@ -458,7 +571,6 @@ const ActsTable = () => {
               fullWidth
               placeholder="ТОВ «Про Тек Вікна Україна»"
             />
-
             <TextField
               label="Компанія орендаря"
               value={actOptions.tenantCompany}
@@ -466,7 +578,6 @@ const ActsTable = () => {
               fullWidth
               placeholder="ТОВ «ГалФрост»"
             />
-
             <TextField
               label="Адреса об'єкту"
               value={actOptions.address}
@@ -476,7 +587,6 @@ const ActsTable = () => {
               rows={2}
               placeholder="Львівська обл., с. Зимна Вода, вул. Яворівська, 30"
             />
-
             <TextField
               label="Посада виконавця"
               value={actOptions.executorTitle}
@@ -484,7 +594,6 @@ const ActsTable = () => {
               fullWidth
               placeholder="інж.-енергетик"
             />
-
             <TextField
               label="ПІБ виконавця"
               value={actOptions.executorName}
@@ -492,7 +601,6 @@ const ActsTable = () => {
               fullWidth
               placeholder="Бенько І. Г."
             />
-
             <TextField
               label="Представник орендаря"
               value={actOptions.tenantRepresentative}
@@ -500,7 +608,6 @@ const ActsTable = () => {
               fullWidth
               placeholder="Ситнік І.Ю."
             />
-
             <Box sx={{ bgcolor: '#f0f7ff', p: 2, borderRadius: 1, border: '1px solid #2196f3' }}>
               <Typography variant="body2" color="primary" gutterBottom>
                 📊 Інформація про звіт:
@@ -526,52 +633,62 @@ const ActsTable = () => {
             variant="contained"
             disabled={generating}
             startIcon={<FileDownloadIcon />}
-            sx={{ minWidth: 150 }}
+            sx={{ minWidth: { xs: 100, sm: 150 } }}
           >
             {generating ? 'Генерується...' : 'Згенерувати'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Box mt={3} p={2} component={Paper}>
-        <Typography variant="h6" gutterBottom>
-          Зведена інформація (Фільтр: {selectedResource}{' '}
-          {selectedMonth && `| Місяць: ${monthLabels.find((m) => m.value === selectedMonth)?.label}`})
+      {/* Summary */}
+      <Box mt={3} p={{ xs: 1.5, sm: 2 }} component={Paper}>
+        <Typography variant={isMobile ? 'subtitle1' : 'h6'} gutterBottom>
+          Зведена інформація
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block" mb={2}>
+          Фільтр: {selectedResource}
+          {selectedMonth && ` | Місяць: ${monthLabels.find((m) => m.value === selectedMonth)?.label}`}
         </Typography>
 
-        <Box mb={2}>
-          <Stack direction="row" spacing={4} flexWrap="wrap">
-            <Typography>
-              <BarChartOutlinedIcon sx={{ verticalAlign: 'middle', color: theme.palette.primary.main, mr: 0.5 }} />
-              Всього записів: <strong>{filteredReadings?.length || 0}</strong>
-            </Typography>
-            <Typography>
-              <BoltOutlinedIcon sx={{ verticalAlign: 'middle', color: theme.palette.primary.main, mr: 0.5 }} />
-              Загальне споживання: <strong>{categorySummary.totalConsumption.toFixed(2)}</strong>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 4 }} mb={2}>
+          <Typography variant="body2">
+            <BarChartOutlinedIcon
+              sx={{ verticalAlign: 'middle', color: theme.palette.primary.main, mr: 0.5, fontSize: isMobile ? 18 : 20 }}
+            />
+            Всього записів: <strong>{filteredReadings?.length || 0}</strong>
+          </Typography>
+          <Typography variant="body2">
+            <BoltOutlinedIcon
+              sx={{ verticalAlign: 'middle', color: theme.palette.primary.main, mr: 0.5, fontSize: isMobile ? 18 : 20 }}
+            />
+            Загальне споживання: <strong>{categorySummary.totalConsumption.toFixed(2)}</strong>
+          </Typography>
+        </Stack>
+
+        <Box mt={2}>
+          <Typography variant={isMobile ? 'body2' : 'subtitle1'} fontWeight="bold" gutterBottom>
+            <PaymentIcon
+              sx={{ verticalAlign: 'middle', color: theme.palette.primary.main, mr: 0.5, fontSize: isMobile ? 18 : 20 }}
+            />
+            Загальна вартість по категоріях:
+          </Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 4 }} mt={1}>
+            {Object.keys(categorySummary.categories).map((cat) => {
+              const cost = categorySummary.categories[cat];
+              if (cost > 0) {
+                return (
+                  <Typography key={cat} component="div" variant="body2">
+                    <Chip label={categoryLabels[cat]} size="small" color="primary" sx={{ mr: 0.5 }} />:
+                    <strong> {cost.toFixed(2)}</strong>
+                  </Typography>
+                );
+              }
+              return null;
+            })}
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+              Разом: {categorySummary.totalCost.toFixed(2)}
             </Typography>
           </Stack>
-
-          <Box mt={2}>
-            <Typography variant="subtitle1" fontWeight="bold">
-              <PaymentIcon sx={{ verticalAlign: 'middle', color: theme.palette.primary.main, mr: 0.5 }} />
-              Загальна вартість по категоріях:
-            </Typography>
-            <Stack direction="row" spacing={4} mt={1}>
-              {Object.keys(categorySummary.categories).map((cat) => {
-                const cost = categorySummary.categories[cat];
-                if (cost > 0) {
-                  return (
-                    <Typography key={cat} component="div">
-                      <Chip label={categoryLabels[cat]} size="small" color="primary" sx={{ mr: 0.5 }} />:
-                      <strong> {cost.toFixed(2)}</strong>
-                    </Typography>
-                  );
-                }
-                return null;
-              })}
-              <Typography sx={{ fontWeight: 'bold' }}>Разом: {categorySummary.totalCost.toFixed(2)}</Typography>
-            </Stack>
-          </Box>
         </Box>
       </Box>
     </Box>

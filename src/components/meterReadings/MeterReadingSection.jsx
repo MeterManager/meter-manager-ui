@@ -1,31 +1,41 @@
-import { useState, useEffect, useMemo } from "react"; 
+import { useState, useEffect, useMemo } from 'react';
 import {
-  Paper, Box, Typography, Collapse, IconButton,
-  Divider, Dialog, DialogTitle, DialogContent, Button,
-  TextField, 
-} from "@mui/material";
+  Paper,
+  Box,
+  Typography,
+  Collapse,
+  IconButton,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Button,
+  Stack,
+  useMediaQuery,
+} from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
-import SearchField from "../ui/SearchField";
-import MeterReadingsTable from "./MeterReadingsTable";
-import MeterReadingForm from "./MeterReadingForm";
-import { useMeterReadings } from "../../hooks/useMeterReadings";
-import CustomDatePicker from "../ui/DatePicker";
+import SearchField from '../ui/SearchField';
+import MeterReadingsTable from './MeterReadingsTable';
+import MeterReadingForm from './MeterReadingForm';
+import { useMeterReadings } from '../../hooks/useMeterReadings';
+import CustomDatePicker from '../ui/DatePicker';
+import { useTheme } from '@mui/material/styles';
 
 const MeterReadingsSection = ({ initialExpanded = true }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+
   const { meterReadings, loading, fetchReadings, removeReading, addReading, editReading, error, setError } =
     useMeterReadings();
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [readingToEdit, setReadingToEdit] = useState(null);
 
-  const [search, setSearch] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
-  const [orderBy, setOrderBy] = useState("reading_date");
-  const [order, setOrder] = useState("desc");
-
-  // useEffect(() => {
-  //   fetchReadings();
-  // }, [fetchReadings]);
+  const [search, setSearch] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [orderBy, setOrderBy] = useState('reading_date');
+  const [order, setOrder] = useState('desc');
 
   const handleToggle = () => setExpanded(!expanded);
   const handleOpenForm = (reading = null) => {
@@ -46,24 +56,22 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
       } else {
         await addReading(formData);
       }
-  
+
       setFormOpen(false);
       setReadingToEdit(null);
-
-      // await fetchReadings();  
     } catch (err) {
-      console.error("Помилка:", err);
+      console.error('Помилка:', err);
     }
   };
-  
+
   const handleCloseForm = () => {
     setFormOpen(false);
     setReadingToEdit(null);
   };
 
   const handleSort = (field) => {
-    const isAsc = orderBy === field && order === "asc";
-    setOrder(isAsc ? "desc" : "asc");
+    const isAsc = orderBy === field && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(field);
   };
 
@@ -73,7 +81,7 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
         const tenantName = r.MeterTenant?.Tenant?.name || '';
         const meterSerial = r.MeterTenant?.Meter?.serial_number || '';
         const query = search.toLowerCase();
-        
+
         const matchesSearch =
           tenantName.toLowerCase().includes(query) ||
           meterSerial.toLowerCase().includes(query) ||
@@ -87,13 +95,13 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
         let valA = a[orderBy];
         let valB = b[orderBy];
 
-        if (orderBy === "reading_date") {
+        if (orderBy === 'reading_date') {
           valA = new Date(valA);
           valB = new Date(valB);
         }
 
-        if (valA < valB) return order === "asc" ? -1 : 1;
-        if (valA > valB) return order === "asc" ? 1 : -1;
+        if (valA < valB) return order === 'asc' ? -1 : 1;
+        if (valA > valB) return order === 'asc' ? 1 : -1;
         return 0;
       });
   }, [meterReadings, search, dateFilter, orderBy, order]);
@@ -105,46 +113,63 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
           display="flex"
           alignItems="center"
           justifyContent="space-between"
-          p={2}
-          sx={{ cursor: "pointer", "&:hover": { backgroundColor: "rgba(0,0,0,0.02)" } }}
+          p={{ xs: 1.5, sm: 2 }}
+          sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' } }}
           onClick={handleToggle}
         >
-          <Typography variant="h5" fontWeight={600}>
+          <Typography
+            variant={isMobile ? 'h6' : 'h5'}
+            fontWeight={600}
+            sx={{ fontSize: { xs: '1.125rem', sm: '1.5rem' } }}
+          >
             Показники ({meterReadings.length})
           </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
         <Divider />
         <Collapse in={expanded} timeout="auto">
-          <Box p={3}>
-            <Box
+          <Box p={{ xs: 2, sm: 3 }}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
               sx={{
                 mb: 2,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: 2,
-               
+                alignItems: { xs: 'stretch', sm: 'center' },
               }}
             >
-              <Button variant="contained" onClick={() => handleOpenForm()}>
+              <Button
+                variant="contained"
+                onClick={() => handleOpenForm()}
+                fullWidth={isMobile}
+                size={isMobile ? 'medium' : 'large'}
+              >
                 Додати показник
               </Button>
-              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2,  ml: "auto", }}>
+
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                sx={{
+                  width: { xs: '100%', sm: 'auto' },
+                  ml: { sm: 'auto !important' },
+                }}
+              >
                 <SearchField
-                  placeholder="Пошук за орендарем або лічильником"
+                  placeholder={isMobile ? 'Пошук' : 'Пошук за орендарем або лічильником'}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  sx={{ width: { xs: '100%', sm: 'auto' } }}
                 />
                 <CustomDatePicker
                   value={dateFilter || null}
                   onChange={(newValue) => setDateFilter(newValue || '')}
                   label="Фільтр по даті"
-                  sx={{ ml: "auto", minWidth: 200 }}
+                  sx={{
+                    width: { xs: '100%', sm: 200 },
+                  }}
                 />
-              </Box>
-            </Box>
+              </Stack>
+            </Stack>
             <MeterReadingsTable
               readings={sortedFilteredReadings}
               onDelete={handleDelete}
@@ -157,14 +182,33 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
         </Collapse>
       </Paper>
 
-      <Dialog open={formOpen} onClose={handleCloseForm} maxWidth="sm" fullWidth>
-        <DialogTitle>{readingToEdit ? "Редагувати показник" : "Додати показник"}</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={formOpen}
+        onClose={handleCloseForm}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={isMobile}
+        PaperProps={{
+          sx: {
+            m: { xs: 0, sm: 2 },
+            maxHeight: { xs: '100%', sm: 'calc(100% - 64px)' },
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            fontSize: { xs: '1.125rem', sm: '1.25rem' },
+            py: { xs: 1.5, sm: 2 },
+          }}
+        >
+          {readingToEdit ? 'Редагувати показник' : 'Додати показник'}
+        </DialogTitle>
+        <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
           <MeterReadingForm
             initialData={readingToEdit}
             onSuccess={(response) => {
-              handleFormSubmit(response);  
-              setFormOpen(false);         
+              handleFormSubmit(response);
+              setFormOpen(false);
             }}
             onCancel={() => setFormOpen(false)}
           />
@@ -173,7 +217,5 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
     </>
   );
 };
-
-
 
 export default MeterReadingsSection;
