@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert } from '@mui/material';
+import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert, CircularProgress } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import TariffsTable from '../tariffs/TariffsTable';
 import TariffForm from '../tariffs/TariffForm';
@@ -36,21 +36,29 @@ const TariffsSection = ({ initialExpanded = true }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
 
+  const handleServiceError = (err, defaultMessage = 'Помилка при виконанні дії') => {
+      console.error("Tariff Service Action Failed:", err);
+      const userMessage = translateErrorMessage(err.message || defaultMessage);
+      setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      setError(userMessage); 
+  };
+
   const handleToggle = () => setExpanded((prev) => !prev);
 
   const handleAdd = () => {
     setEditingTariff(null);
+    setError(null);
     setFormOpen(true);
   };
 
   const handleEdit = (tariff) => {
     setEditingTariff(tariff);
+    setError(null);
     setFormOpen(true);
   };
 
   const handleFormSubmit = async (formData) => {
     try {
-      setError(null);
       if (editingTariff?.id) {
         await editTariff(editingTariff.id, formData);
         setSnackbar({ open: true, message: 'Тариф успішно оновлено', severity: 'success' });
@@ -58,13 +66,12 @@ const TariffsSection = ({ initialExpanded = true }) => {
         await addTariff(formData);
         setSnackbar({ open: true, message: 'Тариф успішно додано', severity: 'success' });
       }
+    } catch (err) {
+      handleServiceError(err, 'Помилка збереження тарифу');
+    } finally {
       setFormOpen(false);
       setEditingTariff(null);
-    } catch (err) {
-      const userMessage = translateErrorMessage(err.message);
-      setError(userMessage);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
-      throw err;
+      setError(null);
     }
   };
 
@@ -84,9 +91,7 @@ const TariffsSection = ({ initialExpanded = true }) => {
       setSnackbar({ open: true, message: 'Тариф видалено', severity: 'success' });
       handleCloseConfirmDialog();
     } catch (err) {
-      const userMessage = translateErrorMessage(err.message);
-      setError(userMessage);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      handleServiceError(err, 'Помилка видалення тарифу');
     }
   };
 
@@ -96,9 +101,9 @@ const TariffsSection = ({ initialExpanded = true }) => {
 
   const handleCloseSnackbar = () => setSnackbar({ open: false, message: '', severity: 'success' });
 
-  const isLoading = tariffsLoading || locationsLoading || typesLoading;
-
-  if (isLoading && !formOpen) return <Typography>Завантаження...</Typography>;
+  const isDataLoading = tariffsLoading || locationsLoading || typesLoading;
+  
+  if (isDataLoading && tariffs.length === 0 && !formOpen) return <CircularProgress />;
   if (locationsError) return <Typography color="error">Помилка при завантаженні локацій</Typography>;
   if (typesError) return <Typography color="error">Помилка при завантаженні типів ресурсів</Typography>;
 
@@ -150,7 +155,7 @@ const TariffsSection = ({ initialExpanded = true }) => {
               resourceTypesMap={resourceTypesMap}
               locations={locations}
               resourceTypes={resourceTypes}
-              isLoading={isLoading || isActionLoading}
+              isLoading={isDataLoading || isActionLoading}
             />
           </Box>
         </Collapse>
@@ -162,8 +167,8 @@ const TariffsSection = ({ initialExpanded = true }) => {
         onSubmit={handleFormSubmit}
         initialData={editingTariff || {}}
         error={error}
-        locations={locations}
-        resourceTypes={resourceTypes}
+        locations={locations.filter(l => l.isActive)}
+        resourceTypes={resourceTypes.filter(rt => rt.isActive)}
         isLoading={isActionLoading}
       />
 

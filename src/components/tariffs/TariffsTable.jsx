@@ -1,27 +1,8 @@
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Button,
-  Box,
-  Chip,
-  IconButton,
-  Typography,
-  Card,
-  CardContent,
-  Stack,
-  Tooltip,
-  Divider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Box, Chip, IconButton, Typography,
+  Card, CardContent, Stack, Tooltip, Divider, FormControl, InputLabel, Select, MenuItem,
 } from '@mui/material';
-import { Edit, Delete, AttachMoney, LocationOn, Category, CalendarToday } from '@mui/icons-material';
+import { Edit, Delete, LocationOn, Category, CalendarToday } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
@@ -47,31 +28,6 @@ const TariffsTable = ({
   const isMobile = useMediaQuery('(max-width:800px)');
   const isTablet = useMediaQuery('(max-width:960px)');
 
-  if (!locationsMap || !resourceTypesMap) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <Typography variant="body1" color="text.secondary">
-          Завантаження...
-        </Typography>
-      </Box>
-    );
-  }
-
-  const filteredTariffs = (tariffs || []).filter((tariff) => {
-    const locationName = locationsMap[tariff.location_id] || '';
-    const resourceName = resourceTypesMap[tariff.energy_resource_type_id] || '';
-    const searchTerm = search.toLowerCase();
-
-    const locationMatch = locationFilter === '' || tariff.location_id === locationFilter;
-    const resourceTypeMatch = resourceTypeFilter === '' || tariff.energy_resource_type_id === resourceTypeFilter;
-    const searchMatch =
-      searchTerm === '' ||
-      locationName.toLowerCase().includes(searchTerm) ||
-      resourceName.toLowerCase().includes(searchTerm) ||
-      tariff.price.toString().includes(searchTerm);
-    return locationMatch && resourceTypeMatch && searchMatch;
-  });
-
   const formatDate = (dateString) => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('uk-UA');
@@ -79,15 +35,33 @@ const TariffsTable = ({
 
   const isCurrentTariff = (tariff) => {
     const now = new Date();
-    const validFrom = new Date(tariff.valid_from);
-    const validTo = tariff.valid_to ? new Date(tariff.valid_to) : null;
     now.setHours(0,0,0,0);
-    validFrom.setHours(0,0,0,0);
-    if(validTo) validTo.setHours(0,0,0,0);
 
+    const validFrom = new Date(tariff.valid_from);
+    validFrom.setHours(0,0,0,0);
+    
+    const validTo = tariff.valid_to ? new Date(tariff.valid_to) : null;
+    if(validTo) validTo.setHours(0,0,0,0);
 
     return now >= validFrom && (!validTo || now <= validTo);
   };
+
+  const filteredTariffs = (tariffs || []).filter((tariff) => {
+    const locationName = locationsMap[tariff.location_id] || '';
+    const resourceName = resourceTypesMap[tariff.energy_resource_type_id] || '';
+    const searchTerm = search.toLowerCase();
+
+    const locationMatch = locationFilter === '' || tariff.location_id === Number(locationFilter);
+    const resourceTypeMatch = resourceTypeFilter === '' || tariff.energy_resource_type_id === Number(resourceTypeFilter);
+    
+    const searchMatch =
+      searchTerm === '' ||
+      locationName.toLowerCase().includes(searchTerm) ||
+      resourceName.toLowerCase().includes(searchTerm) ||
+      Number(tariff.price).toFixed(4).includes(searchTerm); 
+      
+    return locationMatch && resourceTypeMatch && searchMatch;
+  });
 
   const MobileTariffCard = ({ tariff }) => (
     <Card
@@ -109,7 +83,7 @@ const TariffsTable = ({
             component="div"
             sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}
           >
-            {tariff.price} ₴
+            {Number(tariff.price).toFixed(4)} ₴
           </Typography>
           <Chip
             label={isCurrentTariff(tariff) ? 'Активний' : 'Неактивний'}
@@ -121,21 +95,21 @@ const TariffsTable = ({
 
         <Stack spacing={1.5} sx={{ mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-             <LocationOn sx={{ fontSize: '16px', color: 'grey.500' }} />
+              <LocationOn sx={{ fontSize: '16px', color: 'grey.500' }} />
             <Typography variant="body2" color="text.secondary">
               {locationsMap[tariff.location_id] || '—'}
             </Typography>
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-             <Category sx={{ fontSize: '16px', color: 'grey.500' }} />
+              <Category sx={{ fontSize: '16px', color: 'grey.500' }} />
             <Typography variant="body2" color="text.secondary">
               {resourceTypesMap[tariff.energy_resource_type_id] || '—'}
             </Typography>
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-             <CalendarToday sx={{ fontSize: '16px', color: 'grey.500' }} />
+              <CalendarToday sx={{ fontSize: '16px', color: 'grey.500' }} />
             <Typography variant="body2" color="text.secondary">
               {formatDate(tariff.valid_from)}
               {tariff.valid_to ? ` - ${formatDate(tariff.valid_to)}` : ' (безстроково)'}
@@ -147,14 +121,14 @@ const TariffsTable = ({
 
         <Stack direction="row" spacing={1} justifyContent="flex-end">
           <Tooltip title="Редагувати тариф">
-           <span>
+            <span>
             <IconButton size="small" onClick={() => onEdit(tariff)} color="primary" disabled={isLoading}>
               <Edit fontSize="small" />
             </IconButton>
-           </span>
+            </span>
           </Tooltip>
           <Tooltip title="Видалити тариф">
-           <span>
+            <span>
             <IconButton size="small" onClick={() => onDelete(tariff.id)} color="error" disabled={isLoading}>
               <Delete fontSize="small" />
             </IconButton>
@@ -209,7 +183,7 @@ const TariffsTable = ({
               maxWidth: isMobile ? '100%' : '400px',
               flexShrink: 1,
             }}
-             disabled={isLoading}
+            disabled={isLoading}
           />
         </Box>
         <Box
@@ -218,7 +192,7 @@ const TariffsTable = ({
               gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: 2,
             }}
-        >
+          >
             <FormControl fullWidth size="small" disabled={isLoading}>
               <InputLabel>Локація</InputLabel>
               <Select
@@ -234,7 +208,7 @@ const TariffsTable = ({
                 ))}
               </Select>
             </FormControl>
-             <FormControl fullWidth size="small" disabled={isLoading}>
+            <FormControl fullWidth size="small" disabled={isLoading}>
               <InputLabel>Тип ресурсу</InputLabel>
               <Select
                 value={resourceTypeFilter}
@@ -310,7 +284,7 @@ const TariffsTable = ({
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <Typography variant="body2" sx={{ fontWeight: 600, color: theme.palette.primary.main }}>
-                          {tariff.price} ₴
+                          {Number(tariff.price).toFixed(4)} ₴
                         </Typography>
                         {isCurrentTariff(tariff) && (
                           <Chip label="Активний" color="success" size="small" variant="outlined" />
@@ -337,11 +311,11 @@ const TariffsTable = ({
                           </span>
                         </Tooltip>
                         <Tooltip title="Видалити тариф">
-                         <span>
-                          <IconButton size="small" onClick={() => onDelete(tariff.id)} color="error" disabled={isLoading}>
-                            <Delete fontSize="small" />
-                          </IconButton>
-                         </span>
+                          <span>
+                            <IconButton size="small" onClick={() => onDelete(tariff.id)} color="error" disabled={isLoading}>
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                       </Stack>
                     </TableCell>

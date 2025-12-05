@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert } from '@mui/material';
+import {
+  Paper,
+  Box,
+  Typography,
+  Collapse,
+  IconButton,
+  Divider,
+  Snackbar,
+  Alert,
+  CircularProgress,
+} from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import ResourceTypesTable from '../resourceTypes/ResourceTypesTable';
 import ResourceTypeForm from '../resourceTypes/ResourceTypeForm';
@@ -25,18 +35,27 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [editingResourceType, setEditingResourceType] = useState(null);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null, action: null });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null, action: null, dependencies: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  const handleServiceError = (err, defaultMessage = 'Помилка при виконанні дії') => {
+    console.error('Resource Type Service Action Failed:', err);
+    const userMessage = translateErrorMessage(err.message || defaultMessage);
+    setSnackbar({ open: true, message: userMessage, severity: 'error' });
+    setError(userMessage);
+  };
 
   const handleToggle = () => setExpanded(!expanded);
 
   const handleAdd = () => {
     setEditingResourceType(null);
+    setError(null);
     setFormOpen(true);
   };
 
   const handleEdit = (resourceType) => {
     setEditingResourceType(resourceType);
+    setError(null);
     setFormOpen(true);
   };
 
@@ -49,12 +68,12 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
         await addResourceType(formData);
         setSnackbar({ open: true, message: 'Тип ресурсу успішно створено', severity: 'success' });
       }
+    } catch (err) {
+      handleServiceError(err, 'Помилка збереження типу ресурсу');
+    } finally {
       setFormOpen(false);
       setEditingResourceType(null);
-    } catch (err) {
-      const userMessage = translateErrorMessage(err.message);
-      setError(userMessage);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      setError(null);
     }
   };
 
@@ -65,7 +84,12 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
   };
 
   const handleRemove = (id) => {
-    setConfirmDialog({ open: true, id, action: 'delete' });
+    setConfirmDialog({
+      open: true,
+      id,
+      action: 'delete',
+      dependencies: null,
+    });
   };
 
   const handleUpdateStatus = async (id, isActive) => {
@@ -77,9 +101,7 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
         severity: 'success',
       });
     } catch (err) {
-      const userMessage = translateErrorMessage(err.message);
-      setError(userMessage);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      handleServiceError(err, 'Помилка оновлення статусу');
     }
   };
 
@@ -89,16 +111,14 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
         await removeResourceType(confirmDialog.id);
         setSnackbar({ open: true, message: 'Тип ресурсу успішно видалено', severity: 'success' });
       }
-      setConfirmDialog({ open: false, id: null, action: null });
+      setConfirmDialog({ open: false, id: null, action: null, dependencies: null });
     } catch (err) {
-      const userMessage = translateErrorMessage(err.message);
-      setError(userMessage);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      handleServiceError(err, 'Помилка підтвердження дії');
     }
   };
 
   const handleCloseConfirmDialog = () => {
-    setConfirmDialog({ open: false, id: null, action: null });
+    setConfirmDialog({ open: false, id: null, action: null, dependencies: null });
   };
 
   const handleCloseSnackbar = () => {

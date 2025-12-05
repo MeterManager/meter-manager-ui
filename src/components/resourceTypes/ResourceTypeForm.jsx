@@ -1,5 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, IconButton } from '@mui/material';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  Alert,
+  IconButton,
+  CircularProgress,
+} from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
@@ -9,7 +19,7 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
   const isMobile = useMediaQuery('(max-width:800px)');
   const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
 
-  const [formData, setFormData] = useState(initialData);
+  const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
@@ -25,19 +35,21 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
   }, [open, initialData]);
 
   const validateField = (name, value) => {
-    let error = '';
+    let errorMsg = '';
+    const trimmedValue = typeof value === 'string' ? value.trim() : value;
+
     if (name === 'name') {
-      if (!value) {
-        error = "Тип ресурсу обов'язковий.";
-      } else if (resourceTypes.some((t) => t.name.trim() === value.trim() && t.id !== initialData.id)) {
-        error = 'Тип ресурсу з такою назвою вже існує.';
+      if (!trimmedValue) {
+        errorMsg = "Тип ресурсу обов'язковий.";
+      } else if (resourceTypes.some((t) => t.name.trim() === trimmedValue && t.id !== initialData.id)) {
+        errorMsg = 'Тип ресурсу з такою назвою вже існує.';
       }
     }
-    if (name === 'unit' && !value) {
-      error = "Одиниці вимірювання обов'язкові.";
+    if (name === 'unit' && !trimmedValue) {
+      errorMsg = "Одиниці вимірювання обов'язкові.";
     }
-    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
-    return error;
+    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: errorMsg }));
+    return errorMsg;
   };
 
   const handleChange = (e) => {
@@ -52,9 +64,9 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
     let hasError = false;
 
     fieldsToValidate.forEach((field) => {
-      const error = validateField(field, formData[field]);
-      if (error) {
-        errors[field] = error;
+      const errorMsg = validateField(field, formData[field]);
+      if (errorMsg) {
+        errors[field] = errorMsg;
         hasError = true;
       }
     });
@@ -65,11 +77,15 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
 
     onSubmit({
       ...formData,
-      isActive: formData.isActive ?? initialData.isActive ?? true,
+      name: formData.name.trim(),
+      unit: formData.unit.trim(),
+      isActive: formData.isActive ?? true,
     });
   };
 
   const handleClose = () => {
+    setFormData({});
+    setFormErrors({});
     onClose();
   };
 
@@ -131,16 +147,7 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
           fullWidth
           variant="outlined"
           size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mt: 1,
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          sx={{ mt: 1, mb: 2 }}
           error={!!formErrors.name}
           helperText={formErrors.name || ' '}
           disabled={isLoading}
@@ -154,14 +161,6 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
           fullWidth
           variant="outlined"
           size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
           error={!!formErrors.unit}
           helperText={formErrors.unit || ' '}
           disabled={isLoading}
@@ -202,7 +201,7 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
             marginLeft: '0 !important',
           }}
         >
-          Зберегти
+          {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Зберегти'}
         </Button>
       </DialogActions>
     </Dialog>

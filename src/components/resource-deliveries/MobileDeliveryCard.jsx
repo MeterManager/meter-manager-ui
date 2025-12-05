@@ -2,17 +2,27 @@ import { Card, CardContent, Box, Typography, IconButton, Stack, Tooltip, Divider
 import { Edit, Delete, LocationOn } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 
-const MobileDeliveryCard = ({ 
-  delivery, 
-  onEdit, 
-  onDelete, 
-  getLocationName, 
-  getResourceTypeName, 
-  getTotalCost, 
+const MobileDeliveryCard = ({
+  delivery,
+  onEdit,
+  onDelete,
+  getLocationName,
+  getResourceTypeName,
+  getTotalCost,
   getPricePerUnit,
-  isLoading 
+  isLoading,
 }) => {
   const theme = useTheme();
+
+  const safeNumber = (value) => Number(value) || 0;
+
+  const formattedQuantity = safeNumber(delivery.quantity).toFixed(4);
+
+  const formattedPricePerUnit = safeNumber(getPricePerUnit(delivery)).toFixed(2);
+
+  const formattedTotalCost = safeNumber(getTotalCost(delivery)).toFixed(2).toLocaleString('uk-UA');
+
+  const formattedDate = delivery.delivery_date ? new Date(delivery.delivery_date).toLocaleDateString('uk-UA') : '—';
 
   return (
     <Card
@@ -29,18 +39,13 @@ const MobileDeliveryCard = ({
           <Typography
             variant="subtitle1"
             component="div"
-            sx={{
-              fontWeight: 600,
-              color: 'text.primary',
-              lineHeight: 1.3,
-              fontSize: '1rem',
-            }}
+            sx={{ fontWeight: 600, color: 'text.primary', fontSize: '1rem' }}
           >
             {getResourceTypeName(delivery.energy_resource_type_id)}
           </Typography>
-          <Typography 
-            variant="caption" 
-            sx={{ 
+          <Typography
+            variant="caption"
+            sx={{
               color: 'text.secondary',
               fontWeight: 500,
               fontSize: '0.75rem',
@@ -48,26 +53,13 @@ const MobileDeliveryCard = ({
               ml: 1,
             }}
           >
-            {new Date(delivery.delivery_date).toLocaleDateString('uk-UA')}
+            {formattedDate}
           </Typography>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-          <LocationOn 
-            sx={{ 
-              fontSize: '16px', 
-              color: 'grey.500', 
-              mr: 0.5,
-            }} 
-          />
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              color: 'text.secondary',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-            }}
-          >
+          <LocationOn sx={{ fontSize: '16px', color: 'grey.500', mr: 0.5 }} />
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem', fontWeight: 500 }}>
             {getLocationName(delivery)}
           </Typography>
         </Box>
@@ -83,95 +75,46 @@ const MobileDeliveryCard = ({
           }}
         >
           <Box>
-            <Typography 
-              variant="caption" 
-              sx={{ 
-                color: 'text.secondary',
-                fontWeight: 500,
-                fontSize: '0.7rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                display: 'block',
-                mb: 0.5,
-              }}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 500, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', mb: 0.5 }}
             >
               Кількість
             </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                fontWeight: 600,
-                color: 'text.primary',
-                fontSize: '0.875rem',
-              }}
-            >
-              {Number(delivery.quantity).toFixed(2)} {delivery.unit}
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
+              {formattedQuantity} {delivery.unit}
             </Typography>
           </Box>
           <Box>
-            <Typography 
-              variant="caption" 
-              sx={{ 
-                color: 'text.secondary',
-                fontWeight: 500,
-                fontSize: '0.7rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                display: 'block',
-                mb: 0.5,
-              }}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 500, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', mb: 0.5 }}
             >
               Загальна сума
             </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                fontWeight: 600,
-                color: 'success.main',
-                fontSize: '0.875rem',
-              }}
-            >
-              {getTotalCost(delivery).toLocaleString()} ₴
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main', fontSize: '0.875rem' }}>
+              {formattedTotalCost} ₴
             </Typography>
           </Box>
           <Box>
-            <Typography 
-              variant="caption" 
-              sx={{ 
-                color: 'text.secondary',
-                fontWeight: 500,
-                fontSize: '0.7rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                display: 'block',
-                mb: 0.5,
-              }}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 500, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', mb: 0.5 }}
             >
               Ціна за одиницю
             </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                fontWeight: 500,
-                color: 'text.primary',
-                fontSize: '0.875rem',
-              }}
-            >
-              {Number(getPricePerUnit(delivery)).toFixed(2).toLocaleString()} ₴
+            <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.primary', fontSize: '0.875rem' }}>
+              {formattedPricePerUnit} ₴
             </Typography>
           </Box>
           <Box>
-            <Typography 
-              variant="caption" 
-              sx={{ 
-                color: 'text.secondary',
-                fontWeight: 500,
-                fontSize: '0.7rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                display: 'block',
-                mb: 0.5,
-              }}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 500, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', mb: 0.5 }}
             >
               Постачальник
             </Typography>
@@ -197,9 +140,9 @@ const MobileDeliveryCard = ({
           <Stack direction="row" spacing={1}>
             <Tooltip title="Редагувати">
               <span>
-                <IconButton 
-                  size="small" 
-                  onClick={() => onEdit(delivery)} 
+                <IconButton
+                  size="small"
+                  onClick={() => onEdit(delivery)}
                   color="primary"
                   sx={{
                     width: 32,
@@ -207,9 +150,9 @@ const MobileDeliveryCard = ({
                     border: `1px solid ${theme.palette.grey[300]}`,
                     borderRadius: 1,
                     '&:hover': {
-                      backgroundColor: 'primary.50',
-                      borderColor: 'primary.main',
-                    }
+                      backgroundColor: theme.palette.action.hover,
+                      borderColor: theme.palette.primary.main,
+                    },
                   }}
                   disabled={isLoading}
                 >
@@ -219,9 +162,9 @@ const MobileDeliveryCard = ({
             </Tooltip>
             <Tooltip title="Видалити">
               <span>
-                <IconButton 
-                  size="small" 
-                  onClick={() => onDelete(delivery.id)} 
+                <IconButton
+                  size="small"
+                  onClick={() => onDelete(delivery.id)}
                   color="error"
                   sx={{
                     width: 32,
@@ -229,9 +172,9 @@ const MobileDeliveryCard = ({
                     border: `1px solid ${theme.palette.grey[300]}`,
                     borderRadius: 1,
                     '&:hover': {
-                      backgroundColor: 'error.50',
-                      borderColor: 'error.main',
-                    }
+                      backgroundColor: theme.palette.error.light,
+                      borderColor: theme.palette.error.main,
+                    },
                   }}
                   disabled={isLoading}
                 >

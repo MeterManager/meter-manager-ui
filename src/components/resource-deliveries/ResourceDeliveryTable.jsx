@@ -1,23 +1,6 @@
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Button,
-  Box,
-  IconButton,
-  Typography,
-  Card,
-  CardContent,
-  Stack,
-  Tooltip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Box, IconButton, Typography,
+  Card, CardContent, Stack, Tooltip, FormControl, InputLabel, Select, MenuItem,
 } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
@@ -25,6 +8,11 @@ import SearchField from '../ui/SearchField';
 import CustomDatePicker from '../ui/DatePicker';
 import { useTheme } from '@mui/material/styles';
 import MobileDeliveryCard from './MobileDeliveryCard';
+
+const safeToFixed = (value, decimals = 2) => {
+    const num = Number(value) || 0;
+    return num.toFixed(decimals);
+};
 
 const ResourceDeliveryTable = ({
   deliveries,
@@ -61,7 +49,8 @@ const ResourceDeliveryTable = ({
   };
 
   const getTotalCost = (delivery) => {
-    return delivery.total_cost || delivery.totalCost || delivery.quantity * delivery.price_per_unit || 0;
+    const cost = delivery.total_cost || delivery.totalCost || Number(delivery.quantity) * Number(delivery.price_per_unit) || 0;
+    return cost;
   };
 
   const getPricePerUnit = (delivery) => {
@@ -70,7 +59,7 @@ const ResourceDeliveryTable = ({
 
   const filteredDeliveries = deliveries.filter((d) => {
     const deliveryDate = new Date(d.delivery_date);
-    deliveryDate.setHours(0, 0, 0, 0); // Обнуляємо час для коректного порівняння дат
+    deliveryDate.setHours(0, 0, 0, 0); 
 
     const dateFrom = dateFromFilter ? new Date(dateFromFilter) : null;
     if (dateFrom) dateFrom.setHours(0, 0, 0, 0);
@@ -78,15 +67,17 @@ const ResourceDeliveryTable = ({
     const dateTo = dateToFilter ? new Date(dateToFilter) : null;
     if (dateTo) dateTo.setHours(0, 0, 0, 0);
 
-    const locationMatch = locationFilter === '' || d.location_id === locationFilter;
-    const resourceTypeMatch = resourceTypeFilter === '' || d.energy_resource_type_id === resourceTypeFilter;
-    const dateFromMatch = !dateFrom || deliveryDate >= dateFrom;
-    const dateToMatch = !dateTo || deliveryDate <= dateTo;
+    const locationMatch = locationFilter === '' || d.location_id === Number(locationFilter);
+    const resourceTypeMatch = resourceTypeFilter === '' || d.energy_resource_type_id === Number(resourceTypeFilter);
+    
+    const dateFromMatch = !dateFrom || deliveryDate.getTime() >= dateFrom.getTime();
+    const dateToMatch = !dateTo || deliveryDate.getTime() <= dateTo.getTime();
 
     const locationName = getLocationName(d).toLowerCase();
     const resourceName = getResourceTypeName(d.energy_resource_type_id).toLowerCase();
     const supplier = (d.supplier || '').toLowerCase();
     const searchLower = search.toLowerCase();
+    
     const searchMatch = searchLower === '' || resourceName.includes(searchLower) || locationName.includes(searchLower) || supplier.includes(searchLower);
 
     return locationMatch && resourceTypeMatch && dateFromMatch && dateToMatch && searchMatch;
@@ -262,7 +253,7 @@ const ResourceDeliveryTable = ({
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {Number(delivery.quantity).toFixed(2)}
+                        {safeToFixed(delivery.quantity, 4)}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -277,12 +268,12 @@ const ResourceDeliveryTable = ({
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {Number(getPricePerUnit(delivery)).toFixed(2)} ₴
+                        {safeToFixed(getPricePerUnit(delivery))} ₴
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {Number(getTotalCost(delivery)).toFixed(2)} ₴
+                        {safeToFixed(getTotalCost(delivery))} ₴
                       </Typography>
                     </TableCell>
                     <TableCell>

@@ -31,6 +31,12 @@ const LocationsSection = ({ initialExpanded = true }) => {
   const [search, setSearch] = useState('');
   const [tenantFilter, setTenantFilter] = useState('');
 
+  const handleServiceError = (err) => {
+    const userMessage = translateErrorMessage(err.message);
+    setError(userMessage);
+    setSnackbar({ open: true, message: userMessage, severity: 'error' });
+  };
+
   const handleToggle = () => {
     setExpanded(!expanded);
   };
@@ -54,13 +60,12 @@ const LocationsSection = ({ initialExpanded = true }) => {
         await addLocation(formData);
         setSnackbar({ open: true, message: 'Локацію успішно створено', severity: 'success' });
       }
+    } catch (err) {
+      handleServiceError(err);
+    } finally {
       setFormOpen(false);
       setEditingLocation(null);
-    } catch (err) {
-      const userMessage = translateErrorMessage(err.message);
-      setError(userMessage);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
-    } finally {
+      setError(null);
     }
   };
 
@@ -86,15 +91,24 @@ const LocationsSection = ({ initialExpanded = true }) => {
         setSnackbar({ open: true, message: 'Локацію успішно видалено', severity: 'success' });
       }
     } catch (err) {
-      const userMessage = translateErrorMessage(err.message);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
-    } finally {
+      handleServiceError(err);
     }
   };
 
   const handleUpdateStatus = async (id, isActive) => {
+    if (isActive) {
+      try {
+        await updateLocationStatus(id, true);
+        setSnackbar({ open: true, message: 'Локацію успішно активовано', severity: 'success' });
+      } catch (err) {
+        handleServiceError(err);
+      }
+      return;
+    }
+
     try {
       const result = await updateLocationStatus(id, isActive);
+
       if (result.requiresConfirmation) {
         setConfirmDialog({
           open: true,
@@ -105,15 +119,12 @@ const LocationsSection = ({ initialExpanded = true }) => {
       } else {
         setSnackbar({
           open: true,
-          message: `Локацію успішно ${isActive ? 'активовано' : 'деактивовано'}`,
+          message: 'Локацію успішно деактивовано',
           severity: 'success',
         });
       }
     } catch (err) {
-      const userMessage = translateErrorMessage(err.message);
-      setError(userMessage);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
-    } finally {
+      handleServiceError(err);
     }
   };
 
@@ -123,23 +134,22 @@ const LocationsSection = ({ initialExpanded = true }) => {
         await removeLocation(confirmDialog.id);
         setSnackbar({
           open: true,
-          message: 'Локацію успішно видалено',
+          message: 'Локацію та повʼязані обʼєкти успішно видалено',
           severity: 'success',
         });
       } else if (confirmDialog.action === 'deactivate') {
         await updateLocationStatus(confirmDialog.id, false, true);
         setSnackbar({
           open: true,
-          message: 'Локацію успішно деактивовано',
+          message: 'Локацію успішно деактивовано (з залежностями)',
           severity: 'success',
         });
       }
       setConfirmDialog({ open: false, id: null, action: null, dependencies: null });
     } catch (err) {
-      const userMessage = translateErrorMessage(err.message);
-      setError(userMessage);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      handleServiceError(err);
     } finally {
+      setError(null);
     }
   };
 

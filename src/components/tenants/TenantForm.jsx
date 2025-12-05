@@ -14,19 +14,20 @@ import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
 
-const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants, locations = [] }) => {
+const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
   const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
 
-  const [formData, setFormData] = useState(initialData);
+  const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
       setFormData({
         name: initialData.name || '',
-        contactPerson: initialData.contactPerson || '',
+        contactPerson: initialData.contact_person || initialData.contactPerson || '',
         phone: initialData.phone || '',
         email: initialData.email || '',
         isActive: initialData.isActive ?? true,
@@ -34,46 +35,39 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
       });
       setFormErrors({});
     } else {
+      // Скидання стану при закритті
       setFormData({});
       setFormErrors({});
     }
   }, [open, initialData]);
 
-  const validatePhone = (phone) => {
-    const phoneRegex = /^\+380[0-9]{9}$/;
-    return phone ? phoneRegex.test(phone) : true;
-  };
-
   const validateField = (name, value) => {
-    let error = '';
+    let errorMsg = '';
+    const trimmedValue = typeof value === 'string' ? value.trim() : value;
+
     if (name === 'name') {
-      if (!value) {
-        error = "Назва орендаря обов'язкова.";
-      } else if (tenants.some((t) => t.name.trim() === value.trim() && t.id !== initialData.id)) {
-        error = 'Орендар з такою назвою вже існує.';
+      if (!trimmedValue) {
+        errorMsg = "Назва орендаря обов'язкова.";
+      } else if (tenants.some((t) => t.name.trim() === trimmedValue && t.id !== initialData.id)) {
+        errorMsg = 'Орендар з такою назвою вже існує.';
       }
     }
-    if (name === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      error = 'Невірний формат email.';
+    if (name === 'email' && trimmedValue && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedValue)) {
+      errorMsg = 'Невірний формат email.';
     }
-    if (name === 'phone' && value && !/^\+380[0-9]{9}$/.test(value)) {
-      error = 'Номер телефону має бути у форматі +380xxxxxxxxx';
+    if (name === 'phone' && trimmedValue && !trimmedValue.match(/^\+380[0-9]{9}$/)) {
+      errorMsg = 'Номер телефону має бути у форматі +380xxxxxxxxx';
     }
 
-    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
-    return error;
+    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: errorMsg }));
+    return errorMsg;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'phone') {
-      const cleanedValue = value.replace(/[^0-9+]/g, '');
-      setFormData({ ...formData, [name]: cleanedValue });
-      validateField(name, cleanedValue);
-    } else {
-      setFormData({ ...formData, [name]: value });
-      validateField(name, value);
-    }
+
+    setFormData({ ...formData, [name]: value });
+    validateField(name, value);
   };
 
   const handleSubmit = async () => {
@@ -97,13 +91,14 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
     setIsSubmitting(true);
     try {
       await onSubmit({
-        ...formData,
+        name: formData.name.trim(),
+        contact_person: formData.contactPerson?.trim() || null,
+        phone: formData.phone?.trim() || null,
+        email: formData.email?.trim() || null,
         isActive: formData.isActive ?? true,
+        id: formData.id,
       });
-      setFormData({});
-      onClose(); 
     } catch (error) {
-      console.error('Submit error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -115,8 +110,6 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
     onClose();
   };
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   return (
     <Dialog
       open={open}
@@ -126,8 +119,8 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
       fullScreen={isMobile}
       PaperProps={{
         sx: {
-          width: isMobile ? '100%' : isMobileOrTablet ? '90%' : '500px',
-          maxWidth: isMobile ? '100%' : '500px',
+          width: '100%',
+          maxWidth: '500px',
           margin: isMobile ? 0 : 'auto',
         },
       }}
@@ -144,7 +137,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
         }}
       >
         {initialData.id ? 'Редагувати орендаря' : 'Додати орендаря'}
-        <IconButton onClick={handleClose} size="small">
+        <IconButton onClick={handleClose} size="small" disabled={isSubmitting}>
           <Close />
         </IconButton>
       </DialogTitle>
@@ -175,18 +168,10 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           fullWidth
           variant="outlined"
           size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mt: 1,
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          sx={{ mt: 1, mb: 2 }}
           error={!!formErrors.name}
           helperText={formErrors.name || ' '}
+          disabled={isSubmitting}
         />
 
         <TextField
@@ -197,16 +182,9 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           fullWidth
           variant="outlined"
           size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          sx={{ mb: 2 }}
           helperText={formErrors.contactPerson || ' '}
+          disabled={isSubmitting}
         />
 
         <TextField
@@ -217,18 +195,11 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           fullWidth
           variant="outlined"
           size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          sx={{ mb: 2 }}
           error={!!formErrors.phone}
-          helperText={formErrors.phone || ' '}
+          helperText={formErrors.phone || 'У форматі +380xxxxxxxxx'}
           inputProps={{ pattern: '[+0-9]*' }}
+          disabled={isSubmitting}
         />
 
         <TextField
@@ -240,16 +211,9 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
           fullWidth
           variant="outlined"
           size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
           error={!!formErrors.email}
           helperText={formErrors.email || ' '}
+          disabled={isSubmitting}
         />
       </DialogContent>
 
@@ -287,7 +251,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants,
             marginLeft: '0 !important',
           }}
         >
-          {isSubmitting ? <CircularProgress size={24} /> : 'Зберегти'}
+          {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Зберегти'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -21,7 +21,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
@@ -38,34 +38,42 @@ const MetersTable = ({
   setLocalError,
   locations = [],
   energyResourceTypes = [],
-  isLoading
+  isLoading,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:800px)');
   const isTablet = useMediaQuery('(max-width:960px)');
+
   const [search, setSearch] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedResourceType, setSelectedResourceType] = useState('');
   const [loadingMeterId, setLoadingMeterId] = useState(null);
 
+  const handleActionFailure = (err) => {
+    const userMessage = translateErrorMessage(err.message || 'Помилка виконання дії');
+    setLocalError?.(userMessage);
+  };
+
   const handleStatusChange = async (meter) => {
+    if (isLoading || loadingMeterId !== null) return;
+
     setLoadingMeterId(meter.id);
     try {
       await updateMeterStatus(meter.id, !meter.isActive);
     } catch (err) {
-      const userMessage = translateErrorMessage(err.message || 'Помилка зміни статусу');
-      setLocalError?.(userMessage);
+      handleActionFailure(err);
     } finally {
       setLoadingMeterId(null);
     }
   };
 
   const handleRemoveClick = (meterId) => {
-      removeMeter(meterId);
+    removeMeter(meterId);
   };
 
   const getLocationName = (locationId) => locations.find((l) => l.id === locationId)?.name || 'Невідома локація';
-  const getResourceName = (resourceId) => energyResourceTypes.find((rt) => rt.id === resourceId)?.name || 'Невідомий ресурс';
+  const getResourceName = (resourceId) =>
+    energyResourceTypes.find((rt) => rt.id === resourceId)?.name || 'Невідомий ресурс';
 
   const filteredMeters = meters.filter((meter) => {
     const serial = (meter.serial_number || '').toLowerCase();
@@ -75,81 +83,92 @@ const MetersTable = ({
 
     const locationMatch = !selectedLocation || meter.location_id === selectedLocation;
     const resourceTypeMatch = !selectedResourceType || meter.energy_resource_type_id === selectedResourceType;
-    const searchMatch = query === '' || serial.includes(query) || locationName.includes(query) || resourceName.includes(query);
+
+    const searchMatch =
+      query === '' || serial.includes(query) || locationName.includes(query) || resourceName.includes(query);
 
     return locationMatch && resourceTypeMatch && searchMatch;
   });
 
-  const MobileMeterCard = ({ meter }) => (
-    <Card
-      sx={{
-        mb: 2,
-        border: `1px solid ${theme.palette.divider}`,
-        '&:hover': { boxShadow: 2 },
-      }}
-    >
-      <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-            {meter.serial_number}
-          </Typography>
-          <Chip
-            label={meter.isActive ? 'Активний' : 'Неактивний'}
-            color={meter.isActive ? 'success' : 'default'}
-            size="small"
-            sx={{ ml: 1, flexShrink: 0 }}
-          />
-        </Box>
+  const MobileMeterCard = ({ meter }) => {
+    const isRowLoading = loadingMeterId === meter.id;
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          <strong>Локація:</strong> {getLocationName(meter.location_id)}
-        </Typography>
-
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          <strong>Тип ресурсу:</strong> {getResourceName(meter.energy_resource_type_id)}
-        </Typography>
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-             {loadingMeterId === meter.id ? (
-              <CircularProgress size={24} />
-            ) : (
-             <Switch
-                checked={meter.isActive}
-                onChange={() => handleStatusChange(meter)}
-                color="primary"
-                size="small"
-                disabled={isLoading || loadingMeterId !== null}
-              />
-              )}
-            <Typography variant="body2">{meter.isActive ? 'Активний' : 'Неактивний'}</Typography>
+    return (
+      <Card
+        sx={{
+          mb: 2,
+          border: `1px solid ${theme.palette.divider}`,
+          '&:hover': { boxShadow: 2 },
+        }}
+      >
+        <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+            <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+              {meter.serial_number}
+            </Typography>
+            <Chip
+              label={meter.isActive ? 'Активний' : 'Неактивний'}
+              color={meter.isActive ? 'success' : 'default'}
+              size="small"
+              sx={{ ml: 1, flexShrink: 0 }}
+            />
           </Box>
 
-          <Stack direction="row" spacing={1}>
-            <Tooltip title="Редагувати">
-             <span>
-              <IconButton size="small" onClick={() => onEdit(meter)} color="primary" disabled={isLoading || loadingMeterId !== null}>
-                <Edit fontSize="small" />
-              </IconButton>
-             </span>
-            </Tooltip>
-            <Tooltip title={meter.isActive ? 'Неможливо видалити активний лічильник' : 'Видалити'}>
-              <span>
-                <IconButton
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            <strong>Локація:</strong> {getLocationName(meter.location_id)}
+          </Typography>
+
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <strong>Тип ресурсу:</strong> {getResourceName(meter.energy_resource_type_id)}
+          </Typography>
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {isRowLoading ? (
+                <CircularProgress size={20} />
+              ) : (
+                <Switch
+                  checked={meter.isActive}
+                  onChange={() => handleStatusChange(meter)}
+                  color="primary"
+                  size="small"
+                  disabled={isLoading || loadingMeterId !== null}
+                />
+              )}
+              <Typography variant="body2">{meter.isActive ? 'Активний' : 'Неактивний'}</Typography>
+            </Box>
+
+            <Stack direction="row" spacing={1}>
+              <Tooltip title="Редагувати">
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={() => onEdit(meter)}
+                    color="primary"
+                    disabled={isLoading || loadingMeterId !== null}
+                  >
+                    <Edit fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title={meter.isActive ? 'Спочатку деактивуйте лічильник' : 'Видалити'}>
+                <span>
+                  <IconButton
                     size="small"
                     onClick={() => handleRemoveClick(meter.id)}
                     color="error"
                     disabled={meter.isActive || isLoading || loadingMeterId !== null}
-                 >
-                  <Delete fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </Stack>
-        </Box>
-      </CardContent>
-    </Card>
-  );
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Stack>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <Box>
@@ -180,18 +199,22 @@ const MetersTable = ({
           Додати лічильник
         </Button>
 
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto', order: isMobile ? 0 : 1 }}>
+        <Box
+          sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto', order: isMobile ? 0 : 1 }}
+        >
           <FormControl size="small" sx={{ minWidth: 150, flexGrow: 1 }} disabled={isLoading}>
             <InputLabel>Локація</InputLabel>
-            <Select
-              value={selectedLocation}
-              label="Локація"
-              onChange={(e) => setSelectedLocation(e.target.value)}
-            >
-              <MenuItem value=""><em>Всі локації</em></MenuItem>
-              {locations.filter(l => l.isActive).map((loc) => (
-                <MenuItem key={loc.id} value={loc.id}>{loc.name}</MenuItem>
-              ))}
+            <Select value={selectedLocation} label="Локація" onChange={(e) => setSelectedLocation(e.target.value)}>
+              <MenuItem value="">
+                <em>Всі локації</em>
+              </MenuItem>
+              {locations
+                .filter((l) => l.isActive)
+                .map((loc) => (
+                  <MenuItem key={loc.id} value={loc.id}>
+                    {loc.name}
+                  </MenuItem>
+                ))}
             </Select>
           </FormControl>
 
@@ -202,10 +225,16 @@ const MetersTable = ({
               label="Тип ресурсу"
               onChange={(e) => setSelectedResourceType(e.target.value)}
             >
-              <MenuItem value=""><em>Всі типи</em></MenuItem>
-              {energyResourceTypes.filter(rt => rt.isActive).map((rt) => (
-                <MenuItem key={rt.id} value={rt.id}>{rt.name}</MenuItem>
-              ))}
+              <MenuItem value="">
+                <em>Всі типи</em>
+              </MenuItem>
+              {energyResourceTypes
+                .filter((rt) => rt.isActive)
+                .map((rt) => (
+                  <MenuItem key={rt.id} value={rt.id}>
+                    {rt.name}
+                  </MenuItem>
+                ))}
             </Select>
           </FormControl>
         </Box>
@@ -231,12 +260,14 @@ const MetersTable = ({
       {isMobile ? (
         <Box>
           {filteredMeters.length > 0 ? (
-            filteredMeters.map((meter) => <MobileMeterCard key={meter.id} meter={meter} isLoading={isLoading || loadingMeterId === meter.id}/>)
+            filteredMeters.map((meter) => (
+              <MobileMeterCard key={meter.id} meter={meter} isLoading={isLoading || loadingMeterId === meter.id} />
+            ))
           ) : (
             <Card>
               <CardContent>
                 <Typography variant="body1" align="center" color="text.secondary">
-                 За вашими фільтрами нічого не знайдено
+                  За вашими фільтрами нічого не знайдено
                 </Typography>
               </CardContent>
             </Card>
@@ -256,68 +287,84 @@ const MetersTable = ({
             </TableHead>
             <TableBody>
               {filteredMeters.length > 0 ? (
-                filteredMeters.map((meter) => (
-                  <TableRow key={meter.id} sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>{meter.serial_number}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">{getLocationName(meter.location_id)}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">{getResourceName(meter.energy_resource_type_id)}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                         {loadingMeterId === meter.id ? (
-                           <CircularProgress size={24} />
+                filteredMeters.map((meter) => {
+                  const isRowLoading = loadingMeterId === meter.id;
+                  const isDisabled = isLoading || loadingMeterId !== null;
+
+                  return (
+                    <TableRow key={meter.id} sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {meter.serial_number}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {getLocationName(meter.location_id)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {getResourceName(meter.energy_resource_type_id)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {isRowLoading ? (
+                            <CircularProgress size={20} />
                           ) : (
-                           <Switch
+                            <Switch
                               checked={meter.isActive}
                               onChange={() => handleStatusChange(meter)}
                               color="primary"
                               size="small"
-                              disabled={isLoading || loadingMeterId !== null}
+                              disabled={isDisabled}
                             />
-                            )}
-                        <Chip
-                          label={meter.isActive ? 'Активний' : 'Неактивний'}
-                          color={meter.isActive ? 'success' : 'default'}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>
-                      <Stack direction="row" spacing={0} justifyContent="center">
-                        <Tooltip title="Редагувати лічильник">
-                          <span>
-                            <IconButton size="small" onClick={() => onEdit(meter)} color="primary" disabled={isLoading || loadingMeterId !== null}>
-                              <Edit fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                        <Tooltip title={meter.isActive ? 'Спочатку деактивуйте лічильник' : 'Видалити лічильник'}>
-                          <span>
-                            <IconButton
+                          )}
+                          <Chip
+                            label={meter.isActive ? 'Активний' : 'Неактивний'}
+                            color={meter.isActive ? 'success' : 'default'}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'center' }}>
+                        <Stack direction="row" spacing={0} justifyContent="center">
+                          <Tooltip title="Редагувати лічильник">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => onEdit(meter)}
+                                color="primary"
+                                disabled={isDisabled}
+                              >
+                                <Edit fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                          <Tooltip title={meter.isActive ? 'Спочатку деактивуйте лічильник' : 'Видалити лічильник'}>
+                            <span>
+                              <IconButton
                                 size="small"
                                 onClick={() => handleRemoveClick(meter.id)}
-                                disabled={meter.isActive || isLoading || loadingMeterId !== null}
+                                disabled={meter.isActive || isDisabled}
                                 color="error"
-                            >
-                              <Delete fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))
+                              >
+                                <Delete fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                       За вашими фільтрами нічого не знайдено
+                      За вашими фільтрами нічого не знайдено
                     </Typography>
                   </TableCell>
                 </TableRow>

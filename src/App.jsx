@@ -3,12 +3,12 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useAuthContext } from './contexts/AuthContext';
 import ConsentHandler from './components/ConsentHandler';
 import Sidebar from './components/Sidebar';
-import BlockedUserPage from './components/BlockedUserPage';
 import theme from './theme';
 
 import SubmitMetricsPage from './pages/SubmitMetricsPage';
 import DashboardPage from './pages/DashboardPage';
 import ActPage from './pages/ActPage';
+import BlockedUserPage from './pages/BlockedUserPage';
 
 const App = () => {
   const { isLoading, error, isBlocked, isAuthenticated } = useAuthContext();

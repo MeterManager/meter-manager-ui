@@ -9,7 +9,7 @@ import {
   Alert,
   MenuItem,
   CircularProgress,
-  IconButton
+  IconButton,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
@@ -37,6 +37,8 @@ const MeterForm = ({
     if (open) {
       setFormData({
         serial_number: initialData.serial_number || '',
+        // Для Select полів використовуємо '' як fallback, якщо значення немає,
+        // це відповідає MenuItem value=""
         location_id: initialData.location_id || '',
         energy_resource_type_id: initialData.energy_resource_type_id || '',
         isActive: initialData.isActive ?? true,
@@ -44,30 +46,44 @@ const MeterForm = ({
       });
       setFormErrors({});
     }
+    // Скидаємо лише при відкритті, щоб уникнути конфліктів стану
   }, [open, initialData]);
 
   const validateField = (name, value) => {
     let errorMsg = '';
+    const trimmedValue = typeof value === 'string' ? value.trim() : value;
+
     if (name === 'serial_number') {
-      if (!value) {
+      if (!trimmedValue) {
         errorMsg = "Серійний номер обов'язковий.";
-      } else if (Array.isArray(meters) && meters.some((m) => m.serial_number === value && m.id !== formData.id)) {
-          errorMsg = 'Лічильник з таким серійним номером вже існує.';
+      } else if (
+        Array.isArray(meters) &&
+        meters.some((m) => m.serial_number === trimmedValue && m.id !== formData.id)
+      ) {
+        // Перевірка унікальності (на клієнті)
+        errorMsg = 'Лічильник з таким серійним номером вже існує.';
       }
     }
-    if (name === 'location_id' && !value) {
+
+    // Перевірка Select полів
+    if (name === 'location_id' && (trimmedValue === '' || !trimmedValue)) {
       errorMsg = "Локація обов'язкова.";
     }
-    if (name === 'energy_resource_type_id' && !value) {
+    if (name === 'energy_resource_type_id' && (trimmedValue === '' || !trimmedValue)) {
       errorMsg = "Тип ресурсу обов'язковий.";
     }
+
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: errorMsg }));
     return errorMsg;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const processedValue = (name === 'location_id' || name === 'energy_resource_type_id') && value !== '' ? Number(value) : value;
+
+    // Приведення ID до числа, якщо це не пустий рядок ('' -> '')
+    const processedValue =
+      (name === 'location_id' || name === 'energy_resource_type_id') && value !== '' ? Number(value) : value;
+
     setFormData((prev) => ({ ...prev, [name]: processedValue }));
     validateField(name, processedValue);
   };
@@ -89,14 +105,18 @@ const MeterForm = ({
       setFormErrors(errors);
       return;
     }
+
+    // Передача даних для бекенду
     onSubmit({
       ...formData,
-      isActive: formData.isActive ?? false,
+      // isActive має бути явно визначений (або true, або false)
+      isActive: formData.isActive ?? true,
+      // ID вже є числом у formData, якщо воно не пусте
     });
   };
 
   const handleClose = () => {
-    setFormData({});
+    // Скидаємо помилки та викликаємо onClose
     setFormErrors({});
     onClose();
   };
@@ -110,8 +130,8 @@ const MeterForm = ({
       fullScreen={isMobile}
       PaperProps={{
         sx: {
-          width: isMobile ? '100%' : isMobileOrTablet ? '90%' : '500px',
-          maxWidth: isMobile ? '100%' : '500px',
+          width: '100%',
+          maxWidth: '500px',
           margin: isMobile ? 0 : 'auto',
         },
       }}
@@ -129,7 +149,7 @@ const MeterForm = ({
       >
         {initialData.id ? 'Редагувати лічильник' : 'Додати лічильник'}
         <IconButton onClick={handleClose} size="small" disabled={loading}>
-         <Close />
+          <Close />
         </IconButton>
       </DialogTitle>
 
@@ -139,77 +159,76 @@ const MeterForm = ({
           pb: 1,
         }}
       >
-          <>
-            {error && (
-              <Alert
-                severity="error"
-                sx={{ mb: 2, fontSize: isMobile ? '0.875rem' : '1rem' }}
-              >
-                {error}
-              </Alert>
-            )}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, fontSize: isMobile ? '0.875rem' : '1rem' }}>
+            {error}
+          </Alert>
+        )}
 
-            <TextField
-              name="serial_number"
-              label="Серійний номер"
-              value={formData.serial_number || ''}
-              onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              size="medium"
-              sx={{ mt: 1, mb: 2 }}
-              error={!!formErrors.serial_number}
-              helperText={formErrors.serial_number || ' '}
-              disabled={loading}
-            />
+        {/* Серійний номер */}
+        <TextField
+          name="serial_number"
+          label="Серійний номер"
+          value={formData.serial_number || ''}
+          onChange={handleChange}
+          fullWidth
+          variant="outlined"
+          size="medium"
+          sx={{ mt: 1, mb: 2 }}
+          error={!!formErrors.serial_number}
+          helperText={formErrors.serial_number || ' '}
+          disabled={loading}
+        />
 
-            <TextField
-              select
-              name="location_id"
-              label="Локація"
-              value={formData.location_id || ''}
-              onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              size="medium"
-              sx={{ mb: 2 }}
-              error={!!formErrors.location_id}
-              helperText={formErrors.location_id || ' '}
-              disabled={loading}
-            >
-              {(locations || [])
-                .filter((l) => l.isActive)
-                .map((loc) => (
-                  <MenuItem key={loc.id} value={loc.id}>
-                    {loc.name}
-                  </MenuItem>
-                ))}
-            </TextField>
+        {/* Локація */}
+        <TextField
+          select
+          name="location_id"
+          label="Локація"
+          value={formData.location_id || ''}
+          onChange={handleChange}
+          fullWidth
+          variant="outlined"
+          size="medium"
+          sx={{ mb: 2 }}
+          error={!!formErrors.location_id}
+          helperText={formErrors.location_id || ' '}
+          disabled={loading}
+        >
+          <MenuItem value="">Оберіть локацію</MenuItem> {/* Пустий елемент для скидання/вибору */}
+          {(locations || [])
+            .filter((l) => l.isActive) // Фільтр лише для активних локацій
+            .map((loc) => (
+              <MenuItem key={loc.id} value={loc.id}>
+                {loc.name}
+              </MenuItem>
+            ))}
+        </TextField>
 
-            <TextField
-              select
-              name="energy_resource_type_id"
-              label="Тип енергоресурсу"
-              value={formData.energy_resource_type_id || ''}
-              onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              size="medium"
-              sx={{ mb: 2 }}
-              error={!!formErrors.energy_resource_type_id}
-              helperText={formErrors.energy_resource_type_id || ' '}
-              disabled={loading}
-            >
-              {(energyResourceTypes || [])
-                .filter((rt) => rt.isActive)
-                .map((rt) => (
-                  <MenuItem key={rt.id} value={rt.id}>
-                    {rt.name} ({rt.unit})
-                  </MenuItem>
-                ))}
-            </TextField>
-          </>
-
+        {/* Тип енергоресурсу */}
+        <TextField
+          select
+          name="energy_resource_type_id"
+          label="Тип енергоресурсу"
+          value={formData.energy_resource_type_id || ''}
+          onChange={handleChange}
+          fullWidth
+          variant="outlined"
+          size="medium"
+          sx={{ mb: 2 }}
+          error={!!formErrors.energy_resource_type_id}
+          helperText={formErrors.energy_resource_type_id || ' '}
+          disabled={loading}
+        >
+          <MenuItem value="">Оберіть тип ресурсу</MenuItem> {/* Пустий елемент для скидання/вибору */}
+          {(energyResourceTypes || [])
+            .filter((rt) => rt.isActive) // Фільтр лише для активних ресурсів
+            .map((rt) => (
+              <MenuItem key={rt.id} value={rt.id}>
+                {rt.name} ({rt.unit})
+              </MenuItem>
+            ))}
+        </TextField>
       </DialogContent>
 
       <DialogActions

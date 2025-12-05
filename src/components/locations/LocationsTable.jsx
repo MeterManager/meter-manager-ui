@@ -43,11 +43,16 @@ const LocationsTable = ({
   const isMobile = useMediaQuery('(max-width:800px)');
   const isTablet = useMediaQuery('(max-width:960px)');
 
+  const handleActionError = (err) => {
+    const message = err.message || 'Помилка при виконанні дії';
+    setLocalError(message);
+  };
+
   const handleStatusChange = async (location) => {
     try {
       await onStatusChange(location.id, !location.isActive);
     } catch (err) {
-      setLocalError(err.message || 'Помилка при зміні статусу локації');
+      handleActionError(err);
     }
   };
 
@@ -55,22 +60,24 @@ const LocationsTable = ({
     try {
       await onRemove(id);
     } catch (err) {
-      setLocalError(err.message || 'Помилка при видаленні локації');
+      handleActionError(err);
     }
   };
 
   const filteredLocations = locations
     .filter((loc) => {
       if (tenantFilter === '') return true;
-      if (tenantFilter === 'null') return !loc.tenant;
-      return loc.tenant?.id === tenantFilter;
+      if (tenantFilter === 'null') return !loc.tenant?.id;
+      return loc.tenant?.id === parseInt(tenantFilter);
     })
-    .filter(
-      (loc) =>
-        (loc.name || '').toLowerCase().includes(search.toLowerCase()) ||
-        (loc.address || '').toLowerCase().includes(search.toLowerCase()) ||
-        (loc.tenant?.name || '— вільна —').toLowerCase().includes(search.toLowerCase())
-    );
+    .filter((loc) => {
+      const searchText = search.toLowerCase();
+      return (
+        (loc.name || '').toLowerCase().includes(searchText) ||
+        (loc.address || '').toLowerCase().includes(searchText) ||
+        (loc.tenant?.name || '— вільна —').toLowerCase().includes(searchText)
+      );
+    });
 
   const MobileLocationCard = ({ location }) => (
     <Card
@@ -92,10 +99,10 @@ const LocationsTable = ({
               {location.address}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {location.occupied_area ?? '—'}
+              Відсоток Площі: {location.occupied_area ? `${location.occupied_area}%` : '—'}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              Орендар: {location.tenant ? location.tenant.name : '— Вільна —'}
+              Орендар: <strong>{location.tenant ? location.tenant.name : '— Вільна —'}</strong>
             </Typography>
           </Box>
 
@@ -115,7 +122,6 @@ const LocationsTable = ({
               color="primary"
               size="small"
             />
-            <Typography variant="body2">{location.isActive ? 'Активна' : 'Неактивна'}</Typography>
           </Box>
 
           <Stack direction="row" spacing={1}>
@@ -124,7 +130,7 @@ const LocationsTable = ({
                 <Edit fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title={location.isActive ? 'Неможливо видалити активну локацію' : 'Видалити'}>
+            <Tooltip title={location.isActive ? 'Спочатку деактивуйте локацію' : 'Видалити'}>
               <span>
                 <IconButton
                   size="small"
@@ -185,11 +191,7 @@ const LocationsTable = ({
             }}
           >
             <InputLabel>Орендар</InputLabel>
-            <Select
-              value={tenantFilter}
-              onChange={(e) => setTenantFilter(e.target.value)}
-              label="Орендар"
-            >
+            <Select value={tenantFilter} onChange={(e) => setTenantFilter(e.target.value)} label="Орендар">
               <MenuItem value="">— Всі орендарі —</MenuItem>
               <MenuItem value="null">— Вільні локації —</MenuItem>
               {tenants.map((t) => (
@@ -268,14 +270,13 @@ const LocationsTable = ({
                         {loc.address}
                       </Typography>
                     </TableCell>
+
                     <TableCell>
-                      <Typography variant="body2">{loc.occupied_area ?? '—'}</Typography>
+                      <Typography variant="body2">{loc.occupied_area ? `${loc.occupied_area}%` : '—'}</Typography>
                     </TableCell>
 
                     <TableCell>
-                      <Typography variant="body2">
-                        {loc.tenant ? loc.tenant.name : '— Вільна —'}
-                      </Typography>
+                      <Typography variant="body2">{loc.tenant ? loc.tenant.name : '— Вільна —'}</Typography>
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

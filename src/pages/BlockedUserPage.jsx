@@ -2,7 +2,8 @@ import { Box, Button, Typography, Paper } from '@mui/material';
 import { useAuthContext } from '../contexts/AuthContext';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
-const BlockedUserPage = ({ error }) => {
+// Пропс `error` видалено, оскільки він не використовується
+const BlockedUserPage = () => {
   const { handleLogout } = useAuthContext();
 
   return (
@@ -32,17 +33,17 @@ const BlockedUserPage = ({ error }) => {
           Доступ заборонено
         </Typography>
         
-        <Typography variant="body2" sx={{ mb: 3, mt: 2, color: 'text.secondary' }}>
-          Ваш акаунт деактивовано. Зверніться до адміністратора для активації акаунта.
+        <Typography variant="body1" sx={{ mb: 3, mt: 2, color: 'text.secondary' }}>
+          Ваш акаунт деактивовано у системі обліку. Будь ласка, зверніться до адміністратора для активації.
         </Typography>
         
         <Button 
           onClick={handleLogout} 
-          variant="outlined" 
+          variant="contained"
           color="primary"
           size="large"
         >
-          Вийти і увійти під іншим акаунтом
+          Вийти з системи
         </Button>
       </Paper>
     </Box>

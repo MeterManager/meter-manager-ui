@@ -28,7 +28,7 @@ const ResourceDeliverySection = ({ initialExpanded = true }) => {
     loading,
     isActionLoading,
     error,
-    setError
+    setError,
   } = useResourceDeliveries();
 
   const [expanded, setExpanded] = useState(initialExpanded);
@@ -37,16 +37,24 @@ const ResourceDeliverySection = ({ initialExpanded = true }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
 
+  const handleServiceError = (err, defaultMessage = 'Помилка при виконанні дії') => {
+    console.error('Resource Delivery Service Action Failed:', err);
+    const userMessage = translateErrorMessage(err.message || defaultMessage);
+    setSnackbar({ open: true, message: userMessage, severity: 'error' });
+    setError(userMessage);
+  };
+
   const handleToggle = () => setExpanded(!expanded);
 
   const handleAdd = () => {
     setEditingDelivery(null);
+    setError(null);
     setFormOpen(true);
   };
 
   const handleEdit = (delivery) => {
-    const resourceTypeName = resourceTypes.find((rt) => rt.id === delivery.energy_resource_type_id)?.name || delivery.resourceTypeName;
-    setEditingDelivery({ ...delivery, resourceTypeName });
+    setEditingDelivery(delivery);
+    setError(null);
     setFormOpen(true);
   };
 
@@ -62,10 +70,7 @@ const ResourceDeliverySection = ({ initialExpanded = true }) => {
       setFormOpen(false);
       setEditingDelivery(null);
     } catch (err) {
-      const userMessage = translateErrorMessage(err.message);
-      setError(userMessage);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
-      throw err;
+      handleServiceError(err, 'Помилка при збереженні поставки');
     }
   };
 
@@ -85,8 +90,7 @@ const ResourceDeliverySection = ({ initialExpanded = true }) => {
       setSnackbar({ open: true, message: 'Поставку видалено', severity: 'success' });
       handleCloseConfirmDialog();
     } catch (err) {
-      const userMessage = translateErrorMessage(err.message);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      handleServiceError(err, 'Помилка при видаленні поставки');
     }
   };
 
@@ -96,7 +100,7 @@ const ResourceDeliverySection = ({ initialExpanded = true }) => {
 
   const handleCloseSnackbar = () => setSnackbar({ open: false, message: '', severity: 'success' });
 
-  if (loading && !formOpen) return <Typography>Завантаження...</Typography>;
+  if (loading && deliveries.length === 0 && !formOpen) return <Typography>Завантаження...</Typography>;
 
   return (
     <>

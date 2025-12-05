@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert, CircularProgress } from '@mui/material';
+import {
+  Paper,
+  Box,
+  Typography,
+  Collapse,
+  IconButton,
+  Divider,
+  Snackbar,
+  Alert,
+  CircularProgress,
+} from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import MeterTenantsTable from './MeterTenantsTable';
 import MeterTenantForm from './MeterTenantForm';
@@ -40,6 +50,13 @@ const MeterTenantsSection = ({ initialExpanded = true }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
 
+  const handleServiceError = (err, defaultMessage = 'Помилка при виконанні дії') => {
+    console.error('MeterTenant Service Action Failed:', err);
+    const userMessage = translateErrorMessage(err.message || defaultMessage);
+    setSnackbar({ open: true, message: userMessage, severity: 'error' });
+    setError(userMessage);
+  };
+
   const handleToggle = () => setExpanded(!expanded);
 
   const handleAdd = () => {
@@ -71,9 +88,7 @@ const MeterTenantsSection = ({ initialExpanded = true }) => {
       }
       handleFormClose();
     } catch (err) {
-      const userMessage = translateErrorMessage(err.message || 'Помилка при збереженні');
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
-      throw err;
+      handleServiceError(err, 'Помилка при збереженні');
     }
   };
 
@@ -87,8 +102,7 @@ const MeterTenantsSection = ({ initialExpanded = true }) => {
       setSnackbar({ open: true, message: 'Призначення видалено', severity: 'success' });
       handleCloseConfirmDialog();
     } catch (err) {
-      const userMessage = translateErrorMessage(err.message || 'Помилка при видаленні');
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
+      handleServiceError(err, 'Помилка при видаленні');
     }
   };
 
@@ -98,9 +112,9 @@ const MeterTenantsSection = ({ initialExpanded = true }) => {
 
   const handleCloseSnackbar = () => setSnackbar({ open: false, message: '', severity: 'success' });
 
-  const isLoading = mtLoading || metersLoading || tenantsLoading || locationsLoading || typesLoading;
+  const isInitialLoading = mtLoading || metersLoading || tenantsLoading || locationsLoading || typesLoading;
 
-  if (isLoading && !formOpen && meterTenants.length === 0) {
+  if (isInitialLoading && meterTenants.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />
@@ -127,7 +141,7 @@ const MeterTenantsSection = ({ initialExpanded = true }) => {
         <Divider />
         <Collapse in={expanded} timeout="auto">
           <Box p={3}>
-            {isLoading && meterTenants.length === 0 ? (
+            {isInitialLoading && meterTenants.length === 0 ? (
               <CircularProgress />
             ) : (
               <MeterTenantsTable
@@ -145,7 +159,7 @@ const MeterTenantsSection = ({ initialExpanded = true }) => {
                 setLocationFilter={setLocationFilter}
                 tenantFilter={tenantFilter}
                 setTenantFilter={setTenantFilter}
-                isLoading={isLoading || isActionLoading}
+                isLoading={isInitialLoading || isActionLoading}
                 setLocalError={setError}
               />
             )}

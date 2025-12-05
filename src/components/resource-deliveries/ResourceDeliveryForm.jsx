@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
-import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  TextField, 
-  Button, 
-  Alert, 
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  Alert,
   MenuItem,
   IconButton,
   Box,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
@@ -36,17 +36,17 @@ const ResourceDeliveryForm = ({
 
   useEffect(() => {
     if (open) {
+      const dateValue = initialData.delivery_date || initialData.deliveryDate;
       const mappedData = {
         locationId: initialData.location_id || initialData.locationId || '',
         resourceTypeId: initialData.energy_resource_type_id || initialData.resourceTypeId || '',
         quantity: initialData.quantity || '',
         unit: initialData.unit || '',
         pricePerUnit: initialData.price_per_unit || initialData.pricePerUnit || '',
-        deliveryDate:
-          initialData.delivery_date || initialData.deliveryDate
-            ? new Date(initialData.delivery_date || initialData.deliveryDate).toISOString().split('T')[0]
-            : '',
         supplier: initialData.supplier || '',
+        id: initialData.id,
+
+        deliveryDate: dateValue ? new Date(dateValue).toISOString().split('T')[0] : '',
       };
       setFormData(mappedData);
       setFormErrors({});
@@ -54,36 +54,39 @@ const ResourceDeliveryForm = ({
   }, [open, initialData]);
 
   const validateField = (name, value) => {
-    let error = '';
-    if (name === 'locationId' && !value) error = 'Виберіть локацію.';
-    if (name === 'resourceTypeId' && !value) error = 'Виберіть тип ресурсу.';
-    if (name === 'quantity' && (!value || isNaN(value) || parseFloat(value) < 0))
-      error = 'Вкажіть кількість (додатнє число).';
-    if (name === 'unit' && !value) error = 'Вкажіть одиницю виміру.';
-    if (name === 'pricePerUnit' && (!value || isNaN(value) || parseFloat(value) < 0))
-      error = 'Вкажіть ціну за одиницю (додатнє число).';
-    if (name === 'deliveryDate' && !value) error = 'Вкажіть дату.';
+    let errorMsg = '';
+    if (name === 'locationId' && (!value || value === '')) errorMsg = 'Виберіть локацію.';
+    if (name === 'resourceTypeId' && (!value || value === '')) errorMsg = 'Виберіть тип ресурсу.';
+    if (name === 'unit' && !value) errorMsg = 'Вкажіть одиницю виміру.';
+    if (name === 'deliveryDate' && !value) errorMsg = 'Вкажіть дату.';
+    if (name === 'quantity' || name === 'pricePerUnit') {
+      const trimmed = String(value).trim();
+      if (!trimmed) {
+        errorMsg = (name === 'quantity' ? 'Кількість' : 'Ціна') + " обов'язкова.";
+      } else {
+        const num = parseFloat(trimmed);
+        if (isNaN(num) || num <= 0) errorMsg = 'Має бути додатнє число (> 0).';
+      }
+    }
 
-    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
+    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: errorMsg }));
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const processedValue = (name === 'locationId' || name === 'resourceTypeId') && value !== '' ? Number(value) : value;
+    const isIdField = name === 'locationId' || name === 'resourceTypeId';
+    const processedValue = isIdField && value !== '' ? Number(value) : value;
+
     setFormData({ ...formData, [name]: processedValue });
     validateField(name, processedValue);
   };
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.locationId) errors.locationId = 'Виберіть локацію.';
-    if (!formData.resourceTypeId) errors.resourceTypeId = 'Виберіть тип ресурсу.';
-    if (!formData.quantity || isNaN(formData.quantity) || parseFloat(formData.quantity) < 0)
-      errors.quantity = 'Вкажіть кількість.';
-    if (!formData.unit) errors.unit = 'Вкажіть одиницю виміру.';
-    if (!formData.pricePerUnit || isNaN(formData.pricePerUnit) || parseFloat(formData.pricePerUnit) < 0)
-      errors.pricePerUnit = 'Вкажіть ціну за одиницю.';
-    if (!formData.deliveryDate) errors.deliveryDate = 'Вкажіть дату.';
+    ['locationId', 'resourceTypeId', 'quantity', 'unit', 'pricePerUnit', 'deliveryDate'].forEach((field) => {
+      const errorMsg = validateField(field, formData[field]);
+      if (errorMsg) errors[field] = errorMsg;
+    });
     return errors;
   };
 
@@ -96,21 +99,20 @@ const ResourceDeliveryForm = ({
     }
 
     const submitData = {
-      locationId: Number(formData.locationId),
-      resourceTypeId: Number(formData.resourceTypeId),
+      location_id: Number(formData.locationId),
+      energy_resource_type_id: Number(formData.resourceTypeId),
       quantity: parseFloat(formData.quantity),
       unit: formData.unit,
-      pricePerUnit: parseFloat(formData.pricePerUnit),
-      totalCost: parseFloat(formData.quantity) * parseFloat(formData.pricePerUnit),
-      deliveryDate: new Date(formData.deliveryDate).toISOString(),
-      supplier: formData.supplier || '',
+      price_per_unit: parseFloat(formData.pricePerUnit),
+      total_cost: parseFloat(formData.quantity) * parseFloat(formData.pricePerUnit),
+      delivery_date: new Date(formData.deliveryDate).toISOString(),
+      supplier: formData.supplier || null,
+      id: formData.id,
     };
 
     try {
       await onSubmit(submitData);
-      handleClose();
-    } catch (err) {
-    }
+    } catch (err) {}
   };
 
   const handleClose = () => {
@@ -118,6 +120,9 @@ const ResourceDeliveryForm = ({
     setFormErrors({});
     onClose();
   };
+
+  const selectedResource = resourceTypes.find((rt) => rt.id === formData.resourceTypeId);
+  const unitPlaceholder = selectedResource ? selectedResource.unit : 'Одиниця виміру (наприклад, кВт·год)';
 
   return (
     <Dialog
@@ -134,6 +139,7 @@ const ResourceDeliveryForm = ({
         },
       }}
     >
+           {' '}
       <DialogTitle
         sx={{
           fontSize: isMobile ? '1.125rem' : '1.25rem',
@@ -145,9 +151,11 @@ const ResourceDeliveryForm = ({
           justifyContent: 'space-between',
         }}
       >
+               {' '}
         <Box component="span">
-          {initialData.id ? 'Редагувати поставку ресурсу' : 'Додати поставку ресурсу'}
+                    {initialData.id ? 'Редагувати поставку ресурсу' : 'Додати поставку ресурсу'}       {' '}
         </Box>
+               {' '}
         <IconButton
           onClick={handleClose}
           size="small"
@@ -158,16 +166,18 @@ const ResourceDeliveryForm = ({
           }}
           disabled={isLoading}
         >
-          <Close />
+                    <Close />       {' '}
         </IconButton>
+             {' '}
       </DialogTitle>
-
+           {' '}
       <DialogContent
         sx={{
           px: isMobile ? 2 : 3,
           pb: 1,
         }}
       >
+               {' '}
         {error && (
           <Alert
             severity="error"
@@ -176,10 +186,10 @@ const ResourceDeliveryForm = ({
               fontSize: isMobile ? '0.875rem' : '1rem',
             }}
           >
-            {error}
+                        {error}         {' '}
           </Alert>
         )}
-
+               {' '}
         <TextField
           select
           name="locationId"
@@ -193,17 +203,19 @@ const ResourceDeliveryForm = ({
           helperText={formErrors.locationId || ' '}
           disabled={isLoading}
         >
+                    <MenuItem value="">Оберіть локацію</MenuItem>         {' '}
           {locations.length === 0 ? (
             <MenuItem disabled>Немає доступних локацій</MenuItem>
           ) : (
             locations.map((loc) => (
               <MenuItem key={loc.id} value={loc.id}>
-                {loc.name}
+                                {loc.name}             {' '}
               </MenuItem>
             ))
           )}
+                 {' '}
         </TextField>
-
+               {' '}
         <TextField
           select
           name="resourceTypeId"
@@ -217,17 +229,19 @@ const ResourceDeliveryForm = ({
           helperText={formErrors.resourceTypeId || ' '}
           disabled={isLoading}
         >
+                    <MenuItem value="">Оберіть тип ресурсу</MenuItem>         {' '}
           {resourceTypes.length === 0 ? (
             <MenuItem disabled>Немає доступних типів ресурсів</MenuItem>
           ) : (
             resourceTypes.map((res) => (
               <MenuItem key={res.id} value={res.id}>
-                {res.name}
+                                {res.name} ({res.unit})              {' '}
               </MenuItem>
             ))
           )}
+                 {' '}
         </TextField>
-
+               {' '}
         <TextField
           name="quantity"
           label="Кількість"
@@ -239,13 +253,13 @@ const ResourceDeliveryForm = ({
           sx={{ mb: 2 }}
           error={!!formErrors.quantity}
           helperText={formErrors.quantity || ' '}
-          inputProps={{ min: 0, step: 0.01 }}
+          inputProps={{ min: 0.01, step: 0.01 }}
           disabled={isLoading}
         />
-
+               {' '}
         <TextField
           name="unit"
-          label="Одиниця виміру"
+          label={unitPlaceholder}
           value={formData.unit || ''}
           onChange={handleChange}
           fullWidth
@@ -255,7 +269,7 @@ const ResourceDeliveryForm = ({
           helperText={formErrors.unit || ' '}
           disabled={isLoading}
         />
-
+               {' '}
         <TextField
           name="pricePerUnit"
           label="Ціна за одиницю"
@@ -267,10 +281,10 @@ const ResourceDeliveryForm = ({
           sx={{ mb: 2 }}
           error={!!formErrors.pricePerUnit}
           helperText={formErrors.pricePerUnit || ' '}
-          inputProps={{ min: 0, step: 0.01 }}
+          inputProps={{ min: 0.01, step: 0.01 }}
           disabled={isLoading}
         />
-
+               {' '}
         <CustomDatePicker
           value={formData.deliveryDate || null}
           onChange={(newValue) => {
@@ -284,7 +298,7 @@ const ResourceDeliveryForm = ({
           sx={{ mb: 2 }}
           disabled={isLoading}
         />
-
+               {' '}
         <TextField
           name="supplier"
           label="Постачальник"
@@ -295,8 +309,9 @@ const ResourceDeliveryForm = ({
           helperText=" "
           disabled={isLoading}
         />
+             {' '}
       </DialogContent>
-
+           {' '}
       <DialogActions
         sx={{
           px: isMobile ? 2 : 3,
@@ -310,14 +325,11 @@ const ResourceDeliveryForm = ({
           },
         }}
       >
-        <Button
-          variant="outlined"
-          onClick={handleClose}
-          fullWidth={isMobile}
-          disabled={isLoading}
-        >
-          Скасувати
+               {' '}
+        <Button variant="outlined" onClick={handleClose} fullWidth={isMobile} disabled={isLoading}>
+                    Скасувати        {' '}
         </Button>
+               {' '}
         <Button
           variant="contained"
           onClick={handleSubmit}
@@ -325,9 +337,11 @@ const ResourceDeliveryForm = ({
           sx={{ marginLeft: '0 !important' }}
           disabled={isLoading}
         >
-          {isLoading ? <CircularProgress size={24} /> : 'Зберегти'}
+                    {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Зберегти'}       {' '}
         </Button>
+             {' '}
       </DialogActions>
+         {' '}
     </Dialog>
   );
 };

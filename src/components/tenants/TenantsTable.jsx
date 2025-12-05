@@ -47,23 +47,30 @@ const TenantsTable = ({
   const isMobile = useMediaQuery('(max-width:800px)');
   const [loadingTenantId, setLoadingTenantId] = useState(null);
 
+  const handleActionFailure = (err) => {
+    const userMessage = translateErrorMessage(err.message || 'Помилка виконання дії');
+    setLocalError(userMessage);
+  };
+
   const handleStatusChange = async (tenant) => {
+    if (isLoading || loadingTenantId !== null) return;
     setLoadingTenantId(tenant.id);
     try {
       await updateTenantStatus(tenant.id, !tenant.isActive);
     } catch (err) {
-      setLocalError(translateErrorMessage(err.message));
+      handleActionFailure(err);
     } finally {
       setLoadingTenantId(null);
     }
   };
 
   const handleRemove = async (tenant) => {
+    if (isLoading || loadingTenantId !== null) return;
     setLoadingTenantId(tenant.id);
     try {
       await removeTenant(tenant.id);
     } catch (err) {
-      setLocalError(translateErrorMessage(err.message));
+      handleActionFailure(err);
     } finally {
       setLoadingTenantId(null);
     }
@@ -80,110 +87,112 @@ const TenantsTable = ({
     .filter((tenant) => {
       if (locationFilter === '') return true;
       if (locationFilter === 'null') return !tenant.locations || tenant.locations.length === 0;
-      return tenant.locations.some(loc => loc.id === locationFilter);
+      return tenant.locations.some((loc) => loc.id === Number(locationFilter));
     })
     .filter(
       (tenant) =>
         tenant.name.toLowerCase().includes(search.toLowerCase()) ||
         (tenant.contactPerson && tenant.contactPerson.toLowerCase().includes(search.toLowerCase())) ||
         (tenant.email && tenant.email.toLowerCase().includes(search.toLowerCase())) ||
-        getTenantLocations(tenant).some((locationName) =>
-          locationName.toLowerCase().includes(search.toLowerCase())
-        )
+        getTenantLocations(tenant).some((locationName) => locationName.toLowerCase().includes(search.toLowerCase()))
     );
-  
-  const MobileTenantCard = ({ tenant }) => (
-    <Card
-      sx={{
-        mb: 2,
-        border: `1px solid ${theme.palette.divider}`,
-        '&:hover': {
-          boxShadow: 2,
-        },
-      }}
-    >
-      <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6" component="div" sx={{ fontWeight: 600, mb: 0.5 }}>
-              {tenant.name}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {getTenantLocations(tenant).join(', ') || '—'}
-            </Typography>
-          </Box>
-          <Chip
-            label={tenant.isActive ? 'Активний' : 'Неактивний'}
-            color={tenant.isActive ? 'success' : 'default'}
-            size="small"
-            sx={{ ml: 1, flexShrink: 0 }}
-          />
-        </Box>
 
-        {tenant.contactPerson && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-              Контакт: {tenant.contactPerson}
-            </Typography>
-          </Box>
-        )}
+  const MobileTenantCard = ({ tenant }) => {
+    const isRowLoading = loadingTenantId === tenant.id;
+    const isDisabled = loadingTenantId !== null || isLoading;
 
-        {(tenant.phone || tenant.email) && (
-          <Box sx={{ mb: 2 }}>
-            {tenant.phone && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                <Phone fontSize="small" color="action" />
-                <Typography variant="body2">{tenant.phone}</Typography>
-              </Box>
-            )}
-            {tenant.email && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Email fontSize="small" color="action" />
-                <Typography variant="body2">{tenant.email}</Typography>
-              </Box>
-            )}
-          </Box>
-        )}
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {loadingTenantId === tenant.id ? (
-              <CircularProgress size={24} />
-            ) : (
-              <Switch
-                checked={tenant.isActive}
-                onChange={() => handleStatusChange(tenant)}
-                color="primary"
-                size="small"
-                disabled={loadingTenantId !== null || isLoading}
-              />
-            )}
-            <Typography variant="body2">{tenant.isActive ? 'Активний' : 'Неактивний'}</Typography>
+    return (
+      <Card
+        sx={{
+          mb: 2,
+          border: `1px solid ${theme.palette.divider}`,
+          '&:hover': {
+            boxShadow: 2,
+          },
+        }}
+      >
+        <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography variant="h6" component="div" sx={{ fontWeight: 600, mb: 0.5 }}>
+                {tenant.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {getTenantLocations(tenant).join(', ') || '—'}
+              </Typography>
+            </Box>
+            <Chip
+              label={tenant.isActive ? 'Активний' : 'Неактивний'}
+              color={tenant.isActive ? 'success' : 'default'}
+              size="small"
+              sx={{ ml: 1, flexShrink: 0 }}
+            />
           </Box>
 
-          <Stack direction="row" spacing={1}>
-            <Tooltip title="Редагувати">
-              <IconButton size="small" onClick={() => onEdit(tenant)} color="primary" disabled={loadingTenantId !== null || isLoading}>
-                <Edit fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={tenant.isActive ? 'Неможливо видалити активного орендаря' : 'Видалити'}>
-              <span>
-                <IconButton
+          {tenant.contactPerson && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                Контакт: {tenant.contactPerson}
+              </Typography>
+            </Box>
+          )}
+
+          {(tenant.phone || tenant.email) && (
+            <Box sx={{ mb: 2 }}>
+              {tenant.phone && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                  <Phone fontSize="small" color="action" />
+                  <Typography variant="body2">{tenant.phone}</Typography>
+                </Box>
+              )}
+              {tenant.email && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Email fontSize="small" color="action" />
+                  <Typography variant="body2">{tenant.email}</Typography>
+                </Box>
+              )}
+            </Box>
+          )}
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {isRowLoading ? (
+                <CircularProgress size={24} />
+              ) : (
+                <Switch
+                  checked={tenant.isActive}
+                  onChange={() => handleStatusChange(tenant)}
+                  color="primary"
                   size="small"
-                  onClick={() => handleRemove(tenant)}
-                  color="error"
-                  disabled={tenant.isActive || loadingTenantId !== null || isLoading}
-                >
-                  {loadingTenantId === tenant.id ? <CircularProgress size={20} /> : <Delete fontSize="small" />}
+                  disabled={isDisabled}
+                />
+              )}
+            </Box>
+
+            <Stack direction="row" spacing={1}>
+              <Tooltip title="Редагувати">
+                <IconButton size="small" onClick={() => onEdit(tenant)} color="primary" disabled={isDisabled}>
+                  <Edit fontSize="small" />
                 </IconButton>
-              </span>
-            </Tooltip>
-          </Stack>
-        </Box>
-      </CardContent>
-    </Card>
-  );
+              </Tooltip>
+              <Tooltip title={tenant.isActive ? 'Неможливо видалити активного орендаря' : 'Видалити'}>
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleRemove(tenant)}
+                    color="error"
+                    disabled={tenant.isActive || isDisabled}
+                  >
+                    {isRowLoading ? <CircularProgress size={20} /> : <Delete fontSize="small" />}
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Stack>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <Box>
@@ -230,11 +239,7 @@ const TenantsTable = ({
             disabled={isLoading}
           >
             <InputLabel>Локація</InputLabel>
-            <Select
-              value={locationFilter}
-              onChange={(e) => setLocationFilter(e.target.value)}
-              label="Локація"
-            >
+            <Select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} label="Локація">
               <MenuItem value="">— Всі локації —</MenuItem>
               <MenuItem value="null">— Без локації —</MenuItem>
               {locations.map((loc) => (
@@ -293,137 +298,129 @@ const TenantsTable = ({
             </TableHead>
             <TableBody>
               {filteredTenants.length > 0 ? (
-                filteredTenants.map((tenant) => (
-                  <TableRow
-                    key={tenant.id}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: theme.palette.action.hover,
-                      },
-                    }}
-                  >
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {tenant.name}
-                        </Typography>
-                        {tenant.contactPerson && (
-                          <Typography variant="caption" color="text.secondary">
-                            {tenant.contactPerson}
+                filteredTenants.map((tenant) => {
+                  const isRowLoading = loadingTenantId === tenant.id;
+                  const isDisabled = loadingTenantId !== null || isLoading;
+
+                  return (
+                    <TableRow
+                      key={tenant.id}
+                      sx={{
+                        '&:hover': {
+                          backgroundColor: theme.palette.action.hover,
+                        },
+                      }}
+                    >
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {tenant.name}
                           </Typography>
-                        )}
-                      </Box>
-                    </TableCell>
-
-                    <TableCell>
-                      {getTenantLocations(tenant).length === 0 ? (
-                        <Typography variant="body2" color="text.secondary">
-                          —
-                        </Typography>
-                      ) : (
-                        <ul style={{ paddingLeft: '16px', margin: 0, listStyleType: 'disc' }}>
-                          {getTenantLocations(tenant).map((loc, idx) => (
-                            <li key={idx}>
-                              <Typography variant="body2" color="text.secondary">
-                                {loc}
-                              </Typography>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </TableCell>
-
-                    <TableCell>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        {tenant.phone && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Phone fontSize="small" color="action" />
-                            <Typography variant="caption">{tenant.phone}</Typography>
-                          </Box>
-                        )}
-                        {tenant.email && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Email fontSize="small" color="action" />
+                          {tenant.contactPerson && (
                             <Typography variant="caption" color="text.secondary">
-                              {tenant.email}
+                              {tenant.contactPerson}
                             </Typography>
-                          </Box>
-                        )}
-                        {!tenant.phone && !tenant.email && (
+                          )}
+                        </Box>
+                      </TableCell>
+
+                      <TableCell>
+                        {getTenantLocations(tenant).length === 0 ? (
                           <Typography variant="body2" color="text.secondary">
                             —
                           </Typography>
-                        )}
-                      </Box>
-                    </TableCell>
-
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {loadingTenantId === tenant.id ? (
-                          <CircularProgress size={24} />
                         ) : (
-                          <Switch
-                            checked={tenant.isActive}
-                            onChange={() => handleStatusChange(tenant)}
-                            color="primary"
-                            size="small"
-                            disabled={loadingTenantId !== null || isLoading}
-                          />
+                          <ul style={{ paddingLeft: '16px', margin: 0, listStyleType: 'disc' }}>
+                            {getTenantLocations(tenant).map((loc, idx) => (
+                              <li key={idx}>
+                                <Typography variant="body2" color="text.secondary">
+                                  {loc}
+                                </Typography>
+                              </li>
+                            ))}
+                          </ul>
                         )}
-                        <Chip
-                          label={tenant.isActive ? 'Активний' : 'Неактивний'}
-                          color={tenant.isActive ? 'success' : 'default'}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </Box>
-                    </TableCell>
+                      </TableCell>
 
-                    <TableCell>
-                      <Stack direction="row" spacing={0.5}>
-                        <Tooltip title="Редагувати орендаря">
-                          <IconButton
+                      <TableCell>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          {tenant.phone && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Phone fontSize="small" color="action" />
+                              <Typography variant="caption">{tenant.phone}</Typography>
+                            </Box>
+                          )}
+                          {tenant.email && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Email fontSize="small" color="action" />
+                              <Typography variant="caption" color="text.secondary">
+                                {tenant.email}
+                              </Typography>
+                            </Box>
+                          )}
+                          {!tenant.phone && !tenant.email && (
+                            <Typography variant="body2" color="text.secondary">
+                              —
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
+
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {isRowLoading ? (
+                            <CircularProgress size={24} />
+                          ) : (
+                            <Switch
+                              checked={tenant.isActive}
+                              onChange={() => handleStatusChange(tenant)}
+                              color="primary"
+                              size="small"
+                              disabled={isDisabled}
+                            />
+                          )}
+                          <Chip
+                            label={tenant.isActive ? 'Активний' : 'Неактивний'}
+                            color={tenant.isActive ? 'success' : 'default'}
                             size="small"
-                            onClick={() => onEdit(tenant)}
-                            color="primary"
-                            disabled={loadingTenantId !== null || isLoading}
-                          >
-                            <Edit fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip
-                          title={tenant.isActive ? 'Спочатку деактивуйте орендаря' : 'Видалити орендаря'}
-                        >
-                          <span>
+                            variant="outlined"
+                          />
+                        </Box>
+                      </TableCell>
+
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5}>
+                          <Tooltip title="Редагувати орендаря">
                             <IconButton
                               size="small"
-                              onClick={() => handleRemove(tenant)}
-                              disabled={tenant.isActive || loadingTenantId !== null || isLoading}
-                              color="error"
+                              onClick={() => onEdit(tenant)}
+                              color="primary"
+                              disabled={isDisabled}
                             >
-                              {loadingTenantId === tenant.id ? (
-                                <CircularProgress size={20} />
-                              ) : (
-                                <Delete fontSize="small" />
-                              )}
+                              <Edit fontSize="small" />
                             </IconButton>
-                          </span>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))
+                          </Tooltip>
+                          <Tooltip title={tenant.isActive ? 'Спочатку деактивуйте орендаря' : 'Видалити орендаря'}>
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleRemove(tenant)}
+                                disabled={tenant.isActive || isDisabled}
+                                color="error"
+                              >
+                                {isRowLoading ? <CircularProgress size={20} /> : <Delete fontSize="small" />}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                    <Typography variant="body1" color="text.secondary">
-                      {search || locationFilter ? 'За вашим запитом нічого не знайдено' : 'Орендарів не знайдено'}
-                    </Typography>
-                    {!search && !locationFilter && (
-                      <Button variant="outlined" onClick={onAdd} sx={{ mt: 2 }} disabled={isLoading}>
-                        Додати першого орендаря
-                      </Button>
-                    )}
+                  <TableCell colSpan={6} align="center">
+                    Немає доступних орендарів
                   </TableCell>
                 </TableRow>
               )}

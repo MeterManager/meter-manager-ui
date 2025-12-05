@@ -1,9 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, IconButton, FormControl, InputLabel, Select, MenuItem, } from '@mui/material';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  Alert,
+  IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
-
 
 const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locations = [], tenants = [] }) => {
   const theme = useTheme();
@@ -20,7 +32,7 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
         address: initialData.address || '',
         isActive: initialData.isActive ?? true,
         id: initialData.id,
-        tenant_id: initialData.tenant ? initialData.tenant.id : initialData.tenant_id ?? null,
+        tenant_id: initialData.tenant ? initialData.tenant.id : (initialData.tenant_id ?? null),
         occupied_area: initialData.occupied_area ?? '',
       });
       setFormErrors({});
@@ -47,16 +59,16 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
         break;
       case 'occupied_area':
         const numValue = value ? parseFloat(String(value).trim()) : null;
-        
-      if (value && (isNaN(numValue) || numValue < 0 || numValue > 100)) {
-        error = 'Має бути числом від 0 до 100.';
-      }
-      break;
-    default:
-    break;
+
+        if (value && (isNaN(numValue) || numValue < 0 || numValue > 100)) {
+          error = 'Має бути числом від 0 до 100.';
+        }
+        break;
+      default:
+        break;
     }
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
-      return error;
+    return error;
   };
 
   const handleChange = (e) => {
@@ -75,28 +87,26 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
     const errors = {};
     let hasError = false;
 
-    fieldsToValidate.forEach(field => {
-        const error = validateField(field, formData[field]);
-        if (error) {
-            errors[field] = error;
-            hasError = true;
-        }
+    fieldsToValidate.forEach((field) => {
+      const error = validateField(field, formData[field]);
+      if (error) {
+        errors[field] = error;
+        hasError = true;
+      }
     });
 
     if (hasError) {
-     setFormErrors(errors);
-     return;
+      setFormErrors(errors);
+      return;
     }
 
     onSubmit({
-     ...formData,
-     isActive: formData.isActive,
-     tenant_id: formData.tenant_id === '' ? null : formData.tenant_id,
-     occupied_area: formData.occupied_area ? parseFloat(String(formData.occupied_area).trim()) : null,
-     tenantName:
-       formData.tenant_id === null
-         ? null
-         : tenants.find((t) => t.id === formData.tenant_id)?.name || undefined,
+      ...formData,
+      isActive: formData.isActive,
+      tenant_id: formData.tenant_id === '' ? null : formData.tenant_id,
+      occupied_area: formData.occupied_area ? parseFloat(String(formData.occupied_area).trim()) : null,
+      tenantName:
+        formData.tenant_id === null ? null : tenants.find((t) => t.id === formData.tenant_id)?.name || undefined,
     });
   };
 
@@ -177,7 +187,6 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           sx={{ mb: 2 }}
           helperText={formErrors.occupied_area || ' '}
         />
-
 
         <FormControl fullWidth sx={{ mb: 2 }}>
           <InputLabel id="tenant-select-label">Орендар</InputLabel>
