@@ -22,7 +22,10 @@ createRoot(document.getElementById('root')).render(
       useRefreshTokens={true}
       useRefreshTokensFallback={false}
     >
-      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={uk} localeText={ukUA.components.MuiLocalizationProvider.defaultProps.localeText}>
+      <LocalizationProvider 
+        dateAdapter={AdapterDateFns} 
+        adapterLocale={uk} 
+        localeText={ukUA.components.MuiLocalizationProvider.defaultProps.localeText}>
         <AuthProvider>
           <App />
         </AuthProvider>

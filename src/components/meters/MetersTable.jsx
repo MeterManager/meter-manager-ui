@@ -172,35 +172,50 @@ const MetersTable = ({
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          flexWrap: 'wrap',
-          gap: 2,
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          mb: 3,
-        }}
-      >
-        <Button
-          variant="contained"
-          onClick={onAdd}
-          sx={{
-            width: isMobile ? '100%' : 'auto',
-            minWidth: '160px',
-            height: '40px',
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-            order: isMobile ? 1 : 0,
-          }}
-          disabled={isLoading}
-        >
-          Додати лічильник
-        </Button>
-
+      <Box sx={{ mb: 3 }}>
         <Box
-          sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto', order: isMobile ? 0 : 1 }}
+          sx={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2,
+            mb: 2,
+          }}
+        >
+          <Button
+            variant="contained"
+            onClick={onAdd}
+            sx={{
+              width: isMobile ? '100%' : 'auto',
+              minWidth: '160px',
+              height: '40px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+            disabled={isLoading}
+          >
+            Додати лічильник
+          </Button>
+
+          <SearchField
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Пошук..."
+            sx={{
+              width: isMobile ? '100%' : '300px',
+            }}
+            disabled={isLoading}
+          />
+        </Box>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            flexWrap: 'wrap',
+            gap: 2,
+            alignItems: 'center',
+          }}
         >
           <FormControl size="small" sx={{ minWidth: 150, flexGrow: 1 }} disabled={isLoading}>
             <InputLabel>Локація</InputLabel>
@@ -238,17 +253,6 @@ const MetersTable = ({
             </Select>
           </FormControl>
         </Box>
-
-        <SearchField
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Пошук..."
-          sx={{
-            width: isMobile ? '100%' : '300px',
-            order: isMobile ? 2 : 2,
-          }}
-          disabled={isLoading}
-        />
       </Box>
 
       {(search || selectedLocation || selectedResourceType) && (
