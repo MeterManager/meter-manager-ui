@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useAuthContext } from './contexts/AuthContext';
 import ConsentHandler from './components/ConsentHandler';
 import Sidebar from './components/Sidebar';
-import theme from './theme';
+import theme from './theme/theme';
 
 import SubmitMetricsPage from './pages/SubmitMetricsPage';
 import DashboardPage from './pages/DashboardPage';

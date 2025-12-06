@@ -14,6 +14,8 @@ import {
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import { Close } from '@mui/icons-material';
+import { UA } from '../../utils/uaDictionary';
+import { BREAKPOINTS, SIZES, FORM_FIELDS, DIALOG_CONFIG } from '../../constants';
 
 const MeterForm = ({
   open,
@@ -27,8 +29,8 @@ const MeterForm = ({
   loading = false,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:800px)');
-  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(BREAKPOINTS.mobileWide);
+  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down(BREAKPOINTS.md));
 
   const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
@@ -55,22 +57,20 @@ const MeterForm = ({
 
     if (name === 'serial_number') {
       if (!trimmedValue) {
-        errorMsg = "Серійний номер обов'язковий.";
+        errorMsg = UA.meters_serial_required;
       } else if (
         Array.isArray(meters) &&
         meters.some((m) => m.serial_number === trimmedValue && m.id !== formData.id)
       ) {
-        // Перевірка унікальності (на клієнті)
-        errorMsg = 'Лічильник з таким серійним номером вже існує.';
+        errorMsg = UA.meters_serial_exists;
       }
     }
 
-    // Перевірка Select полів
     if (name === 'location_id' && (trimmedValue === '' || !trimmedValue)) {
-      errorMsg = "Локація обов'язкова.";
+      errorMsg = UA.meters_location_required;
     }
     if (name === 'energy_resource_type_id' && (trimmedValue === '' || !trimmedValue)) {
-      errorMsg = "Тип ресурсу обов'язковий.";
+      errorMsg = UA.meters_resource_required;
     }
 
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: errorMsg }));
@@ -126,78 +126,61 @@ const MeterForm = ({
       open={open}
       onClose={handleClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth={DIALOG_CONFIG.maxWidth.sm}
       fullScreen={isMobile}
       PaperProps={{
         sx: {
           width: '100%',
-          maxWidth: '500px',
+          maxWidth: DIALOG_CONFIG.paperMaxWidth,
           margin: isMobile ? 0 : 'auto',
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          fontSize: isMobile ? '1.125rem' : '1.25rem',
-          fontWeight: 600,
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2.5,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        {initialData.id ? 'Редагувати лічильник' : 'Додати лічильник'}
+      <DialogTitle sx={theme.mixins.dialogTitle}>
+        {initialData.id ? UA.meters_edit : UA.meters_add}
         <IconButton onClick={handleClose} size="small" disabled={loading}>
           <Close />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent
-        sx={{
-          px: isMobile ? 2 : 3,
-          pb: 1,
-        }}
-      >
+      <DialogContent sx={theme.mixins.dialogContent}>
         {error && (
           <Alert severity="error" sx={{ mb: 2, fontSize: isMobile ? '0.875rem' : '1rem' }}>
             {error}
           </Alert>
         )}
 
-        {/* Серійний номер */}
         <TextField
           name="serial_number"
-          label="Серійний номер"
+          label={UA.meters_serial_number}
           value={formData.serial_number || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size="medium"
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           sx={{ mt: 1, mb: 2 }}
           error={!!formErrors.serial_number}
           helperText={formErrors.serial_number || ' '}
           disabled={loading}
         />
 
-        {/* Локація */}
         <TextField
           select
           name="location_id"
-          label="Локація"
+          label={UA.meters_location}
           value={formData.location_id || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size="medium"
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           sx={{ mb: 2 }}
           error={!!formErrors.location_id}
           helperText={formErrors.location_id || ' '}
           disabled={loading}
         >
-          <MenuItem value="">Оберіть локацію</MenuItem> {/* Пустий елемент для скидання/вибору */}
+          <MenuItem value="">{UA.common_select} {UA.meters_location.toLowerCase()}</MenuItem>
           {(locations || [])
-            .filter((l) => l.isActive) // Фільтр лише для активних локацій
+            .filter((l) => l.isActive)
             .map((loc) => (
               <MenuItem key={loc.id} value={loc.id}>
                 {loc.name}
@@ -205,24 +188,23 @@ const MeterForm = ({
             ))}
         </TextField>
 
-        {/* Тип енергоресурсу */}
         <TextField
           select
           name="energy_resource_type_id"
-          label="Тип енергоресурсу"
+          label={UA.meters_resource_type}
           value={formData.energy_resource_type_id || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size="medium"
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           sx={{ mb: 2 }}
           error={!!formErrors.energy_resource_type_id}
           helperText={formErrors.energy_resource_type_id || ' '}
           disabled={loading}
         >
-          <MenuItem value="">Оберіть тип ресурсу</MenuItem> {/* Пустий елемент для скидання/вибору */}
+          <MenuItem value="">{UA.common_select} {UA.meters_resource_type.toLowerCase()}</MenuItem>
           {(energyResourceTypes || [])
-            .filter((rt) => rt.isActive) // Фільтр лише для активних ресурсів
+            .filter((rt) => rt.isActive)
             .map((rt) => (
               <MenuItem key={rt.id} value={rt.id}>
                 {rt.name} ({rt.unit})
@@ -231,19 +213,7 @@ const MeterForm = ({
         </TextField>
       </DialogContent>
 
-      <DialogActions
-        sx={{
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2,
-          gap: isMobile ? 1 : 1,
-          flexDirection: isMobile ? 'column-reverse' : 'row',
-          '& .MuiButton-root': {
-            minWidth: isMobile ? 'auto' : '80px',
-            fontSize: isMobile ? '1rem' : '0.875rem',
-            height: isMobile ? '44px' : '36px',
-          },
-        }}
-      >
+      <DialogActions sx={theme.mixins.dialogActions}>
         <Button
           variant="outlined"
           onClick={handleClose}
@@ -251,7 +221,7 @@ const MeterForm = ({
           sx={{ order: isMobile ? 1 : 0 }}
           disabled={loading}
         >
-          Скасувати
+          {UA.common_cancel}
         </Button>
         <Button
           variant="contained"
@@ -260,7 +230,7 @@ const MeterForm = ({
           fullWidth={isMobile}
           sx={{ order: isMobile ? 0 : 1, marginLeft: '0 !important' }}
         >
-          {loading ? <CircularProgress size={24} color="inherit" /> : 'Зберегти'}
+          {loading ? <CircularProgress size={SIZES.circularProgress.medium} color="inherit" /> : UA.common_save}
         </Button>
       </DialogActions>
     </Dialog>
