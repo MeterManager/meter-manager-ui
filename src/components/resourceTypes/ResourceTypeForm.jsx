@@ -13,11 +13,13 @@ import {
 import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
+import { UA } from '../../utils/uaDictionary';
+import { BREAKPOINTS, DIALOG_CONFIG, FORM_FIELDS, SIZES } from '../../constants';
 
 const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, resourceTypes = [], isLoading }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:800px)');
-  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(BREAKPOINTS.mobileWide);
+  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down(BREAKPOINTS.md));
 
   const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
@@ -40,13 +42,13 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
 
     if (name === 'name') {
       if (!trimmedValue) {
-        errorMsg = "Тип ресурсу обов'язковий.";
+        errorMsg = UA.resourceTypes_name_required;
       } else if (resourceTypes.some((t) => t.name.trim() === trimmedValue && t.id !== initialData.id)) {
-        errorMsg = 'Тип ресурсу з такою назвою вже існує.';
+        errorMsg = UA.error_resource_type_exists;
       }
     }
     if (name === 'unit' && !trimmedValue) {
-      errorMsg = "Одиниці вимірювання обов'язкові.";
+      errorMsg = UA.resourceTypes_unit_required;
     }
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: errorMsg }));
     return errorMsg;
@@ -94,39 +96,24 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
       open={open}
       onClose={handleClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth={DIALOG_CONFIG.maxWidth.sm}
       fullScreen={isMobile}
       PaperProps={{
         sx: {
-          width: isMobile ? '100%' : isMobileOrTablet ? '90%' : '500px',
-          maxWidth: isMobile ? '100%' : '500px',
+          width: isMobile ? '100%' : isMobileOrTablet ? DIALOG_CONFIG.paperMaxWidthTablet : DIALOG_CONFIG.paperMaxWidth,
+          maxWidth: isMobile ? '100%' : DIALOG_CONFIG.paperMaxWidth,
           margin: isMobile ? 0 : 'auto',
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          fontSize: isMobile ? '1.125rem' : '1.25rem',
-          fontWeight: 600,
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2.5,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        {initialData.id ? 'Редагувати тип ресурсу' : 'Додати тип ресурсу'}
+      <DialogTitle sx={theme.mixins.dialogTitle}>
+        {initialData.id ? UA.resourceTypes_edit : UA.resourceTypes_add}
         <IconButton onClick={handleClose} disabled={isLoading} size="small">
           <Close />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent
-        sx={{
-          px: isMobile ? 2 : 3,
-          pb: 1,
-        }}
-      >
+      <DialogContent sx={theme.mixins.dialogContent}>
         {error && (
           <Alert
             severity="error"
@@ -141,12 +128,12 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
 
         <TextField
           name="name"
-          label="Тип ресурсу"
+          label={UA.resourceTypes_name}
           value={formData.name || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           sx={{ mt: 1, mb: 2 }}
           error={!!formErrors.name}
           helperText={formErrors.name || ' '}
@@ -155,31 +142,19 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
 
         <TextField
           name="unit"
-          label="Одиниці вимірювання"
+          label={UA.resourceTypes_unit}
           value={formData.unit || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           error={!!formErrors.unit}
           helperText={formErrors.unit || ' '}
           disabled={isLoading}
         />
       </DialogContent>
 
-      <DialogActions
-        sx={{
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2,
-          gap: isMobile ? 1 : 1,
-          flexDirection: isMobile ? 'column-reverse' : 'row',
-          '& .MuiButton-root': {
-            minWidth: isMobile ? 'auto' : '80px',
-            fontSize: isMobile ? '1rem' : '0.875rem',
-            height: isMobile ? '44px' : '36px',
-          },
-        }}
-      >
+      <DialogActions sx={theme.mixins.dialogActions}>
         <Button
           variant="outlined"
           onClick={handleClose}
@@ -189,7 +164,7 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
             order: isMobile ? 1 : 0,
           }}
         >
-          Скасувати
+          {UA.common_cancel}
         </Button>
         <Button
           variant="contained"
@@ -201,7 +176,7 @@ const ResourceTypeForm = ({ open, onClose, onSubmit, initialData = {}, error, re
             marginLeft: '0 !important',
           }}
         >
-          {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Зберегти'}
+          {isLoading ? <CircularProgress size={SIZES.circularProgress.medium} color="inherit" /> : UA.common_save}
         </Button>
       </DialogActions>
     </Dialog>

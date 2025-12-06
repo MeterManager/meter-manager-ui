@@ -13,11 +13,13 @@ import {
 import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
+import { UA } from '../../utils/uaDictionary';
+import { BREAKPOINTS, DIALOG_CONFIG, FORM_FIELDS, SIZES } from '../../constants';
 
 const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:800px)');
-  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(BREAKPOINTS.mobileWide);
+  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down(BREAKPOINTS.md));
 
   const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
@@ -47,16 +49,16 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
 
     if (name === 'name') {
       if (!trimmedValue) {
-        errorMsg = "Назва орендаря обов'язкова.";
+        errorMsg = UA.tenants_name_required;
       } else if (tenants.some((t) => t.name.trim() === trimmedValue && t.id !== initialData.id)) {
-        errorMsg = 'Орендар з такою назвою вже існує.';
+        errorMsg = UA.error_tenant_exists;
       }
     }
     if (name === 'email' && trimmedValue && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedValue)) {
-      errorMsg = 'Невірний формат email.';
+      errorMsg = UA.tenants_email_format;
     }
     if (name === 'phone' && trimmedValue && !trimmedValue.match(/^\+380[0-9]{9}$/)) {
-      errorMsg = 'Номер телефону має бути у форматі +380xxxxxxxxx';
+      errorMsg = UA.tenants_phone_format;
     }
 
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: errorMsg }));
@@ -115,39 +117,24 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
       open={open}
       onClose={handleClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth={DIALOG_CONFIG.maxWidth.sm}
       fullScreen={isMobile}
       PaperProps={{
         sx: {
           width: '100%',
-          maxWidth: '500px',
+          maxWidth: DIALOG_CONFIG.paperMaxWidth,
           margin: isMobile ? 0 : 'auto',
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          fontSize: isMobile ? '1.125rem' : '1.25rem',
-          fontWeight: 600,
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2.5,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        {initialData.id ? 'Редагувати орендаря' : 'Додати орендаря'}
+      <DialogTitle sx={theme.mixins.dialogTitle}>
+        {initialData.id ? UA.tenants_edit : UA.tenants_add}
         <IconButton onClick={handleClose} size="small" disabled={isSubmitting}>
           <Close />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent
-        sx={{
-          px: isMobile ? 2 : 3,
-          pb: 1,
-        }}
-      >
+      <DialogContent sx={theme.mixins.dialogContent}>
         {error && (
           <Alert
             severity="error"
@@ -162,12 +149,12 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
 
         <TextField
           name="name"
-          label="Назва орендаря"
+          label={UA.tenants_name}
           value={formData.name || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           sx={{ mt: 1, mb: 2 }}
           error={!!formErrors.name}
           helperText={formErrors.name || ' '}
@@ -176,12 +163,12 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
 
         <TextField
           name="contactPerson"
-          label="Контактна особа"
+          label={UA.tenants_contact}
           value={formData.contactPerson || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           sx={{ mb: 2 }}
           helperText={formErrors.contactPerson || ' '}
           disabled={isSubmitting}
@@ -189,47 +176,35 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
 
         <TextField
           name="phone"
-          label="Телефон"
+          label={UA.tenants_phone}
           value={formData.phone || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           sx={{ mb: 2 }}
           error={!!formErrors.phone}
-          helperText={formErrors.phone || 'У форматі +380xxxxxxxxx'}
+          helperText={formErrors.phone || UA.tenants_phone_helper}
           inputProps={{ pattern: '[+0-9]*' }}
           disabled={isSubmitting}
         />
 
         <TextField
           name="email"
-          label="Email"
+          label={UA.tenants_email}
           type="email"
           value={formData.email || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           error={!!formErrors.email}
           helperText={formErrors.email || ' '}
           disabled={isSubmitting}
         />
       </DialogContent>
 
-      <DialogActions
-        sx={{
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2,
-          gap: isMobile ? 1 : 1,
-          flexDirection: isMobile ? 'column-reverse' : 'row',
-          '& .MuiButton-root': {
-            minWidth: isMobile ? 'auto' : '80px',
-            fontSize: isMobile ? '1rem' : '0.875rem',
-            height: isMobile ? '44px' : '36px',
-          },
-        }}
-      >
+      <DialogActions sx={theme.mixins.dialogActions}>
         <Button
           variant="outlined"
           onClick={handleClose}
@@ -239,7 +214,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
             order: isMobile ? 1 : 0,
           }}
         >
-          Скасувати
+          {UA.common_cancel}
         </Button>
         <Button
           variant="contained"
@@ -251,7 +226,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
             marginLeft: '0 !important',
           }}
         >
-          {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Зберегти'}
+          {isSubmitting ? <CircularProgress size={SIZES.circularProgress.medium} color="inherit" /> : UA.common_save}
         </Button>
       </DialogActions>
     </Dialog>

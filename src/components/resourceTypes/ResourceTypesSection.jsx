@@ -16,8 +16,12 @@ import ResourceTypeForm from '../resourceTypes/ResourceTypeForm';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import { useResourceTypes } from '../../hooks/useResourceTypes';
 import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
+import { DEFAULTS } from '../../constants';
+import { useTheme } from '@mui/material/styles';
 
 const ResourceTypesSection = ({ initialExpanded = true }) => {
+  const theme = useTheme();
   const {
     resourceTypes,
     search,
@@ -38,9 +42,9 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null, action: null, dependencies: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const handleServiceError = (err, defaultMessage = 'Помилка при виконанні дії') => {
+  const handleServiceError = (err, defaultMessage = null) => {
     console.error('Resource Type Service Action Failed:', err);
-    const userMessage = translateErrorMessage(err.message || defaultMessage);
+    const userMessage = translateErrorMessage(err.message || defaultMessage || UA.error_action_default);
     setSnackbar({ open: true, message: userMessage, severity: 'error' });
     setError(userMessage);
   };
@@ -63,13 +67,13 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
     try {
       if (editingResourceType?.id) {
         await editResourceType(editingResourceType.id, formData);
-        setSnackbar({ open: true, message: 'Тип ресурсу успішно оновлено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.resourceTypes_success_updated, severity: 'success' });
       } else {
         await addResourceType(formData);
-        setSnackbar({ open: true, message: 'Тип ресурсу успішно створено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.resourceTypes_success_created, severity: 'success' });
       }
     } catch (err) {
-      handleServiceError(err, 'Помилка збереження типу ресурсу');
+      handleServiceError(err, UA.error_save_resource_type);
     } finally {
       setFormOpen(false);
       setEditingResourceType(null);
@@ -97,11 +101,11 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
       await updateResourceTypeStatus(id, isActive);
       setSnackbar({
         open: true,
-        message: `Тип ресурсу успішно ${isActive ? 'активовано' : 'деактивовано'}`,
+        message: `${UA.resourceTypes_success_status} ${isActive ? UA.status_activated : UA.status_deactivated}`,
         severity: 'success',
       });
     } catch (err) {
-      handleServiceError(err, 'Помилка оновлення статусу');
+      handleServiceError(err, UA.error_update_status);
     }
   };
 
@@ -109,11 +113,11 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
     try {
       if (confirmDialog.action === 'delete') {
         await removeResourceType(confirmDialog.id);
-        setSnackbar({ open: true, message: 'Тип ресурсу успішно видалено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.resourceTypes_success_deleted, severity: 'success' });
       }
       setConfirmDialog({ open: false, id: null, action: null, dependencies: null });
     } catch (err) {
-      handleServiceError(err, 'Помилка підтвердження дії');
+      handleServiceError(err, UA.error_confirm_action);
     }
   };
 
@@ -127,19 +131,12 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
 
   return (
     <>
-      <Paper sx={{ mb: 3, borderRadius: 2 }} elevation={1}>
+      <Paper sx={theme.mixins.sectionPaper} elevation={DEFAULTS.paperElevation}>
         <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            p: 2,
-            cursor: 'pointer',
-            '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' },
-          }}
+          sx={theme.mixins.sectionHeader}
           onClick={handleToggle}
         >
-          <Typography variant="h5">Типи ресурсів ({resourceTypes.length})</Typography>
+          <Typography variant="h5">{UA.resourceTypes_title} ({resourceTypes.length})</Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
 
@@ -184,7 +181,7 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={6000}
+        autoHideDuration={DEFAULTS.snackbarDuration}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >

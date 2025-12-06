@@ -18,7 +18,7 @@ export const UA = {
   common_required: "обов'язковий",
   common_error: 'Помилка',
   common_success: 'Успішно',
-  
+
   // Status labels
   status_active: 'Активний',
   status_inactive: 'Неактивний',
@@ -28,7 +28,7 @@ export const UA = {
   status_unknown: 'Невідомий',
   status_unknown_location: 'Невідома локація',
   status_unknown_resource: 'Невідомий ресурс',
-  
+
   // Meters
   meters_add: 'Додати лічильник',
   meters_edit: 'Редагувати лічильник',
@@ -51,7 +51,7 @@ export const UA = {
   meters_success_updated: 'Лічильник успішно оновлено',
   meters_success_deleted: 'Лічильник та повʼязані обʼєкти видалено',
   meters_success_status: 'Лічильник успішно',
-  
+
   // Locations
   locations_title: 'Локації',
   locations_add: 'Додати локацію',
@@ -60,11 +60,22 @@ export const UA = {
   locations_address: 'Адреса',
   locations_tenant: 'Орендар',
   locations_occupied_area: 'Відсоток зайнятої площі (%)',
+  locations_area_percent: 'Відсоток Площі',
   locations_name_required: "Назва обов'язкова.",
   locations_address_required: "Адреса обов'язкова.",
   locations_name_exists: 'Локація з такою назвою вже існує.',
   locations_area_error: 'Має бути числом від 0 до 100.',
   locations_tenant_free: '— Вільна —',
+  locations_status_active_f: 'Активна',
+  locations_status_inactive_f: 'Неактивна',
+  locations_deactivate_first: 'Спочатку деактивуйте локацію',
+  locations_edit_tooltip: 'Редагувати локацію',
+  locations_delete_tooltip: 'Видалити локацію',
+  locations_not_found: 'Локації не знайдено',
+  locations_not_found_search: 'За вашим запитом нічого не знайдено',
+  locations_add_first: 'Додати першу локацію',
+  locations_all_tenants: '— Всі орендарі —',
+  locations_free_locations: '— Вільні локації —',
   locations_success_created: 'Локацію успішно створено',
   locations_success_updated: 'Локацію успішно оновлено',
   locations_success_deleted: 'Локацію успішно видалено',
@@ -72,7 +83,8 @@ export const UA = {
   locations_success_activated: 'Локацію успішно активовано',
   locations_success_deactivated: 'Локацію успішно деактивовано',
   locations_success_deactivated_with_deps: 'Локацію успішно деактивовано (з залежностями)',
-  
+  locations_load_error: 'Помилка при завантаженні локацій',
+
   // Resource Types
   resourceTypes_title: 'Типи ресурсів',
   resourceTypes_add: 'Додати тип ресурсу',
@@ -85,16 +97,26 @@ export const UA = {
   resourceTypes_success_created: 'Тип ресурсу успішно створено',
   resourceTypes_success_status: 'Тип ресурсу успішно',
   resourceTypes_success_deleted: 'Тип ресурсу успішно видалено',
-  
+
   // Tenants
   tenants_title: 'Орендарі',
   tenants_add: 'Додати орендаря',
   tenants_edit: 'Редагувати орендаря',
   tenants_name: 'Назва орендаря',
   tenants_contact: 'Контактна особа',
+  tenants_contact_label: 'Контакт',
   tenants_phone: 'Телефон',
   tenants_email: 'Email',
+  tenants_locations: 'Локації',
+  tenants_contacts: 'Контакти',
   tenants_name_required: "Назва орендаря обов'язкова.",
+  tenants_email_format: 'Невірний формат email.',
+  tenants_phone_format: 'Номер телефону має бути у форматі +380xxxxxxxxx',
+  tenants_phone_helper: 'У форматі +380xxxxxxxxx',
+  tenants_search_placeholder: 'Пошук за назвою, контактом...',
+  tenants_no_available: 'Немає доступних орендарів',
+  tenants_all_locations: '— Всі локації —',
+  tenants_no_location: '— Без локації —',
   tenants_success_updated: 'Орендаря успішно оновлено',
   tenants_success_added: 'Орендаря успішно додано',
   tenants_success_deleted: 'Орендаря успішно видалено',
@@ -105,7 +127,7 @@ export const UA = {
   tenants_deactivate_first: 'Спочатку деактивуйте орендаря',
   tenants_not_found: 'Орендарів не знайдено',
   tenants_not_found_search: 'За вашим запитом нічого не знайдено',
-  
+
   // Tariffs
   tariffs_title: 'Тарифи',
   tariffs_add: 'Додати тариф',
@@ -114,7 +136,8 @@ export const UA = {
   tariffs_resource_type: 'Тип ресурсу',
   tariffs_price: 'Ціна',
   tariffs_valid_from: 'Діє з',
-  tariffs_valid_to: 'Діє до',
+  tariffs_valid_to: "Діє до (необов'язково)",
+  tariffs_price: 'Ціна (₴)',
   tariffs_price_required: "Ціна обов'язкова.",
   tariffs_valid_from_required: "Дата початку обов'язкова.",
   tariffs_valid_to_optional: 'Залиште порожнім для безстрокового тарифу',
@@ -123,7 +146,7 @@ export const UA = {
   tariffs_success_deleted: 'Тариф видалено',
   tariffs_edit_tooltip: 'Редагувати тариф',
   tariffs_delete_tooltip: 'Видалити тариф',
-  
+
   // Resource Deliveries
   deliveries_title: 'Поставки ресурсів',
   deliveries_add: 'Додати поставку ресурсу',
@@ -135,15 +158,21 @@ export const UA = {
   deliveries_price_per_unit: 'Ціна за одиницю',
   deliveries_delivery_date: 'Дата доставки',
   deliveries_supplier: 'Постачальник',
+  deliveries_location_required: 'Виберіть локацію.',
+  deliveries_resource_type_required: 'Виберіть тип ресурсу.',
+  deliveries_unit_required: 'Вкажіть одиницю виміру.',
+  deliveries_date_required: 'Вкажіть дату.',
   deliveries_quantity_required: "Кількість обов'язкова.",
   deliveries_price_required: "Ціна обов'язкова.",
+  deliveries_unit_placeholder: 'Одиниця виміру (наприклад, кВт·год)',
+  deliveries_positive_number: 'Має бути додатнє число (> 0).',
   deliveries_success_updated: 'Поставку успішно оновлено',
   deliveries_success_added: 'Поставку успішно додано',
   deliveries_success_deleted: 'Поставку видалено',
   deliveries_edit_tooltip: 'Редагувати поставку',
   deliveries_delete_tooltip: 'Видалити поставку',
   deliveries_supplier_not_specified: 'Не вказано',
-  
+
   // Meter Tenants (Assignments)
   meterTenants_title: "Прив'язка лічильників",
   meterTenants_add: 'Додати призначення',
@@ -156,13 +185,13 @@ export const UA = {
   meterTenants_tenant_required: "Орендар обов'язковий.",
   meterTenants_meter_required: "Лічильник обов'язковий.",
   meterTenants_start_date_required: "Дата початку обов'язкова.",
-  meterTenants_location_first: "Спочатку виберіть локацію.",
+  meterTenants_location_first: 'Спочатку виберіть локацію.',
   meterTenants_select_location: '-- Виберіть локацію --',
   meterTenants_no_meters: 'Немає доступних лічильників для цієї локації',
   meterTenants_select_location_first: 'Спочатку виберіть локацію',
   meterTenants_end_date_before_start: 'Дата завершення не може бути раніше дати початку.',
-  meterTenants_end_date_optional: "Залиште порожнім, якщо безстроково",
-  
+  meterTenants_end_date_optional: 'Залиште порожнім, якщо безстроково',
+
   // Meter Readings
   meterReadings_title: 'Показники лічильників',
   meterReadings_form_title: 'Форма подачі показників',
@@ -193,7 +222,7 @@ export const UA = {
   meterReadings_category_ca: 'СА (Споживання активної)',
   meterReadings_category_cp: 'СР (Споживання реактивної)',
   meterReadings_category_gr: 'ГР (Генерація реактивної)',
-  
+
   // Acts
   acts_title: 'Акти споживання',
   acts_generate: 'Згенерувати акт',
@@ -214,8 +243,8 @@ export const UA = {
   acts_period: 'Період (місяць)',
   acts_period_help: 'Виберіть місяць для акту',
   acts_organization: 'Організація (власник)',
-  acts_executor_title: "Посада виконавця",
-  acts_executor_name: "ПІБ виконавця",
+  acts_executor_title: 'Посада виконавця',
+  acts_executor_name: 'ПІБ виконавця',
   acts_tenant_company: 'Компанія орендаря',
   acts_tenant_representative: 'Представник орендаря',
   acts_address: "Адреса об'єкту",
@@ -258,10 +287,10 @@ export const UA = {
   acts_category_ca: 'СА',
   acts_category_cp: 'СР',
   acts_category_gr: 'ГР',
-  
+
   // Users
   users_title: 'Користувачі',
-  
+
   // Confirm Dialog
   confirm_delete_title: 'Підтвердження видалення',
   confirm_deactivate_title: 'Підтвердження деактивації',
@@ -290,7 +319,7 @@ export const UA = {
   confirm_deliveries_genitive: 'поставок',
   confirm_active_tenants: 'активного орендаря',
   confirm_active_tenants_plural: 'активних орендарів',
-  
+
   // Sidebar
   sidebar_submit_readings: 'Подача показників',
   sidebar_dashboard: 'Панель керування',
@@ -309,22 +338,22 @@ export const UA = {
   sidebar_expand: 'Розгорнути',
   sidebar_collapse: 'Згорнути',
   sidebar_user: 'Користувач',
-  
+
   // Dashboard
   dashboard_title: 'Панель керування',
   dashboard_no_access: 'У вас немає доступу до дашборду',
-  
+
   // Blocked User Page
   blocked_title: 'Доступ заборонено',
   blocked_message: 'Ваш акаунт деактивовано у системі обліку. Будь ласка, зверніться до адміністратора для активації.',
   blocked_logout: 'Вийти з системи',
-  
+
   // Filters
   filter_all_locations: 'Всі локації',
   filter_all_types: 'Всі типи',
   filter_location: 'Локація',
   filter_resource_type: 'Тип ресурсу',
-  
+
   // Error messages (from translateError.js)
   error_meter_serial_exists: 'Лічильник з таким серійним номером вже існує.',
   error_meter_not_found: 'Лічильник не знайдено.',
@@ -373,14 +402,29 @@ export const UA = {
   error_check_dependencies: 'Помилка перевірки залежностей',
   error_confirm_action: 'Помилка підтвердження дії',
   error_load_unknown: 'Невідома помилка завантаження',
-  
+  error_no_locations_available: 'Немає доступних локацій',
+  error_no_resource_types_available: 'Немає доступних типів ресурсів',
+
   // Loading states
   loading_indicator: '⏳ Завантаження...',
-  
+
   // Validation
   validation_required: "обов'язкове",
   validation_number_range: 'Має бути числом від 0 до 100.',
   validation_email: 'Невірний формат email',
   validation_phone: 'Невірний формат телефону',
-};
+  validation_price_positive: 'Ціна має бути позитивним числом.',
+  validation_date_end_before_start: 'Дата завершення не може бути раніше дати початку.',
+  validation_date_start_before_end: 'Дата початку повинна бути раніше дати завершення.',
 
+  // Common placeholders and empty states
+  common_empty_dash: '—',
+  common_percent: '%',
+  common_loading_indicator: '⏳ Завантаження...',
+
+  // Location specific
+  locations_area_dash: '—',
+
+  // Tenant specific
+  tenants_locations_dash: '—',
+};

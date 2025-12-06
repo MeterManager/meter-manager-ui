@@ -16,6 +16,8 @@ import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import CustomDatePicker from '../ui/DatePicker';
+import { UA } from '../../utils/uaDictionary';
+import { BREAKPOINTS, DIALOG_CONFIG, FORM_FIELDS, SIZES } from '../../constants';
 
 const ResourceDeliveryForm = ({
   open,
@@ -28,8 +30,8 @@ const ResourceDeliveryForm = ({
   error,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:800px)');
-  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(BREAKPOINTS.mobileWide);
+  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down(BREAKPOINTS.md));
 
   const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
@@ -55,17 +57,17 @@ const ResourceDeliveryForm = ({
 
   const validateField = (name, value) => {
     let errorMsg = '';
-    if (name === 'locationId' && (!value || value === '')) errorMsg = 'Виберіть локацію.';
-    if (name === 'resourceTypeId' && (!value || value === '')) errorMsg = 'Виберіть тип ресурсу.';
-    if (name === 'unit' && !value) errorMsg = 'Вкажіть одиницю виміру.';
-    if (name === 'deliveryDate' && !value) errorMsg = 'Вкажіть дату.';
+    if (name === 'locationId' && (!value || value === '')) errorMsg = UA.deliveries_location_required;
+    if (name === 'resourceTypeId' && (!value || value === '')) errorMsg = UA.deliveries_resource_type_required;
+    if (name === 'unit' && !value) errorMsg = UA.deliveries_unit_required;
+    if (name === 'deliveryDate' && !value) errorMsg = UA.deliveries_date_required;
     if (name === 'quantity' || name === 'pricePerUnit') {
       const trimmed = String(value).trim();
       if (!trimmed) {
-        errorMsg = (name === 'quantity' ? 'Кількість' : 'Ціна') + " обов'язкова.";
+        errorMsg = (name === 'quantity' ? UA.deliveries_quantity_required : UA.deliveries_price_required);
       } else {
         const num = parseFloat(trimmed);
-        if (isNaN(num) || num <= 0) errorMsg = 'Має бути додатнє число (> 0).';
+        if (isNaN(num) || num <= 0) errorMsg = UA.deliveries_positive_number;
       }
     }
 
@@ -122,40 +124,27 @@ const ResourceDeliveryForm = ({
   };
 
   const selectedResource = resourceTypes.find((rt) => rt.id === formData.resourceTypeId);
-  const unitPlaceholder = selectedResource ? selectedResource.unit : 'Одиниця виміру (наприклад, кВт·год)';
+  const unitPlaceholder = selectedResource ? selectedResource.unit : UA.deliveries_unit_placeholder;
 
   return (
     <Dialog
       open={open}
       onClose={handleClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth={DIALOG_CONFIG.maxWidth.sm}
       fullScreen={isMobile}
       PaperProps={{
         sx: {
-          width: isMobile ? '100%' : isMobileOrTablet ? '90%' : '500px',
-          maxWidth: isMobile ? '100%' : '500px',
+          width: isMobile ? '100%' : isMobileOrTablet ? DIALOG_CONFIG.paperMaxWidthTablet : DIALOG_CONFIG.paperMaxWidth,
+          maxWidth: isMobile ? '100%' : DIALOG_CONFIG.paperMaxWidth,
           margin: isMobile ? 0 : 'auto',
         },
       }}
     >
-           {' '}
-      <DialogTitle
-        sx={{
-          fontSize: isMobile ? '1.125rem' : '1.25rem',
-          fontWeight: 600,
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2.5,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-               {' '}
+      <DialogTitle sx={theme.mixins.dialogTitle}>
         <Box component="span">
-                    {initialData.id ? 'Редагувати поставку ресурсу' : 'Додати поставку ресурсу'}       {' '}
+          {initialData.id ? UA.deliveries_edit : UA.deliveries_add}
         </Box>
-               {' '}
         <IconButton
           onClick={handleClose}
           size="small"
@@ -166,16 +155,12 @@ const ResourceDeliveryForm = ({
           }}
           disabled={isLoading}
         >
-                    <Close />       {' '}
+          <Close />
         </IconButton>
-             {' '}
       </DialogTitle>
            {' '}
       <DialogContent
-        sx={{
-          px: isMobile ? 2 : 3,
-          pb: 1,
-        }}
+        sx={theme.mixins.dialogContent}
       >
                {' '}
         {error && (
@@ -193,19 +178,19 @@ const ResourceDeliveryForm = ({
         <TextField
           select
           name="locationId"
-          label="Локація"
+          label={UA.deliveries_location}
           value={formData.locationId || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
+          variant={FORM_FIELDS.textField.variant}
           sx={{ mt: 1, mb: 2 }}
           error={!!formErrors.locationId}
           helperText={formErrors.locationId || ' '}
           disabled={isLoading}
         >
-                    <MenuItem value="">Оберіть локацію</MenuItem>         {' '}
+                    <MenuItem value="">{UA.common_select} {UA.deliveries_location.toLowerCase()}</MenuItem>         {' '}
           {locations.length === 0 ? (
-            <MenuItem disabled>Немає доступних локацій</MenuItem>
+            <MenuItem disabled>{UA.error_no_locations_available}</MenuItem>
           ) : (
             locations.map((loc) => (
               <MenuItem key={loc.id} value={loc.id}>
@@ -219,19 +204,19 @@ const ResourceDeliveryForm = ({
         <TextField
           select
           name="resourceTypeId"
-          label="Тип ресурсу"
+          label={UA.deliveries_resource_type}
           value={formData.resourceTypeId || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
+          variant={FORM_FIELDS.textField.variant}
           sx={{ mb: 2 }}
           error={!!formErrors.resourceTypeId}
           helperText={formErrors.resourceTypeId || ' '}
           disabled={isLoading}
         >
-                    <MenuItem value="">Оберіть тип ресурсу</MenuItem>         {' '}
+                    <MenuItem value="">{UA.common_select} {UA.deliveries_resource_type.toLowerCase()}</MenuItem>         {' '}
           {resourceTypes.length === 0 ? (
-            <MenuItem disabled>Немає доступних типів ресурсів</MenuItem>
+            <MenuItem disabled>{UA.error_no_resource_types_available}</MenuItem>
           ) : (
             resourceTypes.map((res) => (
               <MenuItem key={res.id} value={res.id}>
@@ -244,12 +229,12 @@ const ResourceDeliveryForm = ({
                {' '}
         <TextField
           name="quantity"
-          label="Кількість"
+          label={UA.deliveries_quantity}
           type="number"
           value={formData.quantity || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
+          variant={FORM_FIELDS.textField.variant}
           sx={{ mb: 2 }}
           error={!!formErrors.quantity}
           helperText={formErrors.quantity || ' '}
@@ -263,7 +248,7 @@ const ResourceDeliveryForm = ({
           value={formData.unit || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
+          variant={FORM_FIELDS.textField.variant}
           sx={{ mb: 2 }}
           error={!!formErrors.unit}
           helperText={formErrors.unit || ' '}
@@ -272,12 +257,12 @@ const ResourceDeliveryForm = ({
                {' '}
         <TextField
           name="pricePerUnit"
-          label="Ціна за одиницю"
+          label={UA.deliveries_price_per_unit}
           type="number"
           value={formData.pricePerUnit || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
+          variant={FORM_FIELDS.textField.variant}
           sx={{ mb: 2 }}
           error={!!formErrors.pricePerUnit}
           helperText={formErrors.pricePerUnit || ' '}
@@ -292,7 +277,7 @@ const ResourceDeliveryForm = ({
               target: { name: 'deliveryDate', value: newValue },
             });
           }}
-          label="Дата доставки"
+          label={UA.deliveries_delivery_date}
           error={!!formErrors.deliveryDate}
           helperText={formErrors.deliveryDate || ' '}
           sx={{ mb: 2 }}
@@ -301,11 +286,11 @@ const ResourceDeliveryForm = ({
                {' '}
         <TextField
           name="supplier"
-          label="Постачальник"
+          label={UA.deliveries_supplier}
           value={formData.supplier || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
+          variant={FORM_FIELDS.textField.variant}
           helperText=" "
           disabled={isLoading}
         />
@@ -313,28 +298,18 @@ const ResourceDeliveryForm = ({
       </DialogContent>
            {' '}
       <DialogActions
-        sx={{
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2,
-          gap: isMobile ? 1 : 1,
-          flexDirection: isMobile ? 'column-reverse' : 'row',
-          '& .MuiButton-root': {
-            minWidth: isMobile ? 'auto' : '80px',
-            fontSize: isMobile ? '1rem' : '0.875rem',
-            height: isMobile ? '44px' : '36px',
-          },
-        }}
+        sx={theme.mixins.dialogActions}
       >
                {' '}
-        <Button variant="outlined" onClick={handleClose} fullWidth={isMobile} disabled={isLoading}>
-                    Скасувати        {' '}
+        <Button variant="outlined" onClick={handleClose} fullWidth={isMobile} disabled={isLoading} sx={{ order: isMobile ? 1 : 0 }}>
+                    {UA.common_cancel}        {' '}
         </Button>
                {' '}
         <Button
           variant="contained"
           onClick={handleSubmit}
           fullWidth={isMobile}
-          sx={{ marginLeft: '0 !important' }}
+          sx={{ order: isMobile ? 0 : 1, marginLeft: '0 !important' }}
           disabled={isLoading}
         >
                     {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Зберегти'}       {' '}

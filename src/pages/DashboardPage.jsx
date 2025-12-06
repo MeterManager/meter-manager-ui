@@ -9,6 +9,7 @@ import MetersSection from '../components/meters/MetersSection';
 import MeterTenantsSection from '../components/meter-tenants/MeterTenantsSection';
 import UsersSection from '../components/users/UsersSection';
 import { useAuthContext } from '../contexts/AuthContext';
+import { UA } from '../utils/uaDictionary';
 
 const ALL_SECTIONS = [
   { path: 'locations', Component: LocationsSection },
@@ -27,9 +28,9 @@ const DashboardPage = () => {
 
   const renderSection = () => {
     if (section) {
-      const Section = ALL_SECTIONS.find(s => s.path === section);
+      const Section = ALL_SECTIONS.find((s) => s.path === section);
       if (Section) {
-        return <Section.Component initialExpanded={true} />; 
+        return <Section.Component initialExpanded={true} />;
       }
     }
 
@@ -37,13 +38,13 @@ const DashboardPage = () => {
       <Stack spacing={3} direction={{ xs: 'column', md: 'row' }} flexWrap="wrap">
         {ALL_SECTIONS.map(({ path, Component }) => (
           <Box key={path} flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-            <Component initialExpanded={false} /> 
+            <Component initialExpanded={false} />
           </Box>
         ))}
       </Stack>
     );
   };
-  
+
   if (authLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
@@ -56,7 +57,7 @@ const DashboardPage = () => {
     return (
       <Container maxWidth="lg">
         <Typography variant="h5" align="center" sx={{ my: 4 }}>
-          У вас немає доступу до дашборду
+          {UA.dashboard_no_access}
         </Typography>
       </Container>
     );
@@ -72,7 +73,7 @@ const DashboardPage = () => {
           fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
         }}
       >
-        Панель керування
+        {UA.dashboard_title}
       </Typography>
       {renderSection()}
     </Container>
