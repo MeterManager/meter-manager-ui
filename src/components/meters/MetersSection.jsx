@@ -44,7 +44,6 @@ const MetersSection = ({ initialExpanded = true }) => {
   } = useMeters();
 
   const handleServiceError = (err, defaultMessage = null) => {
-    console.error('Meter Service Action Failed:', err);
     const userMessage = translateErrorMessage(err.message || defaultMessage || UA.error_action_default);
     setSnackbar({ open: true, message: userMessage, severity: 'error' });
     setError(userMessage);
@@ -134,7 +133,11 @@ const MetersSection = ({ initialExpanded = true }) => {
 
   if (locationsError || resourceTypesError) {
     const errorMsg = locationsError?.message || resourceTypesError?.message || UA.error_load_unknown;
-    return <Typography color="error">{UA.error_action_default}: {errorMsg}</Typography>;
+    return (
+      <Typography color="error">
+        {UA.error_action_default}: {errorMsg}
+      </Typography>
+    );
   }
 
   if (dataLoading) return <CircularProgress />;
@@ -153,7 +156,9 @@ const MetersSection = ({ initialExpanded = true }) => {
           }}
           onClick={handleToggle}
         >
-          <Typography variant="h5">{UA.meters_title} ({meters.length})</Typography>
+          <Typography variant="h5">
+            {UA.meters_title} ({meters.length})
+          </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
         <Divider />

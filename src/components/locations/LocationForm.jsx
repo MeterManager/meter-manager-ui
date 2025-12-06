@@ -59,13 +59,14 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
           error = UA.locations_address_required;
         }
         break;
-      case 'occupied_area':
+      case 'occupied_area': {
         const numValue = value ? parseFloat(String(value).trim()) : null;
 
         if (value && (isNaN(numValue) || numValue < 0 || numValue > 100)) {
           error = UA.locations_area_error;
         }
         break;
+      }
       default:
         break;
     }

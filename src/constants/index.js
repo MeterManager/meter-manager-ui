@@ -214,4 +214,3 @@ export const DATE_FORMATS = {
   iso: 'YYYY-MM-DD',
   display: 'DD.MM.YYYY',
 };
-

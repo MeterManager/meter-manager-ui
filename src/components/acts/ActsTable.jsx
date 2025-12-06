@@ -37,27 +37,15 @@ import BoltOutlinedIcon from '@mui/icons-material/BoltOutlined';
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import { useTheme } from '@mui/material/styles';
 import { generateConsumptionAct } from '../../utils/excelGenerator';
-
-const categoryLabels = {
-  CA: 'СА',
-  CP: 'СР',
-  GR: 'ГР',
-};
-
-const monthLabels = [
-  { value: '01', label: 'Січень' },
-  { value: '02', label: 'Лютий' },
-  { value: '03', label: 'Березень' },
-  { value: '04', label: 'Квітень' },
-  { value: '05', label: 'Травень' },
-  { value: '06', label: 'Червень' },
-  { value: '07', label: 'Липень' },
-  { value: '08', label: 'Серпень' },
-  { value: '09', label: 'Вересень' },
-  { value: '10', label: 'Жовтень' },
-  { value: '11', label: 'Листопад' },
-  { value: '12', label: 'Грудень' },
-];
+import { UA } from '../../utils/uaDictionary';
+import {
+  CATEGORY_LABELS_SHORT,
+  MONTHS,
+  DEFAULT_ACT_OPTIONS,
+  CONSUMPTION_LABELS,
+  WATER_RESOURCES,
+  RESOURCE_TYPES,
+} from '../../constants';
 
 const getDistributionByCategory = (reading, category) => {
   if (!reading.distributions || !Array.isArray(reading.distributions)) return null;
@@ -73,7 +61,7 @@ const getMonthFromDate = (dateString) => {
   return null;
 };
 
-const MobileReadingCard = ({ reading, isWater, isGas, theme }) => {
+const MobileReadingCard = ({ reading, isWater, isGas }) => {
   const distributions = ['CA', 'CP', 'GR']
     .map((cat) => getDistributionByCategory(reading.rawReading, cat))
     .filter(Boolean);
@@ -96,13 +84,13 @@ const MobileReadingCard = ({ reading, isWater, isGas, theme }) => {
     <Card sx={{ mb: 2, boxShadow: 2 }}>
       <CardContent>
         <Typography variant="subtitle2" color="primary" gutterBottom>
-          № лічильника: <strong>{reading.meterNumber}</strong>
+          {UA.acts_meter_number}: <strong>{reading.meterNumber}</strong>
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
           {reading.installationPlace}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
-          Тип: {reading.purpose}
+          {UA.acts_resource_type}: {reading.purpose}
         </Typography>
 
         <Divider sx={{ my: 1.5 }} />
@@ -110,7 +98,7 @@ const MobileReadingCard = ({ reading, isWater, isGas, theme }) => {
         <Grid container spacing={1}>
           <Grid item xs={6}>
             <Typography variant="caption" color="text.secondary">
-              Коефіцієнт
+              {UA.acts_coefficient}
             </Typography>
             <Typography variant="body2" fontWeight="bold">
               {reading.coefficient}
@@ -118,7 +106,7 @@ const MobileReadingCard = ({ reading, isWater, isGas, theme }) => {
           </Grid>
           <Grid item xs={6}>
             <Typography variant="caption" color="text.secondary">
-              % площі
+              {UA.acts_area_percent}
             </Typography>
             <Typography variant="body2" fontWeight="bold">
               {reading.locationArea}
@@ -132,7 +120,7 @@ const MobileReadingCard = ({ reading, isWater, isGas, theme }) => {
           <Box key={idx} sx={{ mb: idx < rowsToRender.length - 1 ? 2 : 0 }}>
             {!isWater && !isGas && dist.category !== 'General' && (
               <Chip
-                label={categoryLabels[dist.category] || dist.category}
+                label={CATEGORY_LABELS_SHORT[dist.category] || dist.category}
                 size="small"
                 color="primary"
                 sx={{ mb: 1 }}
@@ -141,25 +129,25 @@ const MobileReadingCard = ({ reading, isWater, isGas, theme }) => {
             <Grid container spacing={1}>
               <Grid item xs={4}>
                 <Typography variant="caption" color="text.secondary">
-                  Попередні
+                  {UA.acts_previous}
                 </Typography>
                 <Typography variant="body2">{dist.previous_reading || '0.00'}</Typography>
               </Grid>
               <Grid item xs={4}>
                 <Typography variant="caption" color="text.secondary">
-                  Поточні
+                  {UA.acts_current}
                 </Typography>
                 <Typography variant="body2">{dist.current_reading || '0.00'}</Typography>
               </Grid>
               <Grid item xs={4}>
                 <Typography variant="caption" color="text.secondary">
-                  Різниця
+                  {UA.acts_difference}
                 </Typography>
                 <Typography variant="body2">{dist.difference || '0.00'}</Typography>
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="caption" color="text.secondary">
-                  Споживання
+                  {UA.acts_total_consumption}
                 </Typography>
                 <Typography variant="body2" fontWeight="bold">
                   {dist.consumed_energy || '0.00'}
@@ -167,7 +155,7 @@ const MobileReadingCard = ({ reading, isWater, isGas, theme }) => {
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="caption" color="text.secondary">
-                  Вартість (грн)
+                  {UA.acts_cost}
                 </Typography>
                 <Typography variant="body2" fontWeight="bold" color="primary">
                   {dist.total_cost || dist.cost || '0.00'}
@@ -185,7 +173,7 @@ const MobileReadingCard = ({ reading, isWater, isGas, theme }) => {
 const ActsTable = () => {
   const { meterReadings, loading, error, fetchReadings, getReadingsSummary } = useMeterReadings();
   const [generating, setGenerating] = useState(false);
-  const [selectedResource, setSelectedResource] = useState('Електроенергія');
+  const [selectedResource, setSelectedResource] = useState(RESOURCE_TYPES.electricity);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [summary, setSummary] = useState(null);
   const theme = useTheme();
@@ -195,12 +183,7 @@ const ActsTable = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actOptions, setActOptions] = useState({
     period: new Date().toISOString().split('T')[0],
-    organization: 'ТОВ «Про Тек Вікна Україна»',
-    executorName: 'Бенько І. Г.',
-    executorTitle: 'інж.-енергетик',
-    tenantCompany: 'ТОВ «ГалФрост»',
-    tenantRepresentative: 'Ситнік І.Ю.',
-    address: 'Львівська обл., с. Зимна Вода, вул. Яворівська, 30',
+    ...DEFAULT_ACT_OPTIONS,
   });
 
   useEffect(() => {
@@ -229,7 +212,7 @@ const ActsTable = () => {
         id: reading.id,
         rawReading: reading,
         meterNumber: meterInfo?.serial_number || 'N/A',
-        installationPlace: locationInfo?.name || 'Невідома локація',
+        installationPlace: locationInfo?.name || UA.status_unknown_location,
         address: locationInfo?.address || '',
         purpose: energyInfo?.name || 'N/A',
         prevValue: prevValue,
@@ -250,15 +233,15 @@ const ActsTable = () => {
         const purpose = (r.purpose || '').toLowerCase();
         const resource = selectedResource.toLowerCase();
 
-        if (resource === 'вода (всі)') {
+        if (resource === RESOURCE_TYPES.waterAll.toLowerCase()) {
           return purpose.includes('вода');
         }
 
-        if (resource === 'холодна вода') {
+        if (resource === RESOURCE_TYPES.waterCold.toLowerCase()) {
           return purpose.includes('холод');
         }
 
-        if (resource === 'гаряча вода') {
+        if (resource === RESOURCE_TYPES.waterHot.toLowerCase()) {
           return purpose.includes('гаряч');
         }
 
@@ -311,7 +294,7 @@ const ActsTable = () => {
 
   const handleGenerateAct = async () => {
     if (filteredReadings.length === 0) {
-      alert('Немає даних для генерації акту');
+      alert(UA.acts_no_data);
       return;
     }
 
@@ -319,21 +302,28 @@ const ActsTable = () => {
       setGenerating(true);
       await generateConsumptionAct(filteredReadings, selectedResource, actOptions);
       setDialogOpen(false);
-      alert('✅ Акт успішно згенеровано!');
+      alert(`✅ ${UA.acts_success}`);
     } catch (err) {
-      console.error('Помилка при генерації акту:', err);
-      alert('❌ Помилка при генерації акту: ' + (err?.message || err));
+      alert(`❌ ${UA.acts_error}: ${err?.message || err}`);
     } finally {
       setGenerating(false);
     }
   };
 
-  const isWater = ['вода (всі)', 'холодна вода', 'гаряча вода'].includes(selectedResource.toLowerCase());
-  const isGas = selectedResource.toLowerCase() === 'газ';
+  const isWater = WATER_RESOURCES.includes(selectedResource.toLowerCase());
+  const isGas = selectedResource.toLowerCase() === RESOURCE_TYPES.gas.toLowerCase();
 
-  let consumptionLabel = 'Спожита електроенергія (кВт·год)';
-  if (isWater) consumptionLabel = 'Спожита вода, куб. м.';
-  if (isGas) consumptionLabel = 'Спожита теплова енергія, Гкал';
+  let consumptionLabel = CONSUMPTION_LABELS.electricity;
+  if (isWater) consumptionLabel = CONSUMPTION_LABELS.water;
+  if (isGas) consumptionLabel = CONSUMPTION_LABELS.gas;
+
+  const resourceButtons = [
+    RESOURCE_TYPES.electricity,
+    RESOURCE_TYPES.waterAll,
+    RESOURCE_TYPES.waterCold,
+    RESOURCE_TYPES.waterHot,
+    RESOURCE_TYPES.gas,
+  ];
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2 } }}>
@@ -344,9 +334,9 @@ const ActsTable = () => {
         spacing={2}
         mb={2}
       >
-        <Typography variant={isMobile ? 'h5' : 'h4'}>Акти споживання</Typography>
+        <Typography variant={isMobile ? 'h5' : 'h4'}>{UA.acts_title}</Typography>
         <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-end', sm: 'flex-start' }}>
-          <Tooltip title="Оновити">
+          <Tooltip title={UA.acts_refresh_tooltip}>
             <IconButton onClick={fetchReadings} disabled={loading}>
               <RefreshIcon />
             </IconButton>
@@ -358,7 +348,7 @@ const ActsTable = () => {
             onClick={() => setDialogOpen(true)}
             size={isMobile ? 'small' : 'medium'}
           >
-            {isMobile ? 'Акт' : generating ? 'Генерується...' : 'Згенерувати акт'}
+            {isMobile ? UA.acts_short : generating ? UA.acts_generating : UA.acts_generate}
           </Button>
         </Stack>
       </Stack>
@@ -366,7 +356,7 @@ const ActsTable = () => {
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
         <Box sx={{ overflowX: 'auto', pb: 1 }}>
           <Stack direction="row" spacing={1} sx={{ minWidth: 'max-content' }}>
-            {['Електроенергія', 'Вода (всі)', 'Холодна вода', 'Гаряча вода', 'Газ'].map((resource) => (
+            {resourceButtons.map((resource) => (
               <Button
                 key={resource}
                 variant={selectedResource === resource ? 'contained' : 'outlined'}
@@ -380,15 +370,15 @@ const ActsTable = () => {
         </Box>
 
         <FormControl sx={{ minWidth: { xs: '100%', sm: 120 } }} size="small">
-          <InputLabel id="month-select-label">Місяць</InputLabel>
+          <InputLabel id="month-select-label">{UA.acts_month}</InputLabel>
           <Select
             labelId="month-select-label"
             value={selectedMonth}
-            label="Місяць"
+            label={UA.acts_month}
             onChange={(e) => setSelectedMonth(e.target.value)}
           >
-            <MenuItem value="">Всі</MenuItem>
-            {monthLabels.map((month) => (
+            <MenuItem value="">{UA.common_all}</MenuItem>
+            {MONTHS.map((month) => (
               <MenuItem key={month.value} value={month.value}>
                 {month.label}
               </MenuItem>
@@ -405,7 +395,7 @@ const ActsTable = () => {
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-          <Typography>⏳ Завантаження...</Typography>
+          <Typography>⏳ {UA.common_loading}</Typography>
         </Box>
       ) : isMobile ? (
         <Box>
@@ -415,7 +405,7 @@ const ActsTable = () => {
             ))
           ) : (
             <Paper sx={{ p: 3, textAlign: 'center' }}>
-              <Typography color="text.secondary">Дані відсутні за обраними фільтрами</Typography>
+              <Typography color="text.secondary">{UA.acts_no_data_filters}</Typography>
             </Paper>
           )}
         </Box>
@@ -425,38 +415,38 @@ const ActsTable = () => {
             <TableHead>
               <TableRow>
                 <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold', minWidth: 100 }}>
-                  № лічильника
+                  {UA.acts_meter_number}
                 </TableCell>
                 <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold', minWidth: 150 }}>
-                  Призначення обліку
+                  {UA.acts_installation_place}
                 </TableCell>
                 <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold', minWidth: 120 }}>
-                  Тип ресурсу
+                  {UA.acts_resource_type}
                 </TableCell>
                 {!isWater && !isGas && (
                   <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold', minWidth: 80 }}>
-                    Категорія
+                    {UA.acts_category}
                   </TableCell>
                 )}
                 <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold', minWidth: 60 }}>
-                  Коеф.
+                  {UA.acts_coefficient}
                 </TableCell>
                 <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold', minWidth: 80 }}>
-                  % площі
+                  {UA.acts_area_percent}
                 </TableCell>
                 <TableCell colSpan={5} align="center" sx={{ fontWeight: 'bold', borderBottom: 0 }}>
-                  Показники та розрахунок
+                  {UA.acts_indicators}
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell align="right" sx={{ fontWeight: 'bold', minWidth: 90 }}>
-                  Попередні
+                  {UA.acts_previous}
                 </TableCell>
                 <TableCell align="right" sx={{ fontWeight: 'bold', minWidth: 90 }}>
-                  Поточні
+                  {UA.acts_current}
                 </TableCell>
                 <TableCell align="right" sx={{ fontWeight: 'bold', minWidth: 80 }}>
-                  Різниця
+                  {UA.acts_difference}
                 </TableCell>
                 <TableCell align="right" sx={{ fontWeight: 'bold', minWidth: 120 }}>
                   {consumptionLabel}
@@ -465,7 +455,7 @@ const ActsTable = () => {
                   align="right"
                   sx={{ fontWeight: 'bold', bgcolor: theme.palette.action.hover, minWidth: 100 }}
                 >
-                  Вартість (грн)
+                  {UA.acts_cost}
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -504,10 +494,10 @@ const ActsTable = () => {
                       {!isWater && !isGas && (
                         <TableCell align="center">
                           {dist.category === 'General' ? (
-                            '—'
+                            UA.common_empty_dash
                           ) : (
                             <Chip
-                              label={categoryLabels[dist.category] || dist.category}
+                              label={CATEGORY_LABELS_SHORT[dist.category] || dist.category}
                               size="small"
                               sx={{
                                 backgroundColor: 'transparent',
@@ -541,7 +531,7 @@ const ActsTable = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={11} align="center">
-                    Дані відсутні за обраними фільтрами
+                    {UA.acts_no_data_filters}
                   </TableCell>
                 </TableRow>
               )}
@@ -552,81 +542,81 @@ const ActsTable = () => {
 
       {/* Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth fullScreen={isMobile}>
-        <DialogTitle sx={{ bgcolor: '#f5f5f5', fontWeight: 'bold' }}>📄 Налаштування акту споживання</DialogTitle>
+        <DialogTitle sx={{ bgcolor: '#f5f5f5', fontWeight: 'bold' }}>📄 {UA.acts_settings_title}</DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
           <Stack spacing={2.5}>
             <TextField
-              label="Період (місяць)"
+              label={UA.acts_period}
               type="month"
               value={actOptions.period.substring(0, 7)}
               onChange={(e) => setActOptions({ ...actOptions, period: e.target.value + '-01' })}
               InputLabelProps={{ shrink: true }}
               fullWidth
-              helperText="Виберіть місяць для акту"
+              helperText={UA.acts_period_help}
             />
             <TextField
-              label="Організація (власник)"
+              label={UA.acts_organization}
               value={actOptions.organization}
               onChange={(e) => setActOptions({ ...actOptions, organization: e.target.value })}
               fullWidth
-              placeholder="ТОВ «Про Тек Вікна Україна»"
+              placeholder={DEFAULT_ACT_OPTIONS.organization}
             />
             <TextField
-              label="Компанія орендаря"
+              label={UA.acts_tenant_company}
               value={actOptions.tenantCompany}
               onChange={(e) => setActOptions({ ...actOptions, tenantCompany: e.target.value })}
               fullWidth
-              placeholder="ТОВ «ГалФрост»"
+              placeholder={DEFAULT_ACT_OPTIONS.tenantCompany}
             />
             <TextField
-              label="Адреса об'єкту"
+              label={UA.acts_address}
               value={actOptions.address}
               onChange={(e) => setActOptions({ ...actOptions, address: e.target.value })}
               fullWidth
               multiline
               rows={2}
-              placeholder="Львівська обл., с. Зимна Вода, вул. Яворівська, 30"
+              placeholder={DEFAULT_ACT_OPTIONS.address}
             />
             <TextField
-              label="Посада виконавця"
+              label={UA.acts_executor_title}
               value={actOptions.executorTitle}
               onChange={(e) => setActOptions({ ...actOptions, executorTitle: e.target.value })}
               fullWidth
-              placeholder="інж.-енергетик"
+              placeholder={DEFAULT_ACT_OPTIONS.executorTitle}
             />
             <TextField
-              label="ПІБ виконавця"
+              label={UA.acts_executor_name}
               value={actOptions.executorName}
               onChange={(e) => setActOptions({ ...actOptions, executorName: e.target.value })}
               fullWidth
-              placeholder="Бенько І. Г."
+              placeholder={DEFAULT_ACT_OPTIONS.executorName}
             />
             <TextField
-              label="Представник орендаря"
+              label={UA.acts_tenant_representative}
               value={actOptions.tenantRepresentative}
               onChange={(e) => setActOptions({ ...actOptions, tenantRepresentative: e.target.value })}
               fullWidth
-              placeholder="Ситнік І.Ю."
+              placeholder={DEFAULT_ACT_OPTIONS.tenantRepresentative}
             />
             <Box sx={{ bgcolor: '#f0f7ff', p: 2, borderRadius: 1, border: '1px solid #2196f3' }}>
               <Typography variant="body2" color="primary" gutterBottom>
-                📊 Інформація про звіт:
+                📊 {UA.acts_report_info}:
               </Typography>
               <Typography variant="body2">
-                • Ресурс: <strong>{selectedResource}</strong>
+                • {UA.acts_resource}: <strong>{selectedResource}</strong>
               </Typography>
               <Typography variant="body2">
-                • Кількість записів: <strong>{filteredReadings.length}</strong>
+                • {UA.acts_records_count}: <strong>{filteredReadings.length}</strong>
               </Typography>
               <Typography variant="body2">
-                • Формат: <strong>Excel (.xlsx)</strong>
+                • {UA.acts_format}: <strong>{UA.acts_format_excel}</strong>
               </Typography>
             </Box>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2, bgcolor: '#fafafa' }}>
           <Button onClick={() => setDialogOpen(false)} color="inherit">
-            Скасувати
+            {UA.common_cancel}
           </Button>
           <Button
             onClick={handleGenerateAct}
@@ -635,7 +625,7 @@ const ActsTable = () => {
             startIcon={<FileDownloadIcon />}
             sx={{ minWidth: { xs: 100, sm: 150 } }}
           >
-            {generating ? 'Генерується...' : 'Згенерувати'}
+            {generating ? UA.acts_generating : UA.acts_generate}
           </Button>
         </DialogActions>
       </Dialog>
@@ -643,11 +633,11 @@ const ActsTable = () => {
       {/* Summary */}
       <Box mt={3} p={{ xs: 1.5, sm: 2 }} component={Paper}>
         <Typography variant={isMobile ? 'subtitle1' : 'h6'} gutterBottom>
-          Зведена інформація
+          {UA.acts_summary}
         </Typography>
         <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-          Фільтр: {selectedResource}
-          {selectedMonth && ` | Місяць: ${monthLabels.find((m) => m.value === selectedMonth)?.label}`}
+          {UA.filter_resource_type}: {selectedResource}
+          {selectedMonth && ` | ${UA.acts_month}: ${MONTHS.find((m) => m.value === selectedMonth)?.label}`}
         </Typography>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 4 }} mb={2}>
@@ -655,13 +645,13 @@ const ActsTable = () => {
             <BarChartOutlinedIcon
               sx={{ verticalAlign: 'middle', color: theme.palette.primary.main, mr: 0.5, fontSize: isMobile ? 18 : 20 }}
             />
-            Всього записів: <strong>{filteredReadings?.length || 0}</strong>
+            {UA.acts_total_records}: <strong>{filteredReadings?.length || 0}</strong>
           </Typography>
           <Typography variant="body2">
             <BoltOutlinedIcon
               sx={{ verticalAlign: 'middle', color: theme.palette.primary.main, mr: 0.5, fontSize: isMobile ? 18 : 20 }}
             />
-            Загальне споживання: <strong>{categorySummary.totalConsumption.toFixed(2)}</strong>
+            {UA.acts_total_consumption}: <strong>{categorySummary.totalConsumption.toFixed(2)}</strong>
           </Typography>
         </Stack>
 
@@ -670,7 +660,7 @@ const ActsTable = () => {
             <PaymentIcon
               sx={{ verticalAlign: 'middle', color: theme.palette.primary.main, mr: 0.5, fontSize: isMobile ? 18 : 20 }}
             />
-            Загальна вартість по категоріях:
+            {UA.acts_total_cost_by_category}:
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 4 }} mt={1}>
             {Object.keys(categorySummary.categories).map((cat) => {
@@ -678,7 +668,7 @@ const ActsTable = () => {
               if (cost > 0) {
                 return (
                   <Typography key={cat} component="div" variant="body2">
-                    <Chip label={categoryLabels[cat]} size="small" color="primary" sx={{ mr: 0.5 }} />:
+                    <Chip label={CATEGORY_LABELS_SHORT[cat]} size="small" color="primary" sx={{ mr: 0.5 }} />:
                     <strong> {cost.toFixed(2)}</strong>
                   </Typography>
                 );
@@ -686,7 +676,7 @@ const ActsTable = () => {
               return null;
             })}
             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-              Разом: {categorySummary.totalCost.toFixed(2)}
+              {UA.acts_total}: {categorySummary.totalCost.toFixed(2)}
             </Typography>
           </Stack>
         </Box>

@@ -26,7 +26,7 @@ import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 import { UA } from '../../utils/uaDictionary';
-import { BREAKPOINTS, SIZES, FORM_FIELDS } from '../../constants';
+import { BREAKPOINTS, FORM_FIELDS } from '../../constants';
 
 const LocationsTable = ({
   locations,

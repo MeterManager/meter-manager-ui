@@ -73,7 +73,8 @@ const MetersTable = ({
     removeMeter(meterId);
   };
 
-  const getLocationName = (locationId) => locations.find((l) => l.id === locationId)?.name || UA.status_unknown_location;
+  const getLocationName = (locationId) =>
+    locations.find((l) => l.id === locationId)?.name || UA.status_unknown_location;
   const getResourceName = (resourceId) =>
     energyResourceTypes.find((rt) => rt.id === resourceId)?.name || UA.status_unknown_resource;
 
@@ -96,9 +97,7 @@ const MetersTable = ({
     const isRowLoading = loadingMeterId === meter.id;
 
     return (
-      <Card
-        sx={theme.mixins.card}
-      >
+      <Card sx={theme.mixins.card}>
         <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
             <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
@@ -181,12 +180,7 @@ const MetersTable = ({
             mb: 2,
           }}
         >
-          <Button
-            variant="contained"
-            onClick={onAdd}
-            sx={theme.mixins.buttonPrimary}
-            disabled={isLoading}
-          >
+          <Button variant="contained" onClick={onAdd} sx={theme.mixins.buttonPrimary} disabled={isLoading}>
             {UA.meters_add}
           </Button>
 
@@ -207,9 +201,17 @@ const MetersTable = ({
             alignItems: 'center',
           }}
         >
-          <FormControl size={FORM_FIELDS.select.size} sx={{ minWidth: FORM_FIELDS.select.minWidth, flexGrow: 1 }} disabled={isLoading}>
+          <FormControl
+            size={FORM_FIELDS.select.size}
+            sx={{ minWidth: FORM_FIELDS.select.minWidth, flexGrow: 1 }}
+            disabled={isLoading}
+          >
             <InputLabel>{UA.meters_location}</InputLabel>
-            <Select value={selectedLocation} label={UA.meters_location} onChange={(e) => setSelectedLocation(e.target.value)}>
+            <Select
+              value={selectedLocation}
+              label={UA.meters_location}
+              onChange={(e) => setSelectedLocation(e.target.value)}
+            >
               <MenuItem value="">
                 <em>{UA.filter_all_locations}</em>
               </MenuItem>
@@ -223,7 +225,11 @@ const MetersTable = ({
             </Select>
           </FormControl>
 
-          <FormControl size={FORM_FIELDS.select.size} sx={{ minWidth: FORM_FIELDS.select.minWidth, flexGrow: 1 }} disabled={isLoading}>
+          <FormControl
+            size={FORM_FIELDS.select.size}
+            sx={{ minWidth: FORM_FIELDS.select.minWidth, flexGrow: 1 }}
+            disabled={isLoading}
+          >
             <InputLabel>{UA.meters_resource_type}</InputLabel>
             <Select
               value={selectedResourceType}
@@ -272,11 +278,19 @@ const MetersTable = ({
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell sx={{ width: TABLE_COLUMNS.meters.serialNumber, fontWeight: 600 }}>{UA.meters_serial_number}</TableCell>
-                <TableCell sx={{ width: TABLE_COLUMNS.meters.location, fontWeight: 600 }}>{UA.meters_location}</TableCell>
-                <TableCell sx={{ width: TABLE_COLUMNS.meters.resourceType, fontWeight: 600 }}>{UA.meters_resource_type}</TableCell>
+                <TableCell sx={{ width: TABLE_COLUMNS.meters.serialNumber, fontWeight: 600 }}>
+                  {UA.meters_serial_number}
+                </TableCell>
+                <TableCell sx={{ width: TABLE_COLUMNS.meters.location, fontWeight: 600 }}>
+                  {UA.meters_location}
+                </TableCell>
+                <TableCell sx={{ width: TABLE_COLUMNS.meters.resourceType, fontWeight: 600 }}>
+                  {UA.meters_resource_type}
+                </TableCell>
                 <TableCell sx={{ width: TABLE_COLUMNS.meters.status, fontWeight: 600 }}>{UA.meters_status}</TableCell>
-                <TableCell sx={{ width: TABLE_COLUMNS.meters.actions, fontWeight: 600, textAlign: 'center' }}>{UA.meters_actions}</TableCell>
+                <TableCell sx={{ width: TABLE_COLUMNS.meters.actions, fontWeight: 600, textAlign: 'center' }}>
+                  {UA.meters_actions}
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

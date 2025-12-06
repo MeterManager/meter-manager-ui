@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert, CircularProgress } from '@mui/material';
+import {
+  Paper,
+  Box,
+  Typography,
+  Collapse,
+  IconButton,
+  Divider,
+  Snackbar,
+  Alert,
+  CircularProgress,
+} from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import TariffsTable from '../tariffs/TariffsTable';
 import TariffForm from '../tariffs/TariffForm';
@@ -25,10 +35,10 @@ const TariffsSection = ({ initialExpanded = true }) => {
     addTariff,
     editTariff,
     removeTariff,
-    loading: tariffsLoading, 
+    loading: tariffsLoading,
     isActionLoading,
     error,
-    setError
+    setError,
   } = useTariffs();
 
   const { locations, loading: locationsLoading, error: locationsError } = useLocations();
@@ -41,10 +51,9 @@ const TariffsSection = ({ initialExpanded = true }) => {
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
 
   const handleServiceError = (err, defaultMessage = null) => {
-      console.error("Tariff Service Action Failed:", err);
-      const userMessage = translateErrorMessage(err.message || defaultMessage || UA.error_action_default);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
-      setError(userMessage); 
+    const userMessage = translateErrorMessage(err.message || defaultMessage || UA.error_action_default);
+    setSnackbar({ open: true, message: userMessage, severity: 'error' });
+    setError(userMessage);
   };
 
   const handleToggle = () => setExpanded((prev) => !prev);
@@ -106,29 +115,30 @@ const TariffsSection = ({ initialExpanded = true }) => {
   const handleCloseSnackbar = () => setSnackbar({ open: false, message: '', severity: 'success' });
 
   const isDataLoading = tariffsLoading || locationsLoading || typesLoading;
-  
+
   if (isDataLoading && tariffs.length === 0 && !formOpen) return <CircularProgress />;
   if (locationsError) return <Typography color="error">{UA.locations_load_error}</Typography>;
   if (typesError) return <Typography color="error">{UA.error_load_unknown}</Typography>;
 
-  const locationsMap = locations?.reduce((acc, loc) => {
-    acc[loc.id] = loc.name;
-    return acc;
-  }, {}) || {};
+  const locationsMap =
+    locations?.reduce((acc, loc) => {
+      acc[loc.id] = loc.name;
+      return acc;
+    }, {}) || {};
 
-  const resourceTypesMap = resourceTypes?.reduce((acc, rt) => {
-    acc[rt.id] = rt.name;
-    return acc;
-  }, {}) || {};
+  const resourceTypesMap =
+    resourceTypes?.reduce((acc, rt) => {
+      acc[rt.id] = rt.name;
+      return acc;
+    }, {}) || {};
 
   return (
     <>
       <Paper sx={theme.mixins.sectionPaper} elevation={DEFAULTS.paperElevation}>
-        <Box
-          sx={theme.mixins.sectionHeader}
-          onClick={handleToggle}
-        >
-          <Typography variant="h5">{UA.tariffs_title} ({tariffs.length})</Typography>
+        <Box sx={theme.mixins.sectionHeader} onClick={handleToggle}>
+          <Typography variant="h5">
+            {UA.tariffs_title} ({tariffs.length})
+          </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
 
@@ -164,8 +174,8 @@ const TariffsSection = ({ initialExpanded = true }) => {
         onSubmit={handleFormSubmit}
         initialData={editingTariff || {}}
         error={error}
-        locations={locations.filter(l => l.isActive)}
-        resourceTypes={resourceTypes.filter(rt => rt.isActive)}
+        locations={locations.filter((l) => l.isActive)}
+        resourceTypes={resourceTypes.filter((rt) => rt.isActive)}
         isLoading={isActionLoading}
       />
 
@@ -179,7 +189,12 @@ const TariffsSection = ({ initialExpanded = true }) => {
         isLoading={isActionLoading}
       />
 
-      <Snackbar open={snackbar.open} autoHideDuration={DEFAULTS.snackbarDuration} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={DEFAULTS.snackbarDuration}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>

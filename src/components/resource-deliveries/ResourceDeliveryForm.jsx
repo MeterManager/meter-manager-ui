@@ -64,7 +64,7 @@ const ResourceDeliveryForm = ({
     if (name === 'quantity' || name === 'pricePerUnit') {
       const trimmed = String(value).trim();
       if (!trimmed) {
-        errorMsg = (name === 'quantity' ? UA.deliveries_quantity_required : UA.deliveries_price_required);
+        errorMsg = name === 'quantity' ? UA.deliveries_quantity_required : UA.deliveries_price_required;
       } else {
         const num = parseFloat(trimmed);
         if (isNaN(num) || num <= 0) errorMsg = UA.deliveries_positive_number;
@@ -112,9 +112,7 @@ const ResourceDeliveryForm = ({
       id: formData.id,
     };
 
-    try {
-      await onSubmit(submitData);
-    } catch (err) {}
+    await onSubmit(submitData);
   };
 
   const handleClose = () => {
@@ -142,9 +140,7 @@ const ResourceDeliveryForm = ({
       }}
     >
       <DialogTitle sx={theme.mixins.dialogTitle}>
-        <Box component="span">
-          {initialData.id ? UA.deliveries_edit : UA.deliveries_add}
-        </Box>
+        <Box component="span">{initialData.id ? UA.deliveries_edit : UA.deliveries_add}</Box>
         <IconButton
           onClick={handleClose}
           size="small"
@@ -158,11 +154,7 @@ const ResourceDeliveryForm = ({
           <Close />
         </IconButton>
       </DialogTitle>
-           {' '}
-      <DialogContent
-        sx={theme.mixins.dialogContent}
-      >
-               {' '}
+      <DialogContent sx={theme.mixins.dialogContent}>
         {error && (
           <Alert
             severity="error"
@@ -171,10 +163,9 @@ const ResourceDeliveryForm = ({
               fontSize: isMobile ? '0.875rem' : '1rem',
             }}
           >
-                        {error}         {' '}
+            {error}
           </Alert>
         )}
-               {' '}
         <TextField
           select
           name="locationId"
@@ -188,19 +179,19 @@ const ResourceDeliveryForm = ({
           helperText={formErrors.locationId || ' '}
           disabled={isLoading}
         >
-                    <MenuItem value="">{UA.common_select} {UA.deliveries_location.toLowerCase()}</MenuItem>         {' '}
+          <MenuItem value="">
+            {UA.common_select} {UA.deliveries_location.toLowerCase()}
+          </MenuItem>
           {locations.length === 0 ? (
             <MenuItem disabled>{UA.error_no_locations_available}</MenuItem>
           ) : (
             locations.map((loc) => (
               <MenuItem key={loc.id} value={loc.id}>
-                                {loc.name}             {' '}
+                {loc.name}
               </MenuItem>
             ))
           )}
-                 {' '}
         </TextField>
-               {' '}
         <TextField
           select
           name="resourceTypeId"
@@ -214,19 +205,19 @@ const ResourceDeliveryForm = ({
           helperText={formErrors.resourceTypeId || ' '}
           disabled={isLoading}
         >
-                    <MenuItem value="">{UA.common_select} {UA.deliveries_resource_type.toLowerCase()}</MenuItem>         {' '}
+          <MenuItem value="">
+            {UA.common_select} {UA.deliveries_resource_type.toLowerCase()}
+          </MenuItem>
           {resourceTypes.length === 0 ? (
             <MenuItem disabled>{UA.error_no_resource_types_available}</MenuItem>
           ) : (
             resourceTypes.map((res) => (
               <MenuItem key={res.id} value={res.id}>
-                                {res.name} ({res.unit})              {' '}
+                {res.name} ({res.unit})
               </MenuItem>
             ))
           )}
-                 {' '}
         </TextField>
-               {' '}
         <TextField
           name="quantity"
           label={UA.deliveries_quantity}
@@ -241,7 +232,6 @@ const ResourceDeliveryForm = ({
           inputProps={{ min: 0.01, step: 0.01 }}
           disabled={isLoading}
         />
-               {' '}
         <TextField
           name="unit"
           label={unitPlaceholder}
@@ -254,7 +244,6 @@ const ResourceDeliveryForm = ({
           helperText={formErrors.unit || ' '}
           disabled={isLoading}
         />
-               {' '}
         <TextField
           name="pricePerUnit"
           label={UA.deliveries_price_per_unit}
@@ -269,7 +258,6 @@ const ResourceDeliveryForm = ({
           inputProps={{ min: 0.01, step: 0.01 }}
           disabled={isLoading}
         />
-               {' '}
         <CustomDatePicker
           value={formData.deliveryDate || null}
           onChange={(newValue) => {
@@ -283,7 +271,6 @@ const ResourceDeliveryForm = ({
           sx={{ mb: 2 }}
           disabled={isLoading}
         />
-               {' '}
         <TextField
           name="supplier"
           label={UA.deliveries_supplier}
@@ -294,17 +281,17 @@ const ResourceDeliveryForm = ({
           helperText=" "
           disabled={isLoading}
         />
-             {' '}
       </DialogContent>
-           {' '}
-      <DialogActions
-        sx={theme.mixins.dialogActions}
-      >
-               {' '}
-        <Button variant="outlined" onClick={handleClose} fullWidth={isMobile} disabled={isLoading} sx={{ order: isMobile ? 1 : 0 }}>
-                    {UA.common_cancel}        {' '}
+      <DialogActions sx={theme.mixins.dialogActions}>
+        <Button
+          variant="outlined"
+          onClick={handleClose}
+          fullWidth={isMobile}
+          disabled={isLoading}
+          sx={{ order: isMobile ? 1 : 0 }}
+        >
+          {UA.common_cancel}
         </Button>
-               {' '}
         <Button
           variant="contained"
           onClick={handleSubmit}
@@ -312,11 +299,9 @@ const ResourceDeliveryForm = ({
           sx={{ order: isMobile ? 0 : 1, marginLeft: '0 !important' }}
           disabled={isLoading}
         >
-                    {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Зберегти'}       {' '}
+          {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Зберегти'}
         </Button>
-             {' '}
       </DialogActions>
-         {' '}
     </Dialog>
   );
 };

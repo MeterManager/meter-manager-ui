@@ -26,7 +26,6 @@ const formatISODate = (dateValue) => {
 const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, locations, resourceTypes, isLoading }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(BREAKPOINTS.mobile);
-  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down(BREAKPOINTS.md));
 
   const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
@@ -45,7 +44,7 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
     }
   }, [open, initialData]);
 
-  const validateField = (name, value, currentFormData) => {
+  const validateField = (name, value) => {
     let errorMsg = '';
     const trimmedValue = typeof value === 'string' ? value.trim() : value;
 

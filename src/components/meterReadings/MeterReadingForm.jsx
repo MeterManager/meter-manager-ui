@@ -18,6 +18,7 @@ import useMediaQuery from '../../hooks/useMediaQuery';
 import { createMeterReading, updateMeterReading } from '../../api/meterReadings';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useMeterTenants } from '../../hooks/useMeterTenants';
+import { UA } from '../../utils/uaDictionary';
 
 const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
   const theme = useTheme();
@@ -58,7 +59,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
       try {
         const token = await getToken();
         if (!token) {
-          setError('Не вдалося отримати токен, увійдіть знову.');
+          setError(UA.meterReadings_token_failed);
           setLoadingTenants(false);
           return;
         }
@@ -79,9 +80,8 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
 
         setAvailableLocations(Array.from(uniqueLocationsMap.values()));
         setLoadingTenants(false);
-      } catch (e) {
-        console.error('Error loading meter tenants:', e);
-        setError('Помилка при завантаженні списку лічільників');
+      } catch {
+        setError(UA.meterReadings_load_error);
         setLoadingTenants(false);
       }
     })();
@@ -140,7 +140,8 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
   }, [initialData, allMeterTenants]);
 
   const handleChange = (e) => {
-    let { name, value } = e.target;
+    const { name } = e.target;
+    let value = e.target.value;
     if (name === 'selectedLocationId') {
       const newLocationId = value === '' ? '' : Number(value);
       setSelectedLocationId(newLocationId);
@@ -190,19 +191,19 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
 
     const token = await getToken();
     if (!token) {
-      setError('Токен відсутній. Будь ласка, увійдіть знову.');
+      setError(UA.meterReadings_token_error);
       loginWithRedirect();
       return;
     }
 
     if (!formData.meter_tenant_id || !formData.reading_date || !formData.calculation_method) {
-      setError("Будь ласка, заповніть всі обов'язкові поля.");
+      setError(UA.meterReadings_fill_all_required);
       return;
     }
 
     const hasDistributions = ['CA', 'CP', 'GR'].some((cat) => formData.distributions[cat].current_reading !== '');
     if (!hasDistributions) {
-      setError('Будь ласка, заповніть хоча б одну підкатегорію (CA, CP або GR).');
+      setError(UA.meterReadings_fill_distribution);
       return;
     }
 
@@ -251,8 +252,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
 
       onSuccess?.(response);
     } catch (err) {
-      console.error('Error submitting form:', err);
-      setError(err.message || 'Не вдалося зберегти показники.');
+      setError(err.message || UA.meterReadings_save_error);
     } finally {
       setLoading(false);
     }
@@ -261,9 +261,9 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
   const selectLabelId = 'meter-tenant-select-label';
 
   const categoryLabels = {
-    CA: 'СА (Споживання активної)',
-    CP: 'СР (Споживання реактивної)',
-    GR: 'ГР (Генерація реактивної)',
+    CA: UA.meterReadings_category_ca,
+    CP: UA.meterReadings_category_cp,
+    GR: UA.meterReadings_category_gr,
   };
 
   return (
@@ -283,7 +283,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
           mb: isMobile ? 2 : 3,
         }}
       >
-        Форма подачі показників
+        {UA.meterReadings_form_title}
       </Typography>
 
       {error && (
@@ -299,15 +299,15 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
       ) : (
         <Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 2 }}>
           <FormControl fullWidth required>
-            <InputLabel id="location-select-label">Локація</InputLabel>
+            <InputLabel id="location-select-label">{UA.meterReadings_location}</InputLabel>
             <Select
               labelId="location-select-label"
-              label="Локація"
+              label={UA.meterReadings_location}
               name="selectedLocationId"
               value={selectedLocationId}
               onChange={handleChange}
             >
-              <MenuItem value="">Оберіть локацію</MenuItem>
+              <MenuItem value="">{UA.common_select}</MenuItem>
               {availableLocations.map((loc) => (
                 <MenuItem key={loc.id} value={loc.id}>
                   {loc.name}
@@ -317,15 +317,15 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
           </FormControl>
 
           <FormControl fullWidth required disabled={!selectedLocationId}>
-            <InputLabel id={selectLabelId}>Лічильник (зв'язок з орендарем)</InputLabel>
+            <InputLabel id={selectLabelId}>{UA.meterReadings_meter_tenant}</InputLabel>
             <Select
               labelId={selectLabelId}
-              label="Лічильник (зв'язок з орендарем)"
+              label={UA.meterReadings_meter_tenant}
               name="meter_tenant_id"
               value={formData.meter_tenant_id}
               onChange={handleChange}
             >
-              <MenuItem value="">Оберіть зв'язок (Tenant – Meter)</MenuItem>
+              <MenuItem value="">{UA.meterReadings_select_meter_tenant}</MenuItem>
               {allMeterTenants
                 .filter((mt) => mt.Meter?.location_id === selectedLocationId)
                 .map((mt) => (
@@ -337,7 +337,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
           </FormControl>
 
           <TextField
-            label="Ресурс"
+            label={UA.meterReadings_resource}
             value={selectedResource}
             InputProps={{ readOnly: true }}
             fullWidth
@@ -345,7 +345,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
           />
 
           <TextField
-            label="Дата показника"
+            label={UA.meterReadings_reading_date}
             type="date"
             name="reading_date"
             value={formData.reading_date}
@@ -358,23 +358,23 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
           />
 
           <FormControl fullWidth required>
-            <InputLabel>Метод розрахунку</InputLabel>
+            <InputLabel>{UA.meterReadings_calculation_method}</InputLabel>
             <Select
-              label="Метод розрахунку"
+              label={UA.meterReadings_calculation_method}
               name="calculation_method"
               value={formData.calculation_method}
               onChange={handleChange}
             >
-              <MenuItem value="">Оберіть метод</MenuItem>
-              <MenuItem value="direct">Пряме зняття</MenuItem>
-              <MenuItem value="area_based">За площею</MenuItem>
-              <MenuItem value="mixed">Змішаний</MenuItem>
+              <MenuItem value="">{UA.meterReadings_select_method}</MenuItem>
+              <MenuItem value="direct">{UA.meterReadings_method_direct}</MenuItem>
+              <MenuItem value="area_based">{UA.meterReadings_method_area}</MenuItem>
+              <MenuItem value="mixed">{UA.meterReadings_method_mixed}</MenuItem>
             </Select>
           </FormControl>
 
           {(formData.calculation_method === 'area_based' || formData.calculation_method === 'mixed') && (
             <TextField
-              label="Споживання за площею"
+              label={UA.meterReadings_area_consumption}
               type="number"
               name="area_based_consumption"
               value={formData.area_based_consumption}
@@ -384,7 +384,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
           )}
 
           <TextField
-            label="Розрахунковий коефіцієнт (для всіх категорій)"
+            label={UA.meterReadings_coefficient}
             type="number"
             name="calculation_coefficient"
             value={formData.calculation_coefficient}
@@ -397,7 +397,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
             <>
               <Divider sx={{ my: 2 }}>
                 <Typography variant="subtitle1" color="textSecondary">
-                  Розподіл по підкатегоріях (опціонально)
+                  {UA.meterReadings_distributions}
                 </Typography>
               </Divider>
 
@@ -417,7 +417,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
                       <TextField
-                        label="Поточний показник"
+                        label={UA.meterReadings_current}
                         type="number"
                         value={formData.distributions[category].current_reading}
                         onChange={(e) => handleDistributionChange(category, 'current_reading', e.target.value)}
@@ -428,7 +428,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <TextField
-                        label="Попередній показник"
+                        label={UA.meterReadings_previous}
                         type="number"
                         value={formData.distributions[category].previous_reading}
                         onChange={(e) => handleDistributionChange(category, 'previous_reading', e.target.value)}
@@ -445,7 +445,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
             <>
               <Divider sx={{ my: 2 }}>
                 <Typography variant="subtitle1" color="textSecondary">
-                  Показники
+                  {UA.meterReadings_readings}
                 </Typography>
               </Divider>
 
@@ -460,7 +460,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <TextField
-                      label="Поточний показник"
+                      label={UA.meterReadings_current}
                       type="number"
                       value={formData.distributions.CA.current_reading}
                       onChange={(e) => handleDistributionChange('CA', 'current_reading', e.target.value)}
@@ -471,7 +471,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <TextField
-                      label="Попередній показник"
+                      label={UA.meterReadings_previous}
                       type="number"
                       value={formData.distributions.CA.previous_reading}
                       onChange={(e) => handleDistributionChange('CA', 'previous_reading', e.target.value)}
@@ -486,13 +486,13 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
           )}
 
           <TextField
-            label="Ім'я виконавця"
+            label={UA.meterReadings_executor_name}
             name="executor_name"
             value={formData.executor_name}
             onChange={handleChange}
           />
           <TextField
-            label="Представник орендаря"
+            label={UA.meterReadings_tenant_representative}
             name="tenant_representative"
             value={formData.tenant_representative}
             onChange={handleChange}
@@ -512,10 +512,10 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
             }}
           >
             <Button variant="outlined" onClick={onCancel}>
-              Скасувати
+              {UA.common_cancel}
             </Button>
             <Button type="submit" variant="contained" color="primary" disabled={loading}>
-              {loading ? <CircularProgress size={24} /> : 'Зберегти'}
+              {loading ? <CircularProgress size={24} /> : UA.common_save}
             </Button>
           </Box>
         </Box>

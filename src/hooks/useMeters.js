@@ -64,7 +64,7 @@ export const useMeters = () => {
           serial_number: data.serial_number,
           location_id: data.location_id,
           energy_resource_type_id: data.energy_resource_type_id,
-          is_active: data.isActive ?? true
+          is_active: data.isActive ?? true,
         };
         const tempId = `temp-${Date.now()}`;
         const optimisticMeter = {
@@ -80,7 +80,7 @@ export const useMeters = () => {
         const response = await withToken(metersApi.createMeter, meterData);
 
         await mutateMeters();
-        ['metersTenant', 'locations', 'resourceTypes', 'bills', 'calculations'].forEach(key => mutate(key));
+        ['metersTenant', 'locations', 'resourceTypes', 'bills', 'calculations'].forEach((key) => mutate(key));
 
         return response;
       } catch (error) {
@@ -99,31 +99,32 @@ export const useMeters = () => {
       setIsActionLoading(true);
       try {
         setError(null);
-         const meterData = {
+        const meterData = {
           serial_number: data.serial_number,
           location_id: data.location_id,
           energy_resource_type_id: data.energy_resource_type_id,
-          is_active: data.isActive
+          is_active: data.isActive,
         };
 
-        mutateMeters((currentMeters = []) =>
-          currentMeters.map((meter) =>
-            meter.id === id
-              ? {
-                  ...meter,
-                  ...meterData,
-                  isActive: meterData.is_active,
-                  updated_at: new Date().toISOString(),
-                }
-              : meter
-          ),
+        mutateMeters(
+          (currentMeters = []) =>
+            currentMeters.map((meter) =>
+              meter.id === id
+                ? {
+                    ...meter,
+                    ...meterData,
+                    isActive: meterData.is_active,
+                    updated_at: new Date().toISOString(),
+                  }
+                : meter
+            ),
           false
         );
 
         const response = await withToken(metersApi.updateMeter, id, meterData);
 
         await mutateMeters();
-        ['metersTenant', 'bills', 'calculations'].forEach(key => mutate(key));
+        ['metersTenant', 'bills', 'calculations'].forEach((key) => mutate(key));
 
         return response;
       } catch (error) {
@@ -147,8 +148,9 @@ export const useMeters = () => {
         await withToken(metersApi.deleteMeter, id);
 
         await mutateMeters();
-         ['metersTenant', 'bills', 'payments', 'calculations', 'locations', 'resourceTypes'].forEach(key => mutate(key));
-
+        ['metersTenant', 'bills', 'payments', 'calculations', 'locations', 'resourceTypes'].forEach((key) =>
+          mutate(key)
+        );
       } catch (error) {
         mutateMeters();
         handleError(error, 'Помилка при видаленні лічильника');
@@ -168,24 +170,25 @@ export const useMeters = () => {
       setIsActionLoading(true);
       try {
         setError(null);
-        mutateMeters((currentMeters = []) =>
-          currentMeters.map((m) =>
-            m.id === id
-              ? {
-                  ...m,
-                  isActive: isActive,
-                  is_active: isActive,
-                  updated_at: new Date().toISOString(),
-                }
-              : m
-          ),
+        mutateMeters(
+          (currentMeters = []) =>
+            currentMeters.map((m) =>
+              m.id === id
+                ? {
+                    ...m,
+                    isActive: isActive,
+                    is_active: isActive,
+                    updated_at: new Date().toISOString(),
+                  }
+                : m
+            ),
           false
         );
 
         const response = await withToken(metersApi.updateMeter, id, { is_active: isActive });
 
         await mutateMeters();
-        ['metersTenant', 'bills'].forEach(key => mutate(key));
+        ['metersTenant', 'bills'].forEach((key) => mutate(key));
 
         return response;
       } catch (error) {
@@ -207,10 +210,10 @@ export const useMeters = () => {
     async (id) => {
       try {
         const response = await withToken(metersApi.getMeterDependencies, id);
-         return {
-           active: (response.data?.active_readings > 0 || response.data?.active_assignments > 0),
-           details: response.data
-         };
+        return {
+          active: response.data?.active_readings > 0 || response.data?.active_assignments > 0,
+          details: response.data,
+        };
       } catch (err) {
         handleError(err, 'Помилка при отриманні залежностей лічильника');
         throw err;
@@ -219,16 +222,31 @@ export const useMeters = () => {
     [withToken, handleError]
   );
 
-   const getMetersByLocation = useCallback((locationId) => meters.filter((meter) => meter.location_id === locationId), [meters]);
-   const getMetersByResourceType = useCallback((resourceTypeId) => meters.filter((meter) => meter.energy_resource_type_id === resourceTypeId), [meters]);
+  const getMetersByLocation = useCallback(
+    (locationId) => meters.filter((meter) => meter.location_id === locationId),
+    [meters]
+  );
+  const getMetersByResourceType = useCallback(
+    (resourceTypeId) => meters.filter((meter) => meter.energy_resource_type_id === resourceTypeId),
+    [meters]
+  );
 
-   const getActiveMetersByLocation = useCallback((locationId) => activeMeters.filter((meter) => meter.location_id === locationId), [activeMeters]);
-   const getActiveMetersByResourceType = useCallback((resourceTypeId) => activeMeters.filter((meter) => meter.energy_resource_type_id === resourceTypeId), [activeMeters]);
+  const getActiveMetersByLocation = useCallback(
+    (locationId) => activeMeters.filter((meter) => meter.location_id === locationId),
+    [activeMeters]
+  );
+  const getActiveMetersByResourceType = useCallback(
+    (resourceTypeId) => activeMeters.filter((meter) => meter.energy_resource_type_id === resourceTypeId),
+    [activeMeters]
+  );
 
-   const isAvailableForAssignment = useCallback((meterId) => {
-       const meter = meters.find((m) => m.id === meterId);
-       return meter && meter.isActive
-   }, [meters]);
+  const isAvailableForAssignment = useCallback(
+    (meterId) => {
+      const meter = meters.find((m) => m.id === meterId);
+      return meter && meter.isActive;
+    },
+    [meters]
+  );
 
   return {
     meters,

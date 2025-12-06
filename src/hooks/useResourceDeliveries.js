@@ -53,20 +53,13 @@ export const useResourceDeliveries = () => {
     data: deliveries = [],
     isLoading: deliveriesLoading,
     mutate: mutateDeliveries,
-  } = useSWR(
-    swrKey,
-    async () => withToken(fetchDeliveries),
-    {
-      onError: handleError,
-      revalidateOnFocus: false,
-      dedupingInterval: 5000,
-    }
-  );
+  } = useSWR(swrKey, async () => withToken(fetchDeliveries), {
+    onError: handleError,
+    revalidateOnFocus: false,
+    dedupingInterval: 5000,
+  });
 
-  const {
-    data: locations = [],
-    isLoading: locationsLoading,
-  } = useSWR(
+  const { data: locations = [], isLoading: locationsLoading } = useSWR(
     canRequest ? ['locations'] : null,
     async () => withToken(fetchLocations),
     {
@@ -76,10 +69,7 @@ export const useResourceDeliveries = () => {
     }
   );
 
-  const {
-    data: resourceTypes = [],
-    isLoading: resourceTypesLoading,
-  } = useSWR(
+  const { data: resourceTypes = [], isLoading: resourceTypesLoading } = useSWR(
     canRequest ? ['resourceTypes'] : null,
     async () => withToken(fetchResourceTypes),
     {
@@ -166,10 +156,7 @@ export const useResourceDeliveries = () => {
 
   const fetchFormData = useCallback(async () => {
     try {
-      await Promise.all([
-        mutate('locations'),
-        mutate('resourceTypes'),
-      ]);
+      await Promise.all([mutate('locations'), mutate('resourceTypes')]);
     } catch (err) {
       handleError(err, 'Помилка при завантаженні даних для форми');
     }

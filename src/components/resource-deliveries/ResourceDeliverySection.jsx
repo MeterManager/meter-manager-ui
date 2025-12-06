@@ -6,6 +6,7 @@ import ResourceDeliveryForm from './ResourceDeliveryForm';
 import { useResourceDeliveries } from '../../hooks/useResourceDeliveries';
 import { translateErrorMessage } from '../../utils/translateError';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import { UA } from '../../utils/uaDictionary';
 
 const ResourceDeliverySection = ({ initialExpanded = true }) => {
   const {
@@ -37,8 +38,7 @@ const ResourceDeliverySection = ({ initialExpanded = true }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
 
-  const handleServiceError = (err, defaultMessage = 'Помилка при виконанні дії') => {
-    console.error('Resource Delivery Service Action Failed:', err);
+  const handleServiceError = (err, defaultMessage = 'error_action_default') => {
     const userMessage = translateErrorMessage(err.message || defaultMessage);
     setSnackbar({ open: true, message: userMessage, severity: 'error' });
     setError(userMessage);
@@ -62,15 +62,15 @@ const ResourceDeliverySection = ({ initialExpanded = true }) => {
     try {
       if (editingDelivery?.id) {
         await editDelivery(editingDelivery.id, data);
-        setSnackbar({ open: true, message: 'Поставку успішно оновлено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.deliveries_success_updated, severity: 'success' });
       } else {
         await addDelivery(data);
-        setSnackbar({ open: true, message: 'Поставку успішно додано', severity: 'success' });
+        setSnackbar({ open: true, message: UA.deliveries_success_added, severity: 'success' });
       }
       setFormOpen(false);
       setEditingDelivery(null);
     } catch (err) {
-      handleServiceError(err, 'Помилка при збереженні поставки');
+      handleServiceError(err, 'error_save_delivery');
     }
   };
 
@@ -87,10 +87,10 @@ const ResourceDeliverySection = ({ initialExpanded = true }) => {
   const handleConfirmDelete = async () => {
     try {
       await removeDelivery(confirmDialog.id);
-      setSnackbar({ open: true, message: 'Поставку видалено', severity: 'success' });
+      setSnackbar({ open: true, message: UA.deliveries_success_deleted, severity: 'success' });
       handleCloseConfirmDialog();
     } catch (err) {
-      handleServiceError(err, 'Помилка при видаленні поставки');
+      handleServiceError(err, 'error_delete_delivery');
     }
   };
 
@@ -100,7 +100,7 @@ const ResourceDeliverySection = ({ initialExpanded = true }) => {
 
   const handleCloseSnackbar = () => setSnackbar({ open: false, message: '', severity: 'success' });
 
-  if (loading && deliveries.length === 0 && !formOpen) return <Typography>Завантаження...</Typography>;
+  if (loading && deliveries.length === 0 && !formOpen) return <Typography>{UA.common_loading}</Typography>;
 
   return (
     <>
@@ -116,7 +116,9 @@ const ResourceDeliverySection = ({ initialExpanded = true }) => {
           }}
           onClick={handleToggle}
         >
-          <Typography variant="h5">Поставки ресурсів ({deliveries.length})</Typography>
+          <Typography variant="h5">
+            {UA.deliveries_title} ({deliveries.length})
+          </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
         <Divider />

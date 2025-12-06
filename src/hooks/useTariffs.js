@@ -23,15 +23,11 @@ export const useTariffs = () => {
     data: tariffs = [],
     isLoading: loading,
     mutate: mutateTariffs,
-  } = useSWR(
-    swrKey,
-    async () => withToken(fetcher),
-    {
-      onError: handleError,
-      revalidateOnFocus: false,
-      dedupingInterval: 5000,
-    }
-  );
+  } = useSWR(swrKey, async () => withToken(fetcher), {
+    onError: handleError,
+    revalidateOnFocus: false,
+    dedupingInterval: 5000,
+  });
 
   const activeTariffs = useMemo(() => tariffs.filter((t) => t.isActive), [tariffs]);
   const tariffsByResourceType = useMemo(
@@ -102,7 +98,10 @@ export const useTariffs = () => {
       setIsActionLoading(true);
       try {
         setError(null);
-        mutateTariffs(tariffs.filter((t) => t.id !== id), false);
+        mutateTariffs(
+          tariffs.filter((t) => t.id !== id),
+          false
+        );
         await withToken(tariffApi.deleteTariff, id);
         mutateTariffs();
         ['deliveries', 'resourceDeliveries', 'bills', 'payments', 'calculations', 'meters'].forEach(mutate);

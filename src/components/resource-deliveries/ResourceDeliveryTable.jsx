@@ -1,6 +1,23 @@
 import {
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Box, IconButton, Typography,
-  Card, CardContent, Stack, Tooltip, FormControl, InputLabel, Select, MenuItem,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+  Box,
+  IconButton,
+  Typography,
+  Card,
+  CardContent,
+  Stack,
+  Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
@@ -8,10 +25,11 @@ import SearchField from '../ui/SearchField';
 import CustomDatePicker from '../ui/DatePicker';
 import { useTheme } from '@mui/material/styles';
 import MobileDeliveryCard from './MobileDeliveryCard';
+import { UA } from '../../utils/uaDictionary';
 
 const safeToFixed = (value, decimals = 2) => {
-    const num = Number(value) || 0;
-    return num.toFixed(decimals);
+  const num = Number(value) || 0;
+  return num.toFixed(decimals);
 };
 
 const ResourceDeliveryTable = ({
@@ -40,16 +58,17 @@ const ResourceDeliveryTable = ({
   const getLocationName = (delivery) => {
     if (delivery.locationName) return delivery.locationName;
     const location = locations.find((loc) => loc.id === delivery.location_id);
-    return location ? location.name : 'Невідома локація';
+    return location ? location.name : UA.status_unknown_location;
   };
 
   const getResourceTypeName = (resourceTypeId) => {
     const resourceType = resourceTypes.find((rt) => rt.id === resourceTypeId);
-    return resourceType ? `${resourceType.name} (${resourceType.unit})` : 'Невідомий тип';
+    return resourceType ? `${resourceType.name} (${resourceType.unit})` : UA.status_unknown_resource;
   };
 
   const getTotalCost = (delivery) => {
-    const cost = delivery.total_cost || delivery.totalCost || Number(delivery.quantity) * Number(delivery.price_per_unit) || 0;
+    const cost =
+      delivery.total_cost || delivery.totalCost || Number(delivery.quantity) * Number(delivery.price_per_unit) || 0;
     return cost;
   };
 
@@ -59,17 +78,17 @@ const ResourceDeliveryTable = ({
 
   const filteredDeliveries = deliveries.filter((d) => {
     const deliveryDate = new Date(d.delivery_date);
-    deliveryDate.setHours(0, 0, 0, 0); 
+    deliveryDate.setHours(0, 0, 0, 0);
 
     const dateFrom = dateFromFilter ? new Date(dateFromFilter) : null;
     if (dateFrom) dateFrom.setHours(0, 0, 0, 0);
-    
+
     const dateTo = dateToFilter ? new Date(dateToFilter) : null;
     if (dateTo) dateTo.setHours(0, 0, 0, 0);
 
     const locationMatch = locationFilter === '' || d.location_id === Number(locationFilter);
     const resourceTypeMatch = resourceTypeFilter === '' || d.energy_resource_type_id === Number(resourceTypeFilter);
-    
+
     const dateFromMatch = !dateFrom || deliveryDate.getTime() >= dateFrom.getTime();
     const dateToMatch = !dateTo || deliveryDate.getTime() <= dateTo.getTime();
 
@@ -77,8 +96,12 @@ const ResourceDeliveryTable = ({
     const resourceName = getResourceTypeName(d.energy_resource_type_id).toLowerCase();
     const supplier = (d.supplier || '').toLowerCase();
     const searchLower = search.toLowerCase();
-    
-    const searchMatch = searchLower === '' || resourceName.includes(searchLower) || locationName.includes(searchLower) || supplier.includes(searchLower);
+
+    const searchMatch =
+      searchLower === '' ||
+      resourceName.includes(searchLower) ||
+      locationName.includes(searchLower) ||
+      supplier.includes(searchLower);
 
     return locationMatch && resourceTypeMatch && dateFromMatch && dateToMatch && searchMatch;
   });
@@ -114,14 +137,14 @@ const ResourceDeliveryTable = ({
             }}
             disabled={isLoading}
           >
-            Додати поставку
+            {UA.deliveries_add}
           </Button>
 
           <SearchField
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             fullWidth={isMobile}
-            placeholder="Пошук..."
+            placeholder={UA.common_search}
             sx={{
               width: isMobile ? '100%' : '350px',
               maxWidth: isMobile ? '100%' : '400px',
@@ -140,13 +163,13 @@ const ResourceDeliveryTable = ({
           }}
         >
           <FormControl fullWidth size="small" disabled={isLoading}>
-            <InputLabel>Локація</InputLabel>
+            <InputLabel>{UA.deliveries_location}</InputLabel>
             <Select
               value={locationFilter}
               onChange={(e) => setLocationFilter(e.target.value)}
-              label="Локація"
+              label={UA.deliveries_location}
             >
-              <MenuItem value="">— Всі локації —</MenuItem>
+              <MenuItem value="">{UA.deliveries_all_locations}</MenuItem>
               {locations.map((loc) => (
                 <MenuItem key={loc.id} value={loc.id}>
                   {loc.name}
@@ -156,13 +179,13 @@ const ResourceDeliveryTable = ({
           </FormControl>
 
           <FormControl fullWidth size="small" disabled={isLoading}>
-            <InputLabel>Тип ресурсу</InputLabel>
+            <InputLabel>{UA.deliveries_resource_type}</InputLabel>
             <Select
               value={resourceTypeFilter}
               onChange={(e) => setResourceTypeFilter(e.target.value)}
-              label="Тип ресурсу"
+              label={UA.deliveries_resource_type}
             >
-              <MenuItem value="">— Всі ресурси —</MenuItem>
+              <MenuItem value="">{UA.deliveries_all_resources}</MenuItem>
               {resourceTypes.map((res) => (
                 <MenuItem key={res.id} value={res.id}>
                   {res.name}
@@ -172,7 +195,7 @@ const ResourceDeliveryTable = ({
           </FormControl>
 
           <CustomDatePicker
-            label="Дата з"
+            label={UA.deliveries_date_from}
             value={dateFromFilter}
             onChange={(newValue) => setDateFromFilter(newValue)}
             disabled={isLoading}
@@ -180,7 +203,7 @@ const ResourceDeliveryTable = ({
           />
 
           <CustomDatePicker
-            label="Дата по"
+            label={UA.deliveries_date_to}
             value={dateToFilter}
             onChange={(newValue) => setDateToFilter(newValue)}
             disabled={isLoading}
@@ -191,7 +214,7 @@ const ResourceDeliveryTable = ({
 
       {(search || locationFilter || resourceTypeFilter || dateFromFilter || dateToFilter) && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, mt: 0, fontWeight: 500 }}>
-          Знайдено: {filteredDeliveries.length} з {deliveries.length}
+          {UA.common_found}: {filteredDeliveries.length} {UA.common_of} {deliveries.length}
         </Typography>
       )}
 
@@ -215,7 +238,7 @@ const ResourceDeliveryTable = ({
             <Card sx={{ border: `1px solid ${theme.palette.grey[300]}`, borderRadius: 1, boxShadow: 'none' }}>
               <CardContent sx={{ py: 4, textAlign: 'center' }}>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                  За вашими фільтрами нічого не знайдено
+                  {UA.common_no_results}
                 </Typography>
               </CardContent>
             </Card>
@@ -226,15 +249,23 @@ const ResourceDeliveryTable = ({
           <Table sx={{ minWidth: 1100 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell sx={{ width: isTablet ? '12%' : '15%', fontWeight: 600 }}>Локація</TableCell>
-                <TableCell sx={{ width: isTablet ? '12%' : '15%', fontWeight: 600 }}>Ресурс</TableCell>
-                <TableCell sx={{ width: '10%', fontWeight: 600 }}>Кількість</TableCell>
-                <TableCell sx={{ width: isTablet ? '8%' : '10%', fontWeight: 600 }}>Одиниця</TableCell>
-                <TableCell sx={{ width: isTablet ? '12%' : '15%', fontWeight: 600 }}>Дата поставки</TableCell>
-                <TableCell sx={{ width: '11%', fontWeight: 600 }}>Ціна за од.</TableCell>
-                <TableCell sx={{ width: '12%', fontWeight: 600 }}>Сума</TableCell>
-                <TableCell sx={{ width: '10%', fontWeight: 600 }}>Постачальник</TableCell>
-                <TableCell sx={{ width: '5%', fontWeight: 600, textAlign: 'center' }}>Дії</TableCell>
+                <TableCell sx={{ width: isTablet ? '12%' : '15%', fontWeight: 600 }}>
+                  {UA.deliveries_location}
+                </TableCell>
+                <TableCell sx={{ width: isTablet ? '12%' : '15%', fontWeight: 600 }}>
+                  {UA.deliveries_resource_type}
+                </TableCell>
+                <TableCell sx={{ width: '10%', fontWeight: 600 }}>{UA.deliveries_quantity}</TableCell>
+                <TableCell sx={{ width: isTablet ? '8%' : '10%', fontWeight: 600 }}>{UA.deliveries_unit}</TableCell>
+                <TableCell sx={{ width: isTablet ? '12%' : '15%', fontWeight: 600 }}>
+                  {UA.deliveries_delivery_date}
+                </TableCell>
+                <TableCell sx={{ width: '11%', fontWeight: 600 }}>{UA.deliveries_price_per_unit}</TableCell>
+                <TableCell sx={{ width: '12%', fontWeight: 600 }}>{UA.deliveries_total_sum}</TableCell>
+                <TableCell sx={{ width: '10%', fontWeight: 600 }}>{UA.deliveries_supplier}</TableCell>
+                <TableCell sx={{ width: '5%', fontWeight: 600, textAlign: 'center' }}>
+                  {UA.deliveries_actions}
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -278,21 +309,31 @@ const ResourceDeliveryTable = ({
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {delivery.supplier || '-'}
+                        {delivery.supplier || UA.common_empty_dash}
                       </Typography>
                     </TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>
                       <Stack direction="row" spacing={0} justifyContent="center">
-                        <Tooltip title="Редагувати поставку">
+                        <Tooltip title={UA.deliveries_edit_tooltip}>
                           <span>
-                            <IconButton size="small" onClick={() => onEdit(delivery)} color="primary" disabled={isLoading}>
+                            <IconButton
+                              size="small"
+                              onClick={() => onEdit(delivery)}
+                              color="primary"
+                              disabled={isLoading}
+                            >
                               <Edit fontSize="small" />
                             </IconButton>
                           </span>
                         </Tooltip>
-                        <Tooltip title="Видалити поставку">
+                        <Tooltip title={UA.deliveries_delete_tooltip}>
                           <span>
-                            <IconButton size="small" onClick={() => removeDelivery(delivery.id)} color="error" disabled={isLoading}>
+                            <IconButton
+                              size="small"
+                              onClick={() => removeDelivery(delivery.id)}
+                              color="error"
+                              disabled={isLoading}
+                            >
                               <Delete fontSize="small" />
                             </IconButton>
                           </span>
@@ -305,7 +346,7 @@ const ResourceDeliveryTable = ({
                 <TableRow>
                   <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                      За вашими фільтрами нічого не знайдено
+                      {UA.common_no_results}
                     </Typography>
                   </TableCell>
                 </TableRow>

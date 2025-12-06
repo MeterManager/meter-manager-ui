@@ -30,7 +30,6 @@ const MeterForm = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(BREAKPOINTS.mobileWide);
-  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down(BREAKPOINTS.md));
 
   const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
@@ -178,7 +177,9 @@ const MeterForm = ({
           helperText={formErrors.location_id || ' '}
           disabled={loading}
         >
-          <MenuItem value="">{UA.common_select} {UA.meters_location.toLowerCase()}</MenuItem>
+          <MenuItem value="">
+            {UA.common_select} {UA.meters_location.toLowerCase()}
+          </MenuItem>
           {(locations || [])
             .filter((l) => l.isActive)
             .map((loc) => (
@@ -202,7 +203,9 @@ const MeterForm = ({
           helperText={formErrors.energy_resource_type_id || ' '}
           disabled={loading}
         >
-          <MenuItem value="">{UA.common_select} {UA.meters_resource_type.toLowerCase()}</MenuItem>
+          <MenuItem value="">
+            {UA.common_select} {UA.meters_resource_type.toLowerCase()}
+          </MenuItem>
           {(energyResourceTypes || [])
             .filter((rt) => rt.isActive)
             .map((rt) => (

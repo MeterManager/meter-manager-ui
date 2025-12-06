@@ -43,7 +43,6 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const handleServiceError = (err, defaultMessage = null) => {
-    console.error('Resource Type Service Action Failed:', err);
     const userMessage = translateErrorMessage(err.message || defaultMessage || UA.error_action_default);
     setSnackbar({ open: true, message: userMessage, severity: 'error' });
     setError(userMessage);
@@ -132,11 +131,10 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
   return (
     <>
       <Paper sx={theme.mixins.sectionPaper} elevation={DEFAULTS.paperElevation}>
-        <Box
-          sx={theme.mixins.sectionHeader}
-          onClick={handleToggle}
-        >
-          <Typography variant="h5">{UA.resourceTypes_title} ({resourceTypes.length})</Typography>
+        <Box sx={theme.mixins.sectionHeader} onClick={handleToggle}>
+          <Typography variant="h5">
+            {UA.resourceTypes_title} ({resourceTypes.length})
+          </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
 

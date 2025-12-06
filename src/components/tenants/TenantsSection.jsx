@@ -48,7 +48,6 @@ const TenantsSection = ({ initialExpanded = true }) => {
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null, action: null, dependencies: null });
 
   const handleServiceError = (err, defaultMessage = null) => {
-    console.error('Tenant Service Action Failed:', err);
     const userMessage = translateErrorMessage(err.message || defaultMessage || UA.error_action_default);
     setSnackbar({ open: true, message: userMessage, severity: 'error' });
     setError(userMessage);

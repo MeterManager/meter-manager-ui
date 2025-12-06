@@ -18,6 +18,8 @@ export const UA = {
   common_required: "обов'язковий",
   common_error: 'Помилка',
   common_success: 'Успішно',
+  common_empty_dash: '—',
+  common_percent: '%',
 
   // Status labels
   status_active: 'Активний',
@@ -30,11 +32,11 @@ export const UA = {
   status_unknown_resource: 'Невідомий ресурс',
 
   // Meters
+  meters_title: 'Лічильники',
   meters_add: 'Додати лічильник',
   meters_edit: 'Редагувати лічильник',
   meters_search: 'Пошук...',
   meters_not_found: 'За вашими фільтрами нічого не знайдено',
-  meters_title: 'Лічильники',
   meters_serial_number: 'Серійний номер',
   meters_location: 'Локація',
   meters_resource_type: 'Тип ресурсу',
@@ -84,6 +86,7 @@ export const UA = {
   locations_success_deactivated: 'Локацію успішно деактивовано',
   locations_success_deactivated_with_deps: 'Локацію успішно деактивовано (з залежностями)',
   locations_load_error: 'Помилка при завантаженні локацій',
+  locations_area_dash: '—',
 
   // Resource Types
   resourceTypes_title: 'Типи ресурсів',
@@ -93,8 +96,8 @@ export const UA = {
   resourceTypes_unit: 'Одиниці вимірювання',
   resourceTypes_name_required: "Тип ресурсу обов'язковий.",
   resourceTypes_unit_required: "Одиниці вимірювання обов'язкові.",
-  resourceTypes_success_updated: 'Тип ресурсу успішно оновлено',
   resourceTypes_success_created: 'Тип ресурсу успішно створено',
+  resourceTypes_success_updated: 'Тип ресурсу успішно оновлено',
   resourceTypes_success_status: 'Тип ресурсу успішно',
   resourceTypes_success_deleted: 'Тип ресурсу успішно видалено',
 
@@ -117,8 +120,8 @@ export const UA = {
   tenants_no_available: 'Немає доступних орендарів',
   tenants_all_locations: '— Всі локації —',
   tenants_no_location: '— Без локації —',
-  tenants_success_updated: 'Орендаря успішно оновлено',
   tenants_success_added: 'Орендаря успішно додано',
+  tenants_success_updated: 'Орендаря успішно оновлено',
   tenants_success_deleted: 'Орендаря успішно видалено',
   tenants_success_status: 'Статус орендаря оновлено',
   tenants_edit_tooltip: 'Редагувати орендаря',
@@ -127,6 +130,7 @@ export const UA = {
   tenants_deactivate_first: 'Спочатку деактивуйте орендаря',
   tenants_not_found: 'Орендарів не знайдено',
   tenants_not_found_search: 'За вашим запитом нічого не знайдено',
+  tenants_locations_dash: '—',
 
   // Tariffs
   tariffs_title: 'Тарифи',
@@ -137,20 +141,19 @@ export const UA = {
   tariffs_price: 'Ціна',
   tariffs_valid_from: 'Діє з',
   tariffs_valid_to: "Діє до (необов'язково)",
-  tariffs_price: 'Ціна (₴)',
   tariffs_price_required: "Ціна обов'язкова.",
   tariffs_valid_from_required: "Дата початку обов'язкова.",
   tariffs_valid_to_optional: 'Залиште порожнім для безстрокового тарифу',
-  tariffs_success_updated: 'Тариф успішно оновлено',
   tariffs_success_added: 'Тариф успішно додано',
+  tariffs_success_updated: 'Тариф успішно оновлено',
   tariffs_success_deleted: 'Тариф видалено',
   tariffs_edit_tooltip: 'Редагувати тариф',
   tariffs_delete_tooltip: 'Видалити тариф',
 
   // Resource Deliveries
   deliveries_title: 'Поставки ресурсів',
-  deliveries_add: 'Додати поставку ресурсу',
-  deliveries_edit: 'Редагувати поставку ресурсу',
+  deliveries_add: 'Додати поставку',
+  deliveries_edit: 'Редагувати поставку',
   deliveries_location: 'Локація',
   deliveries_resource_type: 'Тип ресурсу',
   deliveries_quantity: 'Кількість',
@@ -166,12 +169,18 @@ export const UA = {
   deliveries_price_required: "Ціна обов'язкова.",
   deliveries_unit_placeholder: 'Одиниця виміру (наприклад, кВт·год)',
   deliveries_positive_number: 'Має бути додатнє число (> 0).',
-  deliveries_success_updated: 'Поставку успішно оновлено',
   deliveries_success_added: 'Поставку успішно додано',
+  deliveries_success_updated: 'Поставку успішно оновлено',
   deliveries_success_deleted: 'Поставку видалено',
   deliveries_edit_tooltip: 'Редагувати поставку',
   deliveries_delete_tooltip: 'Видалити поставку',
   deliveries_supplier_not_specified: 'Не вказано',
+  deliveries_total_sum: 'Загальна сума',
+  deliveries_all_locations: '— Всі локації —',
+  deliveries_all_resources: '— Всі ресурси —',
+  deliveries_date_from: 'Дата з',
+  deliveries_date_to: 'Дата по',
+  deliveries_actions: 'Дії',
 
   // Meter Tenants (Assignments)
   meterTenants_title: "Прив'язка лічильників",
@@ -216,7 +225,7 @@ export const UA = {
   meterReadings_fill_all_required: "Будь ласка, заповніть всі обов'язкові поля.",
   meterReadings_fill_distribution: 'Будь ласка, заповніть хоча б одну підкатегорію (CA, CP або GR).',
   meterReadings_save_error: 'Не вдалося зберегти показники.',
-  meterReadings_load_error: 'Помилка при завантаженні списку лічільників',
+  meterReadings_load_error: 'Помилка при завантаженні списку лічильників',
   meterReadings_token_error: 'Токен відсутній. Будь ласка, увійдіть знову.',
   meterReadings_token_failed: 'Не вдалося отримати токен, увійдіть знову.',
   meterReadings_category_ca: 'СА (Споживання активної)',
@@ -236,10 +245,10 @@ export const UA = {
   acts_total_cost_by_category: 'Загальна вартість по категоріях',
   acts_total: 'Разом',
   acts_no_data: 'Немає даних для генерації акту',
-  acts_success: '✅ Акт успішно згенеровано!',
-  acts_error: '❌ Помилка при генерації акту',
+  acts_success: 'Акт успішно згенеровано!',
+  acts_error: 'Помилка при генерації акту',
   acts_no_data_filters: 'Дані відсутні за обраними фільтрами',
-  acts_settings_title: '📄 Налаштування акту споживання',
+  acts_settings_title: 'Налаштування акту споживання',
   acts_period: 'Період (місяць)',
   acts_period_help: 'Виберіть місяць для акту',
   acts_organization: 'Організація (власник)',
@@ -248,7 +257,7 @@ export const UA = {
   acts_tenant_company: 'Компанія орендаря',
   acts_tenant_representative: 'Представник орендаря',
   acts_address: "Адреса об'єкту",
-  acts_report_info: '📊 Інформація про звіт',
+  acts_report_info: 'Інформація про звіт',
   acts_resource: 'Ресурс',
   acts_records_count: 'Кількість записів',
   acts_format: 'Формат',
@@ -354,7 +363,7 @@ export const UA = {
   filter_location: 'Локація',
   filter_resource_type: 'Тип ресурсу',
 
-  // Error messages (from translateError.js)
+  // Error messages
   error_meter_serial_exists: 'Лічильник з таким серійним номером вже існує.',
   error_meter_not_found: 'Лічильник не знайдено.',
   error_meter_inactive_location: 'Неможливо створити лічильник - локація неактивна.',
@@ -405,9 +414,6 @@ export const UA = {
   error_no_locations_available: 'Немає доступних локацій',
   error_no_resource_types_available: 'Немає доступних типів ресурсів',
 
-  // Loading states
-  loading_indicator: '⏳ Завантаження...',
-
   // Validation
   validation_required: "обов'язкове",
   validation_number_range: 'Має бути числом від 0 до 100.',
@@ -417,14 +423,70 @@ export const UA = {
   validation_date_end_before_start: 'Дата завершення не може бути раніше дати початку.',
   validation_date_start_before_end: 'Дата початку повинна бути раніше дати завершення.',
 
-  // Common placeholders and empty states
-  common_empty_dash: '—',
-  common_percent: '%',
-  common_loading_indicator: '⏳ Завантаження...',
+  // Meter Tenants - Success messages
+  meterTenants_success_added: 'Призначення додано',
+  meterTenants_success_updated: 'Призначення оновлено',
+  meterTenants_success_deleted: 'Призначення видалено',
 
-  // Location specific
-  locations_area_dash: '—',
+  // Meter Tenants - Error messages
+  error_save_meter_tenant: 'Помилка при збереженні призначення',
+  error_delete_meter_tenant: 'Помилка при видаленні призначення',
 
-  // Tenant specific
-  tenants_locations_dash: '—',
+  meterTenants_success_added: 'Призначення додано',
+  meterTenants_success_updated: 'Призначення оновлено',
+  meterTenants_success_deleted: 'Призначення видалено',
+  error_save_meter_tenant: 'Помилка при збереженні призначення',
+  error_delete_meter_tenant: 'Помилка при видаленні призначення',
+
+  // MeterReadingForm
+  meterReadings_location_select: '-- Оберіть локацію --',
+  meterReadings_location_select_short: 'Оберіть локацію',
+  meterReadings_meter_tenant_select: "Оберіть зв'язок (Tenant – Meter)",
+  meterReadings_select_method_short: 'Оберіть метод',
+  meterReadings_method_direct_reading: 'Пряме зняття',
+  meterReadings_method_area_based: 'За площею',
+  meterReadings_method_mixed: 'Змішаний',
+  meterReadings_distributions_optional: 'Розподіл по підкатегоріях (опціонально)',
+  meterReadings_readings_title: 'Показники',
+  meterReadings_cancel: 'Скасувати',
+  meterReadings_save: 'Зберегти',
+  meterReadings_token_missing: 'Токен відсутній. Будь ласка, увійдіть знову.',
+  meterReadings_loading_error: 'Помилка при завантаженні списку лічільників',
+  meterReadings_save_failed: 'Не вдалося зберегти показники.',
+
+  // MeterReadingsSection
+  meterReadings_count: 'Показники',
+  meterReadings_add_reading: 'Додати показник',
+  meterReadings_edit_reading: 'Редагувати показник',
+  meterReadings_search_placeholder: 'Пошук за орендарем або лічильником',
+  meterReadings_search_short: 'Пошук',
+  meterReadings_filter_by_date: 'Фільтр по даті',
+
+  resourceTypes_unit_label: 'Одиниця',
+  resourceTypes_search_placeholder: 'Пошук за типом чи одиницею',
+  resourceTypes_not_found: 'Типи ресурсів не знайдено',
+  resourceTypes_not_found_search: 'За вашим запитом нічого не знайдено',
+  resourceTypes_add_first: 'Додати перший тип ресурсу',
+  resourceTypes_edit_tooltip: 'Редагувати тип ресурсу',
+  resourceTypes_delete_tooltip: 'Видалити тип ресурсу',
+  resourceTypes_deactivate_first: 'Спочатку деактивуйте тип ресурсу',
+  resourceTypes_cannot_delete_active: 'Неможливо видалити активний тип ресурсу',
+
+  users_title: 'Користувачі',
+  users_full_name: 'ПІБ',
+  users_role: 'Роль',
+  users_status: 'Статус',
+  users_search_placeholder: 'Пошук за ПІБ користувача...',
+  users_not_found: 'Користувачів не знайдено',
+  users_not_found_search: 'За вашим запитом нічого не знайдено',
+  users_status_error: 'Помилка зміни статусу',
+  users_status_update_error: 'Помилка при оновленні статусу користувача',
+  users_activated: 'активовано',
+  users_deactivated: 'деактивовано',
+  users_success_status_updated: 'Користувача успішно',
+
+  // Consent Handler
+  consent_info_message: 'Щоб отримати доступ до даних, натисніть «Продовжити»',
+  consent_button_continue: 'Продовжити',
+  consent_button_redirecting: 'Переходимо...',
 };
