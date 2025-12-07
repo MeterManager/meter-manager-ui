@@ -149,6 +149,14 @@ export const UA = {
   tariffs_success_deleted: 'Тариф видалено',
   tariffs_edit_tooltip: 'Редагувати тариф',
   tariffs_delete_tooltip: 'Видалити тариф',
+  tariffs_active: 'Активний',
+  tariffs_inactive: 'Неактивний',
+  tariffs_indefinite: 'Безстроково',
+  tariffs_all_locations: '— Всі локації —',
+  tariffs_all_resources: '— Всі ресурси —',
+  tariffs_search_placeholder: 'Пошук за локацією, ресурсом або ціною...',
+  tariffs_actions: 'Дії',
+  tariffs_status: 'Статус',
 
   // Resource Deliveries
   deliveries_title: 'Поставки ресурсів',
