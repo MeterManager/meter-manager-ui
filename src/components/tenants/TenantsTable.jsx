@@ -104,14 +104,26 @@ const TenantsTable = ({
     const isDisabled = loadingTenantId !== null || isLoading;
 
     return (
-      <Card sx={theme.mixins.card}>
-        <CardContent sx={theme.mixins.cardContent}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="h6" component="div" sx={theme.mixins.mobileCardTitle}>
+      <Card
+        sx={{
+          mb: 1.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1.5,
+          transition: 'box-shadow 0.2s',
+          '&:hover': {
+            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+          },
+        }}
+      >
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 0.25 }}>
                 {tenant.name}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" fontSize="0.875rem">
                 {getTenantLocations(tenant).join(', ') || UA.common_empty_dash}
               </Typography>
             </Box>
@@ -119,51 +131,54 @@ const TenantsTable = ({
               label={tenant.isActive ? UA.status_active : UA.status_inactive}
               color={tenant.isActive ? 'success' : 'default'}
               size="small"
-              sx={theme.mixins.chipStatus}
+              sx={{ ml: 1.5, flexShrink: 0, height: 24 }}
             />
           </Box>
 
           {tenant.contactPerson && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+            <Box sx={{ mb: 1.5 }}>
+              <Typography variant="body2" color="text.secondary" fontSize="0.875rem">
                 {UA.tenants_contact_label}: {tenant.contactPerson}
               </Typography>
             </Box>
           )}
 
           {(tenant.phone || tenant.email) && (
-            <Box sx={{ mb: 2 }}>
+            <Box sx={{ mb: 1.5 }}>
               {tenant.phone && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                  <Phone fontSize="small" color="action" />
-                  <Typography variant="body2">{tenant.phone}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
+                  <Phone fontSize="small" sx={{ color: 'text.secondary' }} />
+                  <Typography variant="body2" fontSize="0.875rem">
+                    {tenant.phone}
+                  </Typography>
                 </Box>
               )}
               {tenant.email && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Email fontSize="small" color="action" />
-                  <Typography variant="body2">{tenant.email}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Email fontSize="small" sx={{ color: 'text.secondary' }} />
+                  <Typography variant="body2" fontSize="0.875rem">
+                    {tenant.email}
+                  </Typography>
                 </Box>
               )}
             </Box>
           )}
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               {isRowLoading ? (
-                <CircularProgress size={SIZES.circularProgress.medium} />
+                <CircularProgress size={20} />
               ) : (
                 <Switch
                   checked={tenant.isActive}
                   onChange={() => handleStatusChange(tenant)}
-                  color="primary"
                   size="small"
                   disabled={isDisabled}
                 />
               )}
             </Box>
 
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={0.5}>
               <Tooltip title={UA.common_edit}>
                 <IconButton size="small" onClick={() => onEdit(tenant)} color="primary" disabled={isDisabled}>
                   <Edit fontSize="small" />
@@ -177,11 +192,7 @@ const TenantsTable = ({
                     color="error"
                     disabled={tenant.isActive || isDisabled}
                   >
-                    {isRowLoading ? (
-                      <CircularProgress size={SIZES.circularProgress.small} />
-                    ) : (
-                      <Delete fontSize="small" />
-                    )}
+                    {isRowLoading ? <CircularProgress size={18} /> : <Delete fontSize="small" />}
                   </IconButton>
                 </span>
               </Tooltip>
@@ -198,17 +209,22 @@ const TenantsTable = ({
         sx={{
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
-          gap: 2,
+          gap: 1.5,
           alignItems: isMobile ? 'stretch' : 'center',
-          justifyContent: isMobile ? 'stretch' : 'space-between',
-          mb: 3,
+          mb: 2.5,
         }}
       >
         <Button
           variant="contained"
           onClick={onAdd}
           fullWidth={isMobile}
-          sx={theme.mixins.buttonPrimary}
+          sx={{
+            minWidth: isMobile ? 'auto' : '140px',
+            height: 40,
+            fontSize: '0.9375rem',
+            fontWeight: 500,
+            flexShrink: 0,
+          }}
           disabled={loadingTenantId !== null || isLoading}
         >
           {UA.tenants_add}
@@ -217,16 +233,16 @@ const TenantsTable = ({
         <Box
           sx={{
             display: 'flex',
-            gap: 2,
+            gap: 1.5,
             flexDirection: isMobile ? 'column' : 'row',
-            width: '100%',
+            flex: 1,
           }}
         >
           <FormControl
             variant="outlined"
-            size={FORM_FIELDS.select.size}
+            size="small"
             sx={{
-              width: isMobile ? '100%' : '200px',
+              width: isMobile ? '100%' : '180px',
               flexShrink: 0,
             }}
             disabled={isLoading}
@@ -252,17 +268,13 @@ const TenantsTable = ({
             onChange={(e) => setSearch(e.target.value)}
             fullWidth
             placeholder={UA.tenants_search_placeholder}
-            sx={{
-              width: '100%',
-              maxWidth: '100%',
-            }}
             disabled={isLoading}
           />
         </Box>
       </Box>
 
       {search && (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }} fontSize="0.875rem">
           {UA.common_found}: {filteredTenants.length} {UA.common_of} {tenants.length}
         </Typography>
       )}
@@ -272,8 +284,8 @@ const TenantsTable = ({
           {filteredTenants.length > 0 ? (
             filteredTenants.map((tenant) => <MobileTenantCard key={tenant.id} tenant={tenant} />)
           ) : (
-            <Card>
-              <CardContent>
+            <Card sx={{ boxShadow: 1 }}>
+              <CardContent sx={{ p: 3 }}>
                 <Typography variant="body1" align="center" color="text.secondary">
                   {search ? UA.tenants_not_found_search : UA.tenants_not_found}
                 </Typography>
@@ -282,15 +294,15 @@ const TenantsTable = ({
           )}
         </Box>
       ) : (
-        <TableContainer component={Paper} sx={{ boxShadow: 1 }}>
+        <TableContainer component={Paper} sx={{ boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <Table>
             <TableHead>
-              <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell sx={{ width: '20%', fontWeight: 600 }}>{UA.tenants_title.slice(0, -1)}</TableCell>
-                <TableCell sx={{ width: '25%', fontWeight: 600 }}>{UA.tenants_locations}</TableCell>
-                <TableCell sx={{ width: '20%', fontWeight: 600 }}>{UA.tenants_contacts}</TableCell>
-                <TableCell sx={{ width: '20%', fontWeight: 600 }}>{UA.meters_status}</TableCell>
-                <TableCell sx={{ width: '15%', fontWeight: 600 }}>{UA.meters_actions}</TableCell>
+              <TableRow sx={{ backgroundColor: 'grey.50' }}>
+                <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{UA.tenants_title.slice(0, -1)}</TableCell>
+                <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{UA.tenants_locations}</TableCell>
+                <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{UA.tenants_contacts}</TableCell>
+                <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{UA.meters_status}</TableCell>
+                <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{UA.meters_actions}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -300,30 +312,41 @@ const TenantsTable = ({
                   const isDisabled = loadingTenantId !== null || isLoading;
 
                   return (
-                    <TableRow key={tenant.id} sx={theme.mixins.tableRow}>
-                      <TableCell>
+                    <TableRow
+                      key={tenant.id}
+                      sx={{
+                        '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' },
+                        transition: 'background-color 0.15s',
+                      }}
+                    >
+                      <TableCell sx={{ py: 1.5 }}>
                         <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          <Typography variant="body2" fontWeight={500} fontSize="0.9375rem">
                             {tenant.name}
                           </Typography>
                           {tenant.contactPerson && (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              fontSize="0.8125rem"
+                              sx={{ display: 'block', mt: 0.25 }}
+                            >
                               {tenant.contactPerson}
                             </Typography>
                           )}
                         </Box>
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell sx={{ py: 1.5 }}>
                         {getTenantLocations(tenant).length === 0 ? (
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" color="text.secondary" fontSize="0.875rem">
                             {UA.common_empty_dash}
                           </Typography>
                         ) : (
-                          <ul style={{ paddingLeft: '16px', margin: 0, listStyleType: 'disc' }}>
+                          <ul style={{ paddingLeft: '20px', margin: 0 }}>
                             {getTenantLocations(tenant).map((loc, idx) => (
                               <li key={idx}>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography variant="body2" color="text.secondary" fontSize="0.875rem">
                                   {loc}
                                 </Typography>
                               </li>
@@ -332,39 +355,40 @@ const TenantsTable = ({
                         )}
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell sx={{ py: 1.5 }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                           {tenant.phone && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <Phone fontSize="small" color="action" />
-                              <Typography variant="caption">{tenant.phone}</Typography>
+                              <Phone fontSize="small" sx={{ color: 'text.secondary' }} />
+                              <Typography variant="body2" fontSize="0.875rem">
+                                {tenant.phone}
+                              </Typography>
                             </Box>
                           )}
                           {tenant.email && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <Email fontSize="small" color="action" />
-                              <Typography variant="caption" color="text.secondary">
+                              <Email fontSize="small" sx={{ color: 'text.secondary' }} />
+                              <Typography variant="body2" fontSize="0.875rem">
                                 {tenant.email}
                               </Typography>
                             </Box>
                           )}
                           {!tenant.phone && !tenant.email && (
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" color="text.secondary" fontSize="0.875rem">
                               {UA.common_empty_dash}
                             </Typography>
                           )}
                         </Box>
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell sx={{ py: 1.5 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {isRowLoading ? (
-                            <CircularProgress size={SIZES.circularProgress.medium} />
+                            <CircularProgress size={20} />
                           ) : (
                             <Switch
                               checked={tenant.isActive}
                               onChange={() => handleStatusChange(tenant)}
-                              color="primary"
                               size="small"
                               disabled={isDisabled}
                             />
@@ -374,11 +398,12 @@ const TenantsTable = ({
                             color={tenant.isActive ? 'success' : 'default'}
                             size="small"
                             variant="outlined"
+                            sx={{ height: 24 }}
                           />
                         </Box>
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell sx={{ py: 1.5 }}>
                         <Stack direction="row" spacing={0.5}>
                           <Tooltip title={UA.tenants_edit_tooltip}>
                             <IconButton
@@ -398,11 +423,7 @@ const TenantsTable = ({
                                 disabled={tenant.isActive || isDisabled}
                                 color="error"
                               >
-                                {isRowLoading ? (
-                                  <CircularProgress size={SIZES.circularProgress.small} />
-                                ) : (
-                                  <Delete fontSize="small" />
-                                )}
+                                {isRowLoading ? <CircularProgress size={18} /> : <Delete fontSize="small" />}
                               </IconButton>
                             </span>
                           </Tooltip>
@@ -413,8 +434,10 @@ const TenantsTable = ({
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    {UA.tenants_no_available}
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body1" color="text.secondary">
+                      {UA.tenants_no_available}
+                    </Typography>
                   </TableCell>
                 </TableRow>
               )}

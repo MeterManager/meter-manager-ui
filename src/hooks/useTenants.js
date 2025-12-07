@@ -139,7 +139,10 @@ export const useTenants = () => {
           t.id === id
             ? {
                 ...t,
-                ...tenantData,
+                name: tenantData.name,
+                contactPerson: tenantData.contact_person,
+                phone: tenantData.phone,
+                email: tenantData.email,
                 isActive: tenantData.is_active,
                 updatedAt: new Date().toISOString(),
               }
@@ -163,6 +166,7 @@ export const useTenants = () => {
         throw new Error(errorMessage);
       }
     },
+
     [tenants, mutateTenants, getToken, isBlocked]
   );
 

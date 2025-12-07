@@ -148,23 +148,37 @@ const TenantsSection = ({ initialExpanded = true }) => {
 
   return (
     <>
-      <Paper sx={theme.mixins.sectionPaper} elevation={DEFAULTS.paperElevation}>
+      <Paper
+        sx={{
+          mb: 2.5,
+          borderRadius: 1.5,
+          overflow: 'hidden',
+        }}
+        elevation={2}
+      >
         <Box
           display="flex"
           alignItems="center"
           justifyContent="space-between"
-          p={2}
-          sx={theme.mixins.sectionHeader}
+          px={2.5}
+          py={1.75}
+          sx={{
+            cursor: 'pointer',
+            transition: 'background-color 0.2s',
+            '&:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.02)',
+            },
+          }}
           onClick={handleToggle}
         >
-          <Typography variant="h5" fontWeight={600}>
+          <Typography variant="h6" fontWeight={600} fontSize="1.125rem">
             {UA.tenants_title} ({tenants.length})
           </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
         <Divider />
         <Collapse in={expanded} timeout="auto">
-          <Box p={3}>
+          <Box px={2.5} py={2.5}>
             <TenantsTable
               tenants={tenants}
               search={search}

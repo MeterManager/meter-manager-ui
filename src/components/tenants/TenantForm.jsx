@@ -18,8 +18,7 @@ import { BREAKPOINTS, DIALOG_CONFIG, FORM_FIELDS, SIZES } from '../../constants'
 
 const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(BREAKPOINTS.mobileWide);
-  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down(BREAKPOINTS.md));
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
 
   const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
@@ -29,7 +28,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
     if (open) {
       setFormData({
         name: initialData.name || '',
-        contactPerson: initialData.contact_person || initialData.contactPerson || '',
+        contactPerson: initialData.contactPerson || '',
         phone: initialData.phone || '',
         email: initialData.email || '',
         isActive: initialData.isActive ?? true,
@@ -37,7 +36,6 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
       });
       setFormErrors({});
     } else {
-      // Скидання стану при закритті
       setFormData({});
       setFormErrors({});
     }
@@ -67,7 +65,6 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setFormData({ ...formData, [name]: value });
     validateField(name, value);
   };
@@ -94,13 +91,14 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
     try {
       await onSubmit({
         name: formData.name.trim(),
-        contact_person: formData.contactPerson?.trim() || null,
+        contactPerson: formData.contactPerson?.trim() || null,
         phone: formData.phone?.trim() || null,
         email: formData.email?.trim() || null,
         isActive: formData.isActive ?? true,
         id: formData.id,
       });
     } catch (error) {
+      console.error('Form submission error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -121,8 +119,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
       fullScreen={isMobile}
       PaperProps={{
         sx: {
-          width: '100%',
-          maxWidth: DIALOG_CONFIG.paperMaxWidth,
+          maxWidth: '600px',
           margin: isMobile ? 0 : 'auto',
         },
       }}
@@ -136,13 +133,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
 
       <DialogContent sx={theme.mixins.dialogContent}>
         {error && (
-          <Alert
-            severity="error"
-            sx={{
-              mb: 2,
-              fontSize: isMobile ? '0.875rem' : '1rem',
-            }}
-          >
+          <Alert severity="error" sx={{ mb: 2, fontSize: isMobile ? '0.875rem' : '1rem' }}>
             {error}
           </Alert>
         )}
@@ -159,6 +150,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
           error={!!formErrors.name}
           helperText={formErrors.name || ' '}
           disabled={isSubmitting}
+          required
         />
 
         <TextField
@@ -170,7 +162,7 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
           variant={FORM_FIELDS.textField.variant}
           size={FORM_FIELDS.textField.size}
           sx={{ mb: 2 }}
-          helperText={formErrors.contactPerson || ' '}
+          helperText=" "
           disabled={isSubmitting}
         />
 
@@ -185,7 +177,6 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
           sx={{ mb: 2 }}
           error={!!formErrors.phone}
           helperText={formErrors.phone || UA.tenants_phone_helper}
-          inputProps={{ pattern: '[+0-9]*' }}
           disabled={isSubmitting}
         />
 
@@ -209,10 +200,8 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
           variant="outlined"
           onClick={handleClose}
           fullWidth={isMobile}
+          sx={{ order: isMobile ? 1 : 0 }}
           disabled={isSubmitting}
-          sx={{
-            order: isMobile ? 1 : 0,
-          }}
         >
           {UA.common_cancel}
         </Button>
@@ -220,11 +209,8 @@ const TenantForm = ({ open, onClose, onSubmit, initialData = {}, error, tenants 
           variant="contained"
           onClick={handleSubmit}
           fullWidth={isMobile}
+          sx={{ order: isMobile ? 0 : 1, marginLeft: '0 !important' }}
           disabled={isSubmitting}
-          sx={{
-            order: isMobile ? 0 : 1,
-            marginLeft: '0 !important',
-          }}
         >
           {isSubmitting ? <CircularProgress size={SIZES.circularProgress.medium} color="inherit" /> : UA.common_save}
         </Button>
