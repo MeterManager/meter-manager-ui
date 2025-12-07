@@ -12,6 +12,7 @@ const SearchField: React.FC<SearchFieldProps> = ({ value, onChange, sx }) => {
   return (
     <TextField
       label="Пошук"
+      size="small"
       value={value}
       onChange={onChange}
       sx={sx}

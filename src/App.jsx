@@ -3,21 +3,15 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useAuthContext } from './contexts/AuthContext';
 import ConsentHandler from './components/ConsentHandler';
 import Sidebar from './components/Sidebar';
-import BlockedUserPage from './components/BlockedUserPage';
-import theme from './theme';
+import theme from './theme/theme';
 
 import SubmitMetricsPage from './pages/SubmitMetricsPage';
 import DashboardPage from './pages/DashboardPage';
+import ActPage from './pages/ActPage';
+import BlockedUserPage from './pages/BlockedUserPage';
 
 const App = () => {
   const { isLoading, error, isBlocked, isAuthenticated } = useAuthContext();
-
-  console.log('🔍 App render:', {
-    isLoading,
-    error,
-    isBlocked,
-    isAuthenticated,
-  });
 
   if (isLoading) {
     return (
@@ -77,6 +71,7 @@ const App = () => {
             <Routes>
               <Route path="/" element={<SubmitMetricsPage />} />
               <Route path="/dashboard/:section?" element={<DashboardPage />} />
+              <Route path="/acts" element={<ActPage />} />
             </Routes>
           </Box>
         </Box>

@@ -1,98 +1,146 @@
 import { useState } from 'react';
-import { Paper, Box, Typography, Collapse, IconButton, Divider, CircularProgress, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import {
+  Paper,
+  Box,
+  Typography,
+  Collapse,
+  IconButton,
+  Divider,
+  CircularProgress,
+  Snackbar,
+  Alert,
+} from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import MetersTable from './MetersTable';
 import MeterForm from './MeterForm';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import { useMeters } from '../../hooks/useMeters';
 import { useLocations } from '../../hooks/useLocations';
 import { useResourceTypes } from '../../hooks/useResourceTypes';
+import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
 
 const MetersSection = ({ initialExpanded = true }) => {
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [editingMeter, setEditingMeter] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null, dependencies: null });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null, action: 'delete', dependencies: null });
 
-  const { locations, error: locationsError } = useLocations();
-  const { resourceTypes: energyResourceTypes, loading: loadingResourceTypes, error: resourceTypesError } = useResourceTypes();
-  const { meters, loading, error, addMeter, editMeter, removeMeter, updateMeterStatus, getMeterDependencies } = useMeters();
+  const { locations, loading: locationsLoading, error: locationsError } = useLocations();
+  const { resourceTypes: energyResourceTypes, loading: typesLoading, error: resourceTypesError } = useResourceTypes();
+
+  const {
+    meters,
+    loading: metersLoading,
+    isActionLoading,
+    error,
+    setError,
+    addMeter,
+    editMeter,
+    removeMeter,
+    updateMeterStatus,
+    getMeterDependencies,
+  } = useMeters();
+
+  const handleServiceError = (err, defaultMessage = null) => {
+    const userMessage = translateErrorMessage(err.message || defaultMessage || UA.error_action_default);
+    setSnackbar({ open: true, message: userMessage, severity: 'error' });
+    setError(userMessage);
+  };
 
   const handleToggle = () => setExpanded(!expanded);
 
   const handleAdd = () => {
     setEditingMeter(null);
+    setError(null);
     setFormOpen(true);
   };
 
   const handleEdit = (meter) => {
     setEditingMeter(meter);
+    setError(null);
     setFormOpen(true);
   };
 
   const handleFormClose = () => {
     setFormOpen(false);
     setEditingMeter(null);
+    setError(null);
   };
 
   const handleFormSubmit = async (formData) => {
     try {
       if (editingMeter?.id) {
         await editMeter(editingMeter.id, formData);
-        setSnackbar({ open: true, message: 'Лічильник успішно оновлено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.meters_success_updated, severity: 'success' });
       } else {
         await addMeter(formData);
-        setSnackbar({ open: true, message: 'Лічильник успішно додано', severity: 'success' });
+        setSnackbar({ open: true, message: UA.meters_success_added, severity: 'success' });
       }
-      setFormOpen(false);
-      setEditingMeter(null);
-      setExpanded(true);
+      handleFormClose();
     } catch (err) {
-      console.error(err);
-      setSnackbar({ open: true, message: err.message || 'Помилка при збереженні лічильника', severity: 'error' });
+      handleServiceError(err, UA.error_save_meter);
     }
   };
 
   const handleRemove = async (id) => {
     try {
-      const dependencies = await getMeterDependencies(id);
-      if (dependencies.active) {
-        setConfirmDialog({ open: true, id, dependencies });
-      } else {
-        await removeMeter(id);
-        setSnackbar({ open: true, message: 'Лічильник видалено', severity: 'success' });
-      }
+      const deps = await getMeterDependencies(id);
+
+      const hasDependencies = deps.active_meter_tenants > 0 || deps.deliveries > 0;
+
+      setConfirmDialog({
+        open: true,
+        id,
+        action: 'delete',
+        dependencies: hasDependencies ? deps : null,
+      });
     } catch (err) {
-      console.error(err);
-      setSnackbar({ open: true, message: err.message || 'Помилка при видаленні лічильника', severity: 'error' });
+      handleServiceError(err, UA.error_check_dependencies);
     }
   };
 
   const handleConfirmDelete = async () => {
     try {
       await removeMeter(confirmDialog.id);
-      setSnackbar({ open: true, message: 'Лічильник видалено', severity: 'success' });
-      setConfirmDialog({ open: false, id: null, dependencies: null });
+      setSnackbar({ open: true, message: UA.meters_success_deleted, severity: 'success' });
+      handleCloseConfirmDialog();
     } catch (err) {
-      setSnackbar({ open: true, message: err.message || 'Помилка при видаленні лічильника', severity: 'error' });
-      setConfirmDialog({ open: false, id: null, dependencies: null });
+      handleServiceError(err, UA.error_delete_meter);
     }
+  };
+
+  const handleCloseConfirmDialog = () => {
+    setConfirmDialog({ open: false, id: null, action: 'delete', dependencies: null });
   };
 
   const handleStatusChange = async (id, isActive) => {
     try {
       await updateMeterStatus(id, isActive);
-      setSnackbar({ open: true, message: `Лічильник успішно ${isActive ? 'активовано' : 'деактивовано'}`, severity: 'success' });
+      setSnackbar({
+        open: true,
+        message: `${UA.meters_success_status} ${isActive ? UA.status_activated : UA.status_deactivated}`,
+        severity: 'success',
+      });
     } catch (err) {
-      console.error(err);
-      setSnackbar({ open: true, message: err.message || 'Помилка при зміні статусу лічильника', severity: 'error' });
+      handleServiceError(err, UA.error_update_status);
     }
   };
 
   const handleCloseSnackbar = () => setSnackbar({ open: false, message: '', severity: 'success' });
+  const dataLoading = locationsLoading || typesLoading;
 
-  if (locationsError) return <Typography color="error">Помилка при завантаженні локацій</Typography>;
-  if (resourceTypesError) return <Typography color="error">Помилка при завантаженні типів ресурсів</Typography>;
+  if (locationsError || resourceTypesError) {
+    const errorMsg = locationsError?.message || resourceTypesError?.message || UA.error_load_unknown;
+    return (
+      <Typography color="error">
+        {UA.error_action_default}: {errorMsg}
+      </Typography>
+    );
+  }
+
+  if (dataLoading) return <CircularProgress />;
 
   return (
     <>
@@ -108,13 +156,15 @@ const MetersSection = ({ initialExpanded = true }) => {
           }}
           onClick={handleToggle}
         >
-          <Typography variant="h5">Лічільники ({meters.length})</Typography>
+          <Typography variant="h5">
+            {UA.meters_title} ({meters.length})
+          </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
         <Divider />
         <Collapse in={expanded} timeout="auto">
           <Box sx={{ p: 3 }}>
-            {loading || loadingResourceTypes ? (
+            {metersLoading && meters.length === 0 ? (
               <CircularProgress />
             ) : (
               <MetersTable
@@ -123,8 +173,10 @@ const MetersSection = ({ initialExpanded = true }) => {
                 onEdit={handleEdit}
                 removeMeter={handleRemove}
                 updateMeterStatus={handleStatusChange}
-                locations={locations}
-                energyResourceTypes={energyResourceTypes}
+                locations={locations || []}
+                energyResourceTypes={energyResourceTypes || []}
+                isLoading={metersLoading || isActionLoading}
+                setLocalError={setError}
               />
             )}
           </Box>
@@ -140,23 +192,25 @@ const MetersSection = ({ initialExpanded = true }) => {
         meters={meters}
         locations={(locations || []).filter((l) => l.isActive)}
         energyResourceTypes={(energyResourceTypes || []).filter((rt) => rt.isActive)}
-        loading={loading}
+        loading={isActionLoading}
       />
 
-      <Dialog open={confirmDialog.open} onClose={() => setConfirmDialog({ open: false, id: null, dependencies: null })}>
-        <DialogTitle>Підтвердження видалення</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Цей лічильник має активні залежності. Ви впевнені, що хочете його видалити?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmDialog({ open: false, id: null, dependencies: null })}>Скасувати</Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained">Видалити</Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onClose={handleCloseConfirmDialog}
+        onConfirm={handleConfirmDelete}
+        action="delete"
+        entity="meter"
+        dependencies={confirmDialog.dependencies}
+        isLoading={isActionLoading}
+      />
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>

@@ -1,92 +1,65 @@
-import { useState, useEffect, useCallback } from 'react';
-import * as userApi from '../api/userApi';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useState, useCallback, useMemo } from 'react';
+import useSWR, { mutate } from 'swr';
+import * as usersApi from '../api/userApi';
+import { useAuthRequest } from './useAuthRequest';
+import { useErrorHandler } from './useErrorHandler';
+
+const fetcher = async (token, search = '') => {
+  const response = await usersApi.getUsers(token, search);
+  return (response.data || []).map((u) => ({ ...u, isActive: u.is_active }));
+};
 
 export const useUsers = () => {
-  const { isAuthenticated, isLoading, user: currentUser, getToken, isBlocked } = useAuthContext();
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { canRequest, withToken } = useAuthRequest();
+  const { error, setError, handleError } = useErrorHandler('Помилка при завантаженні користувачів');
   const [search, setSearch] = useState('');
-  const [error, setError] = useState(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    if (!isAuthenticated || isLoading || isBlocked) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-      const response = await userApi.getUsers(token, search);
-      const usersData = Array.isArray(response.data) ? response.data : response.data?.data || [];
-      const newUsers = usersData.map((u) => ({ ...u, isActive: u.is_active === true }));
-      setUsers(newUsers);
-    } catch (err) {
-      setError('Помилка при завантаженні користувачів');
-    } finally {
-      setLoading(false);
-    }
-  }, [search, isAuthenticated, isLoading, currentUser, getToken, isBlocked]);
+  const swrKey = canRequest ? ['users'] : null;
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const editUser = useCallback(
-    async (id, payload) => {
-      if (isBlocked) throw new Error('User is blocked');
-      const userToEdit = users.find((u) => u.id === id);
-      if (!userToEdit) throw new Error('Користувача не знайдено');
-      if (userToEdit.role === 'admin') throw new Error('Не можна редагувати користувача з роллю "admin".');
-
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-      try {
-        setError(null);
-        const response = await userApi.updateUser(token, id, payload);
-        await fetchData();
-        return response;
-      } catch (err) {
-        setError('Помилка при редагуванні користувача');
-        throw err;
-      }
-    },
-    [users, fetchData, getToken, isBlocked]
-  );
+  const {
+    data: users = [],
+    isLoading: loadingSWR,
+    mutate: mutateUsers,
+  } = useSWR(swrKey, async () => withToken(fetcher), {
+    onError: handleError,
+    revalidateOnFocus: false,
+    dedupingInterval: 5000,
+  });
 
   const updateUserStatus = useCallback(
-    async (id, is_active) => {
-      if (isBlocked) throw new Error('User is blocked');
-      const user = users.find((u) => u.id === id);
-      if (!user) throw new Error('Користувача не знайдено');
-      if (user.role === 'admin') throw new Error('Не можна змінити статус користувача з роллю "admin".');
-
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
+    async (id, isActive) => {
+      setIsActionLoading(true);
       try {
         setError(null);
-        const payload = { is_active };
-        const response = await userApi.updateUser(token, id, payload);
-        await fetchData();
-        return response;
+        mutateUsers(
+          (currentUsers = []) => currentUsers.map((u) => (u.id === id ? { ...u, isActive, is_active: isActive } : u)),
+          false
+        );
+        await withToken(usersApi.updateUser, id, { is_active: isActive });
+        await mutateUsers();
       } catch (err) {
-        setError('Помилка при оновленні статусу користувача');
+        mutateUsers();
+        handleError(err, 'Помилка при оновленні статусу користувача');
         throw err;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [users, fetchData, getToken, isBlocked]
+    [withToken, mutateUsers, handleError, setError]
   );
+
+  const loading = loadingSWR || isActionLoading;
 
   return {
     users,
     loading,
+    isActionLoading,
     search,
     setSearch,
-    editUser,
     updateUserStatus,
     error,
     setError,
+    refreshUsers: mutateUsers,
   };
 };

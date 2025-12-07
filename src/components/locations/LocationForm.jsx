@@ -1,12 +1,28 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert } from '@mui/material';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  Alert,
+  IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from '@mui/material';
+import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
-import useMediaQuery from '../../hooks/useMediaQuery';
+import { useMediaQuery } from '@mui/material';
+import { UA } from '../../utils/uaDictionary';
+import { BREAKPOINTS, DIALOG_CONFIG, FORM_FIELDS, SIZES } from '../../constants';
 
-const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locations }) => {
+const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locations = [], tenants = [] }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:800px)');
-  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(BREAKPOINTS.mobileWide);
+  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down(BREAKPOINTS.md));
 
   const [formData, setFormData] = useState(initialData);
   const [formErrors, setFormErrors] = useState({});
@@ -18,45 +34,71 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
         address: initialData.address || '',
         isActive: initialData.isActive ?? true,
         id: initialData.id,
+        tenant_id: initialData.tenant ? initialData.tenant.id : (initialData.tenant_id ?? null),
+        occupied_area: initialData.occupied_area ?? '',
       });
+      setFormErrors({});
+    } else {
+      setFormData({});
       setFormErrors({});
     }
   }, [open, initialData]);
 
   const validateField = (name, value) => {
     let error = '';
-    if (name === 'name') {
-      if (!value) {
-        error = "Назва обов'язкова.";
-      } else if (locations.some((loc) => loc.name.trim() === value.trim() && loc.id !== initialData.id)) {
-        error = 'Локація з такою назвою вже існує.';
+    switch (name) {
+      case 'name':
+        if (!value) {
+          error = UA.locations_name_required;
+        } else if (locations.some((loc) => loc.name.trim() === value.trim() && loc.id !== initialData.id)) {
+          error = UA.locations_name_exists;
+        }
+        break;
+      case 'address':
+        if (!value) {
+          error = UA.locations_address_required;
+        }
+        break;
+      case 'occupied_area': {
+        const numValue = value ? parseFloat(String(value).trim()) : null;
+
+        if (value && (isNaN(numValue) || numValue < 0 || numValue > 100)) {
+          error = UA.locations_area_error;
+        }
+        break;
       }
-    }
-    if (name === 'address' && !value) {
-      error = "Адреса обов'язкова.";
+      default:
+        break;
     }
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
+    return error;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((s) => ({ ...s, [name]: value }));
     validateField(name, value);
   };
 
-  const validateForm = () => {
-    const errors = {};
-    if (!formData.name) errors.name = "Назва обов'язкова.";
-    else if (locations.some((loc) => loc.name.trim() === formData.name.trim() && loc.id !== initialData.id)) {
-      errors.name = 'Локація з такою назвою вже існує.';
-    }
-    if (!formData.address) errors.address = "Адреса обов'язкова.";
-    return errors;
+  const handleTenantChange = (e) => {
+    const value = e.target.value;
+    setFormData((s) => ({ ...s, tenant_id: value }));
   };
 
   const handleSubmit = () => {
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
+    const fieldsToValidate = ['name', 'address', 'occupied_area'];
+    const errors = {};
+    let hasError = false;
+
+    fieldsToValidate.forEach((field) => {
+      const error = validateField(field, formData[field]);
+      if (error) {
+        errors[field] = error;
+        hasError = true;
+      }
+    });
+
+    if (hasError) {
       setFormErrors(errors);
       return;
     }
@@ -64,128 +106,110 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
     onSubmit({
       ...formData,
       isActive: formData.isActive,
+      tenant_id: formData.tenant_id === '' ? null : formData.tenant_id,
+      occupied_area: formData.occupied_area ? parseFloat(String(formData.occupied_area).trim()) : null,
+      tenantName:
+        formData.tenant_id === null ? null : tenants.find((t) => t.id === formData.tenant_id)?.name || undefined,
     });
-
-    setFormData({});
-  };
-
-  const handleClose = () => {
-    setFormData({});
-    setFormErrors({});
-    onClose();
   };
 
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
+      onClose={onClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth={DIALOG_CONFIG.maxWidth.sm}
       fullScreen={isMobile}
       PaperProps={{
         sx: {
-          width: isMobile ? '100%' : isMobileOrTablet ? '90%' : '500px',
-          maxWidth: isMobile ? '100%' : '500px',
+          width: isMobile ? '100%' : isMobileOrTablet ? DIALOG_CONFIG.paperMaxWidthTablet : DIALOG_CONFIG.paperMaxWidth,
+          maxWidth: isMobile ? '100%' : DIALOG_CONFIG.paperMaxWidth,
           margin: isMobile ? 0 : 'auto',
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          fontSize: isMobile ? '1.125rem' : '1.25rem',
-          fontWeight: 600,
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2.5,
-        }}
-      >
-        {initialData.id ? 'Редагувати локацію' : 'Додати локацію'}
+      <DialogTitle sx={theme.mixins.dialogTitle}>
+        {initialData.id ? UA.locations_edit : UA.locations_add}
+        <IconButton onClick={onClose} size="small">
+          <Close />
+        </IconButton>
       </DialogTitle>
 
-      <DialogContent
-        sx={{
-          px: isMobile ? 2 : 3,
-          pb: 1,
-        }}
-      >
+      <DialogContent sx={theme.mixins.dialogContent}>
         {error && (
-          <Alert
-            severity="error"
-            sx={{
-              mb: 2,
-              fontSize: isMobile ? '0.875rem' : '1rem',
-            }}
-          >
+          <Alert severity="error" sx={{ mb: 2, fontSize: isMobile ? '0.875rem' : '1rem' }}>
             {error}
           </Alert>
         )}
 
         <TextField
           name="name"
-          label="Назва"
+          label={UA.locations_name}
           value={formData.name || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mt: 1,
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
+          sx={{ mt: 1, mb: 2 }}
           error={!!formErrors.name}
           helperText={formErrors.name || ' '}
         />
 
         <TextField
           name="address"
-          label="Адреса"
+          label={UA.locations_address}
           value={formData.address || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           multiline={!isMobile}
           rows={isMobile ? 1 : 2}
-          sx={{
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          sx={{ mb: 2 }}
           error={!!formErrors.address}
           helperText={formErrors.address || ' '}
         />
+        <TextField
+          name="occupied_area"
+          label={UA.locations_occupied_area}
+          type="number"
+          value={formData.occupied_area || ''}
+          onChange={handleChange}
+          fullWidth
+          variant={FORM_FIELDS.textField.variant}
+          sx={{ mb: 2 }}
+          helperText={formErrors.occupied_area || ' '}
+        />
+
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel id="tenant-select-label">{UA.locations_tenant}</InputLabel>
+          <Select
+            labelId="tenant-select-label"
+            value={formData.tenant_id ?? ''}
+            label={UA.locations_tenant}
+            onChange={handleTenantChange}
+            name="tenant_id"
+          >
+            <MenuItem value="">{UA.locations_tenant_free}</MenuItem>
+            {tenants.map((t) => (
+              <MenuItem key={t.id} value={t.id}>
+                {t.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </DialogContent>
 
-      <DialogActions
-        sx={{
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2,
-          gap: isMobile ? 1 : 1,
-          flexDirection: isMobile ? 'column-reverse' : 'row',
-          '& .MuiButton-root': {
-            minWidth: isMobile ? 'auto' : '80px',
-            fontSize: isMobile ? '1rem' : '0.875rem',
-            height: isMobile ? '44px' : '36px',
-          },
-        }}
-      >
+      <DialogActions sx={theme.mixins.dialogActions}>
         <Button
           variant="outlined"
-          onClick={handleClose}
+          onClick={onClose}
           fullWidth={isMobile}
           sx={{
             order: isMobile ? 1 : 0,
           }}
         >
-          Скасувати
+          {UA.common_cancel}
         </Button>
         <Button
           variant="contained"
@@ -196,7 +220,7 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
             marginLeft: '0 !important',
           }}
         >
-          Зберегти
+          {UA.common_save}
         </Button>
       </DialogActions>
     </Dialog>

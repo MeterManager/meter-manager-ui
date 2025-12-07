@@ -1,76 +1,106 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Paper, Box, Typography, Collapse, IconButton, Divider } from '@mui/material';
+import { useState } from 'react';
+import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import ResourceDeliveryTable from './ResourceDeliveryTable';
 import ResourceDeliveryForm from './ResourceDeliveryForm';
 import { useResourceDeliveries } from '../../hooks/useResourceDeliveries';
+import { translateErrorMessage } from '../../utils/translateError';
+import ConfirmDialog from '../ui/ConfirmDialog';
+import { UA } from '../../utils/uaDictionary';
 
-const ResourceDeliverySection = ({ locations = [], resourceTypes = [], initialExpanded = true }) => {
-  const memoizedLocations = useMemo(() => locations, [locations]);
-  const memoizedResourceTypes = useMemo(() => resourceTypes, [resourceTypes]);
-
-  const { deliveries, search, setSearch, addDelivery, editDelivery, removeDelivery, error, setError } =
-    useResourceDeliveries();
+const ResourceDeliverySection = ({ initialExpanded = true }) => {
+  const {
+    deliveries,
+    locations,
+    resourceTypes,
+    search,
+    setSearch,
+    locationFilter,
+    setLocationFilter,
+    resourceTypeFilter,
+    setResourceTypeFilter,
+    dateFromFilter,
+    setDateFromFilter,
+    dateToFilter,
+    setDateToFilter,
+    addDelivery,
+    editDelivery,
+    removeDelivery,
+    loading,
+    isActionLoading,
+    error,
+    setError,
+  } = useResourceDeliveries();
 
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [editingDelivery, setEditingDelivery] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
 
-  const handleToggle = useCallback(() => setExpanded((prev) => !prev), []);
+  const handleServiceError = (err, defaultMessage = 'error_action_default') => {
+    const userMessage = translateErrorMessage(err.message || defaultMessage);
+    setSnackbar({ open: true, message: userMessage, severity: 'error' });
+    setError(userMessage);
+  };
 
-  const handleAdd = useCallback(() => {
+  const handleToggle = () => setExpanded(!expanded);
+
+  const handleAdd = () => {
     setEditingDelivery(null);
+    setError(null);
     setFormOpen(true);
-  }, []);
+  };
 
-  const handleEdit = useCallback(
-    (delivery) => {
-      const resourceTypeName =
-        memoizedResourceTypes.find((rt) => rt.id === delivery.energy_resource_type_id)?.name ||
-        delivery.resourceTypeName;
+  const handleEdit = (delivery) => {
+    setEditingDelivery(delivery);
+    setError(null);
+    setFormOpen(true);
+  };
 
-      setEditingDelivery({
-        ...delivery,
-        resourceTypeName,
-      });
-      setFormOpen(true);
-    },
-    [memoizedResourceTypes]
-  );
-
-  const handleFormSubmit = useCallback(
-    async (data) => {
-      try {
-        setError(null);
-        if (editingDelivery?.id) {
-          await editDelivery(editingDelivery.id, data);
-        } else {
-          await addDelivery(data);
-        }
-        setFormOpen(false);
-        setEditingDelivery(null);
-      } catch (err) {
-        setError(err.message || 'Помилка при збереженні поставки');
+  const handleFormSubmit = async (data) => {
+    try {
+      if (editingDelivery?.id) {
+        await editDelivery(editingDelivery.id, data);
+        setSnackbar({ open: true, message: UA.deliveries_success_updated, severity: 'success' });
+      } else {
+        await addDelivery(data);
+        setSnackbar({ open: true, message: UA.deliveries_success_added, severity: 'success' });
       }
-    },
-    [editingDelivery, addDelivery, editDelivery, setError]
-  );
+      setFormOpen(false);
+      setEditingDelivery(null);
+    } catch (err) {
+      handleServiceError(err, 'error_save_delivery');
+    }
+  };
 
-  const handleFormClose = useCallback(() => {
+  const handleFormClose = () => {
     setFormOpen(false);
     setEditingDelivery(null);
-  }, []);
+    setError(null);
+  };
 
-  const handleRemove = useCallback(
-    async (id) => {
-      try {
-        await removeDelivery(id);
-      } catch (err) {
-        setError(err.message || 'Помилка при видаленні поставки');
-      }
-    },
-    [removeDelivery, setError]
-  );
+  const handleRemove = (id) => {
+    setConfirmDialog({ open: true, id });
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await removeDelivery(confirmDialog.id);
+      setSnackbar({ open: true, message: UA.deliveries_success_deleted, severity: 'success' });
+      handleCloseConfirmDialog();
+    } catch (err) {
+      handleServiceError(err, 'error_delete_delivery');
+    }
+  };
+
+  const handleCloseConfirmDialog = () => {
+    setConfirmDialog({ open: false, id: null });
+  };
+
+  const handleCloseSnackbar = () => setSnackbar({ open: false, message: '', severity: 'success' });
+
+  if (loading && deliveries.length === 0 && !formOpen) return <Typography>{UA.common_loading}</Typography>;
 
   return (
     <>
@@ -82,44 +112,36 @@ const ResourceDeliverySection = ({ locations = [], resourceTypes = [], initialEx
             justifyContent: 'space-between',
             p: 2,
             cursor: 'pointer',
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.02)',
-            },
+            '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' },
           }}
           onClick={handleToggle}
         >
-          <Typography
-            variant="h5"
-            component="h2"
-            sx={{
-              flexGrow: 1,
-              minWidth: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Поставки ресурсів ({deliveries.length})
+          <Typography variant="h5">
+            {UA.deliveries_title} ({deliveries.length})
           </Typography>
-          <IconButton onClick={handleToggle} size="small">
-            {expanded ? <ExpandLess /> : <ExpandMore />}
-          </IconButton>
+          <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
-
         <Divider />
-
         <Collapse in={expanded}>
           <Box sx={{ p: 3 }}>
             <ResourceDeliveryTable
               deliveries={deliveries}
-              locations={memoizedLocations}
-              resourceTypes={memoizedResourceTypes}
+              locations={locations}
+              resourceTypes={resourceTypes}
               search={search}
               setSearch={setSearch}
+              locationFilter={locationFilter}
+              setLocationFilter={setLocationFilter}
+              resourceTypeFilter={resourceTypeFilter}
+              setResourceTypeFilter={setResourceTypeFilter}
+              dateFromFilter={dateFromFilter}
+              setDateFromFilter={setDateFromFilter}
+              dateToFilter={dateToFilter}
+              setDateToFilter={setDateToFilter}
               onAdd={handleAdd}
               onEdit={handleEdit}
               removeDelivery={handleRemove}
-              error={error}
+              isLoading={loading}
             />
           </Box>
         </Collapse>
@@ -130,10 +152,32 @@ const ResourceDeliverySection = ({ locations = [], resourceTypes = [], initialEx
         onClose={handleFormClose}
         onSubmit={handleFormSubmit}
         initialData={editingDelivery || {}}
-        locations={memoizedLocations}
-        resourceTypes={memoizedResourceTypes}
+        locations={locations}
+        resourceTypes={resourceTypes}
+        isLoading={isActionLoading}
         error={error}
       />
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onClose={handleCloseConfirmDialog}
+        onConfirm={handleConfirmDelete}
+        action="delete"
+        entity="delivery"
+        dependencies={null}
+        isLoading={isActionLoading}
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

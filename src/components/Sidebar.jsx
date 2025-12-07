@@ -39,14 +39,16 @@ import { NavLink } from 'react-router-dom';
 import { Scrollbar } from 'react-scrollbars-custom';
 import { useAuthContext } from '../contexts/AuthContext';
 import useMediaQuery from '../hooks/useMediaQuery';
+import { UA } from '../utils/uaDictionary';
+import { BREAKPOINTS, STORAGE_KEYS } from '../constants';
 
 const Sidebar = () => {
   const theme = useTheme();
-  const isMobileOrTablet = useMediaQuery('(max-width:960px)');
+  const isMobileOrTablet = useMediaQuery(BREAKPOINTS.tablet);
 
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('sidebarCollapsed');
+      const saved = localStorage.getItem(STORAGE_KEYS.sidebarCollapsed);
       return saved === 'true';
     }
     return false;
@@ -56,7 +58,7 @@ const Sidebar = () => {
 
   const [expandedMenus, setExpandedMenus] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('expandedMenus');
+      const saved = localStorage.getItem(STORAGE_KEYS.expandedMenus);
       try {
         return saved ? JSON.parse(saved) : {};
       } catch (error) {
@@ -71,7 +73,7 @@ const Sidebar = () => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarCollapsed', collapsed.toString());
+      localStorage.setItem(STORAGE_KEYS.sidebarCollapsed, collapsed.toString());
     }
   }, [collapsed]);
 
@@ -84,7 +86,7 @@ const Sidebar = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem('expandedMenus', JSON.stringify(expandedMenus));
+        localStorage.setItem(STORAGE_KEYS.expandedMenus, JSON.stringify(expandedMenus));
       } catch (error) {
         console.warn('Failed to save expandedMenus to localStorage:', error);
       }
@@ -115,30 +117,34 @@ const Sidebar = () => {
   }, []);
 
   const menuItems = [
-    { key: '1', label: 'Подача показників', icon: <Assignment />, path: '/' },
+    { key: '1', label: UA.sidebar_submit_readings, icon: <Assignment />, path: '/' },
     ...(isAdmin
       ? [
           {
             key: '2',
-            label: 'Панель керування',
+            label: UA.sidebar_dashboard,
             icon: <Dashboard />,
             path: '/dashboard',
             hasSubmenu: true,
             submenu: [
-              { key: '2-1', label: 'Локації', path: '/dashboard/locations', icon: <LocationOn /> },
-              { key: '2-2', label: 'Типи ресурсів', path: '/dashboard/resource-types', icon: <Category /> },
-              { key: '2-3', label: 'Орендарі', path: '/dashboard/tenants', icon: <People /> },
-              { key: '2-4', label: 'Поставки ресурсів', path: '/dashboard/resource-delivery', icon: <LocalShipping /> },
-              { key: '2-5', label: 'Тарифи', path: '/dashboard/tariffs', icon: <AttachMoney /> },
-              { key: '2-6', label: 'Лічильники', path: '/dashboard/meters', icon: <Speed /> },
-              { key: '2-7', label: "Прив'язка лічильників", path: '/dashboard/meter-tenants', icon: <Link /> },
-              { key: '2-8', label: 'Користувачі', path: '/dashboard/users', icon: <AccountCircle /> },
+              { key: '2-1', label: UA.sidebar_locations, path: '/dashboard/locations', icon: <LocationOn /> },
+              { key: '2-2', label: UA.sidebar_resource_types, path: '/dashboard/resource-types', icon: <Category /> },
+              { key: '2-3', label: UA.sidebar_tenants, path: '/dashboard/tenants', icon: <People /> },
+              {
+                key: '2-4',
+                label: UA.sidebar_deliveries,
+                path: '/dashboard/resource-delivery',
+                icon: <LocalShipping />,
+              },
+              { key: '2-5', label: UA.sidebar_tariffs, path: '/dashboard/tariffs', icon: <AttachMoney /> },
+              { key: '2-6', label: UA.sidebar_meters, path: '/dashboard/meters', icon: <Speed /> },
+              { key: '2-7', label: UA.sidebar_meter_tenants, path: '/dashboard/meter-tenants', icon: <Link /> },
+              { key: '2-8', label: UA.sidebar_users, path: '/dashboard/users', icon: <AccountCircle /> },
             ],
           },
         ]
       : []),
-    { key: '3', label: 'Звіти', icon: <Description />, path: '/reports' },
-    { key: '4', label: 'Налаштування', icon: <Settings />, path: '/settings' },
+    { key: '3', label: UA.sidebar_reports, icon: <Description />, path: '/acts' },
   ];
 
   const MenuItem = ({ item, isCollapsed, expandedMenus, toggleMenu }) => {
@@ -279,11 +285,11 @@ const Sidebar = () => {
                 variant="body2"
                 sx={{ flexGrow: 1, fontSize: '0.875rem', fontWeight: 500 }}
                 noWrap
-                title={user?.full_name || user?.name || 'Користувач'}
+                title={user?.full_name || user?.name || UA.sidebar_user}
               >
-                {user?.full_name || user?.name || 'Користувач'}
+                {user?.full_name || user?.name || UA.sidebar_user}
               </Typography>
-              <Tooltip title="Вийти">
+              <Tooltip title={UA.sidebar_logout}>
                 <IconButton
                   onClick={handleLogout}
                   sx={{
@@ -313,13 +319,13 @@ const Sidebar = () => {
                 },
               }}
             >
-              Увійти / Зареєструватися
+              {UA.sidebar_login_register}
             </Button>
           )}
         </Box>
       ) : (
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-          <Tooltip title={isAuthenticated ? 'Вийти' : 'Увійти'}>
+          <Tooltip title={isAuthenticated ? UA.sidebar_logout : UA.sidebar_login}>
             <IconButton
               onClick={isAuthenticated ? handleLogout : loginWithRedirect}
               sx={{
@@ -390,7 +396,7 @@ const Sidebar = () => {
       {!isMobileOrTablet && (
         <Box sx={{ p: 1, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
           <Box sx={{ display: 'flex', justifyContent: collapsed ? 'center' : 'flex-end' }}>
-            <Tooltip title={collapsed ? 'Розгорнути' : 'Згорнути'}>
+            <Tooltip title={collapsed ? UA.sidebar_expand : UA.sidebar_collapse}>
               <IconButton
                 onClick={toggleCollapsed}
                 sx={{

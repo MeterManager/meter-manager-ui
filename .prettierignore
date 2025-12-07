@@ -1,4 +1,6 @@
 node_modules
-.env
 build
 dist
+.env
+.env.development
+.env.production

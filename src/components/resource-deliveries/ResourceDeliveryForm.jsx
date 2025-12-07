@@ -1,37 +1,53 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, MenuItem } from '@mui/material';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  Alert,
+  MenuItem,
+  IconButton,
+  Box,
+  CircularProgress,
+} from '@mui/material';
+import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
+import CustomDatePicker from '../ui/DatePicker';
+import { UA } from '../../utils/uaDictionary';
+import { BREAKPOINTS, DIALOG_CONFIG, FORM_FIELDS, SIZES } from '../../constants';
 
 const ResourceDeliveryForm = ({
   open,
   onClose,
   onSubmit,
   initialData = {},
-  error,
   locations = [],
   resourceTypes = [],
+  isLoading,
+  error,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:800px)');
-  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(BREAKPOINTS.mobileWide);
+  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down(BREAKPOINTS.md));
 
   const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     if (open) {
+      const dateValue = initialData.delivery_date || initialData.deliveryDate;
       const mappedData = {
         locationId: initialData.location_id || initialData.locationId || '',
         resourceTypeId: initialData.energy_resource_type_id || initialData.resourceTypeId || '',
         quantity: initialData.quantity || '',
         unit: initialData.unit || '',
         pricePerUnit: initialData.price_per_unit || initialData.pricePerUnit || '',
-        deliveryDate:
-          initialData.delivery_date || initialData.deliveryDate
-            ? new Date(initialData.delivery_date || initialData.deliveryDate).toISOString().split('T')[0]
-            : '',
         supplier: initialData.supplier || '',
+        id: initialData.id,
+        deliveryDate: dateValue ? new Date(dateValue).toISOString().split('T')[0] : '',
       };
       setFormData(mappedData);
       setFormErrors({});
@@ -39,36 +55,42 @@ const ResourceDeliveryForm = ({
   }, [open, initialData]);
 
   const validateField = (name, value) => {
-    let error = '';
-    if (name === 'locationId' && !value) error = 'Виберіть локацію.';
-    if (name === 'resourceTypeId' && !value) error = 'Виберіть тип ресурсу.';
-    if (name === 'quantity' && (!value || isNaN(value) || parseFloat(value) < 0))
-      error = 'Вкажіть кількість (додатнє число).';
-    if (name === 'unit' && !value) error = 'Вкажіть одиницю виміру.';
-    if (name === 'pricePerUnit' && (!value || isNaN(value) || parseFloat(value) < 0))
-      error = 'Вкажіть ціну за одиницю (додатнє число).';
-    if (name === 'deliveryDate' && !value) error = 'Вкажіть дату.';
+    let errorMsg = '';
+    if (name === 'locationId' && (!value || value === '')) errorMsg = UA.deliveries_location_required;
+    if (name === 'resourceTypeId' && (!value || value === '')) errorMsg = UA.deliveries_resource_type_required;
+    if (name === 'unit' && !value) errorMsg = UA.deliveries_unit_required;
+    if (name === 'deliveryDate' && !value) errorMsg = UA.deliveries_date_required;
+    if (name === 'quantity' || name === 'pricePerUnit') {
+      const trimmed = String(value).trim();
+      if (!trimmed) {
+        errorMsg = name === 'quantity' ? UA.deliveries_quantity_required : UA.deliveries_price_required;
+      } else {
+        const num = parseFloat(trimmed);
+        if (isNaN(num) || num <= 0) errorMsg = UA.deliveries_positive_number;
+      }
+    }
 
-    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
+    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: errorMsg }));
+    return errorMsg;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const processedValue = (name === 'locationId' || name === 'resourceTypeId') && value !== '' ? Number(value) : value;
+    const isIdField = name === 'locationId' || name === 'resourceTypeId';
+    const processedValue = isIdField && value !== '' ? Number(value) : value;
+
     setFormData({ ...formData, [name]: processedValue });
     validateField(name, processedValue);
   };
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.locationId) errors.locationId = 'Виберіть локацію.';
-    if (!formData.resourceTypeId) errors.resourceTypeId = 'Виберіть тип ресурсу.';
-    if (!formData.quantity || isNaN(formData.quantity) || parseFloat(formData.quantity) < 0)
-      errors.quantity = 'Вкажіть кількість.';
-    if (!formData.unit) errors.unit = 'Вкажіть одиницю виміру.';
-    if (!formData.pricePerUnit || isNaN(formData.pricePerUnit) || parseFloat(formData.pricePerUnit) < 0)
-      errors.pricePerUnit = 'Вкажіть ціну за одиницю.';
-    if (!formData.deliveryDate) errors.deliveryDate = 'Вкажіть дату.';
+    ['locationId', 'resourceTypeId', 'quantity', 'unit', 'pricePerUnit', 'deliveryDate'].forEach((field) => {
+      const value = formData[field];
+      const errorMsg = validateField(field, value);
+      if (errorMsg) errors[field] = errorMsg;
+    });
+    setFormErrors(errors);
     return errors;
   };
 
@@ -76,27 +98,50 @@ const ResourceDeliveryForm = ({
     e.preventDefault();
     const errors = validateForm();
     if (Object.keys(errors).length) {
-      setFormErrors(errors);
+      return;
+    }
+
+    const quantity = parseFloat(formData.quantity);
+    const pricePerUnit = parseFloat(formData.pricePerUnit);
+
+    if (isNaN(quantity) || quantity <= 0) {
+      setFormErrors({ ...formErrors, quantity: UA.deliveries_positive_number });
+      return;
+    }
+
+    if (isNaN(pricePerUnit) || pricePerUnit <= 0) {
+      setFormErrors({ ...formErrors, pricePerUnit: UA.deliveries_positive_number });
+      return;
+    }
+
+    const locationId = Number(formData.locationId);
+    const resourceTypeId = Number(formData.resourceTypeId);
+
+    if (!locationId || !resourceTypeId) {
+      setFormErrors({
+        ...formErrors,
+        locationId: !locationId ? UA.deliveries_location_required : '',
+        resourceTypeId: !resourceTypeId ? UA.deliveries_resource_type_required : '',
+      });
       return;
     }
 
     const submitData = {
-      locationId: Number(formData.locationId),
-      resourceTypeId: Number(formData.resourceTypeId),
-      quantity: parseFloat(formData.quantity),
-      unit: formData.unit,
-      pricePerUnit: parseFloat(formData.pricePerUnit),
-      totalCost: parseFloat(formData.quantity) * parseFloat(formData.pricePerUnit),
-      deliveryDate: new Date(formData.deliveryDate).toISOString(),
-      supplier: formData.supplier || '',
+      location_id: locationId,
+      energy_resource_type_id: resourceTypeId,
+      quantity: quantity,
+      unit: String(formData.unit).trim(),
+      price_per_unit: pricePerUnit,
+      total_cost: quantity * pricePerUnit,
+      delivery_date: new Date(formData.deliveryDate).toISOString(),
+      supplier: formData.supplier ? String(formData.supplier).trim() : null,
     };
 
-    try {
-      await onSubmit(submitData);
-      onClose();
-    } catch (err) {
-      console.error('Error submitting form:', err);
+    if (formData.id) {
+      submitData.id = formData.id;
     }
+
+    await onSubmit(submitData);
   };
 
   const handleClose = () => {
@@ -105,38 +150,40 @@ const ResourceDeliveryForm = ({
     onClose();
   };
 
+  const selectedResource = resourceTypes.find((rt) => rt.id === formData.resourceTypeId);
+  const unitPlaceholder = selectedResource ? selectedResource.unit : UA.deliveries_unit_placeholder;
+
   return (
     <Dialog
       open={open}
       onClose={handleClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth={DIALOG_CONFIG.maxWidth.sm}
       fullScreen={isMobile}
       PaperProps={{
         sx: {
-          width: isMobile ? '100%' : isMobileOrTablet ? '90%' : '500px',
-          maxWidth: isMobile ? '100%' : '500px',
+          width: isMobile ? '100%' : isMobileOrTablet ? DIALOG_CONFIG.paperMaxWidthTablet : DIALOG_CONFIG.paperMaxWidth,
+          maxWidth: isMobile ? '100%' : DIALOG_CONFIG.paperMaxWidth,
           margin: isMobile ? 0 : 'auto',
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          fontSize: isMobile ? '1.125rem' : '1.25rem',
-          fontWeight: 600,
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2.5,
-        }}
-      >
-        {initialData.id ? 'Редагувати поставку ресурсу' : 'Додати поставку ресурсу'}
+      <DialogTitle sx={theme.mixins.dialogTitle}>
+        <Box component="span">{initialData.id ? UA.deliveries_edit : UA.deliveries_add}</Box>
+        <IconButton
+          onClick={handleClose}
+          size="small"
+          sx={{
+            ml: 1,
+            color: 'text.secondary',
+            '&:hover': { color: 'text.primary' },
+          }}
+          disabled={isLoading}
+        >
+          <Close />
+        </IconButton>
       </DialogTitle>
-
-      <DialogContent
-        sx={{
-          px: isMobile ? 2 : 3,
-          pb: 1,
-        }}
-      >
+      <DialogContent sx={theme.mixins.dialogContent}>
         {error && (
           <Alert
             severity="error"
@@ -148,31 +195,24 @@ const ResourceDeliveryForm = ({
             {error}
           </Alert>
         )}
-
         <TextField
           select
           name="locationId"
-          label="Локація"
+          label={UA.deliveries_location}
           value={formData.locationId || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mt: 1,
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          variant={FORM_FIELDS.textField.variant}
+          sx={{ mt: 1, mb: 2 }}
           error={!!formErrors.locationId}
           helperText={formErrors.locationId || ' '}
+          disabled={isLoading}
         >
+          <MenuItem value="">
+            {UA.common_select} {UA.deliveries_location.toLowerCase()}
+          </MenuItem>
           {locations.length === 0 ? (
-            <MenuItem disabled>Немає доступних локацій</MenuItem>
+            <MenuItem disabled>{UA.error_no_locations_available}</MenuItem>
           ) : (
             locations.map((loc) => (
               <MenuItem key={loc.id} value={loc.id}>
@@ -181,182 +221,114 @@ const ResourceDeliveryForm = ({
             ))
           )}
         </TextField>
-
         <TextField
           select
           name="resourceTypeId"
-          label="Тип ресурсу"
+          label={UA.deliveries_resource_type}
           value={formData.resourceTypeId || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          variant={FORM_FIELDS.textField.variant}
+          sx={{ mb: 2 }}
           error={!!formErrors.resourceTypeId}
           helperText={formErrors.resourceTypeId || ' '}
+          disabled={isLoading}
         >
+          <MenuItem value="">
+            {UA.common_select} {UA.deliveries_resource_type.toLowerCase()}
+          </MenuItem>
           {resourceTypes.length === 0 ? (
-            <MenuItem disabled>Немає доступних типів ресурсів</MenuItem>
+            <MenuItem disabled>{UA.error_no_resource_types_available}</MenuItem>
           ) : (
             resourceTypes.map((res) => (
               <MenuItem key={res.id} value={res.id}>
-                {res.name}
+                {res.name} ({res.unit})
               </MenuItem>
             ))
           )}
         </TextField>
-
         <TextField
           name="quantity"
-          label="Кількість"
+          label={UA.deliveries_quantity}
           type="number"
           value={formData.quantity || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          variant={FORM_FIELDS.textField.variant}
+          sx={{ mb: 2 }}
           error={!!formErrors.quantity}
           helperText={formErrors.quantity || ' '}
-          inputProps={{ min: 0, step: 0.01 }}
+          inputProps={{ min: 0.01, step: 0.01 }}
+          disabled={isLoading}
         />
-
         <TextField
           name="unit"
-          label="Одиниця виміру"
+          label={unitPlaceholder}
           value={formData.unit || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          variant={FORM_FIELDS.textField.variant}
+          sx={{ mb: 2 }}
           error={!!formErrors.unit}
           helperText={formErrors.unit || ' '}
+          disabled={isLoading}
         />
-
         <TextField
           name="pricePerUnit"
-          label="Ціна за одиницю"
+          label={UA.deliveries_price_per_unit}
           type="number"
           value={formData.pricePerUnit || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          variant={FORM_FIELDS.textField.variant}
+          sx={{ mb: 2 }}
           error={!!formErrors.pricePerUnit}
           helperText={formErrors.pricePerUnit || ' '}
-          inputProps={{ min: 0, step: 0.01 }}
+          inputProps={{ min: 0.01, step: 0.01 }}
+          disabled={isLoading}
         />
-
-        <TextField
-          name="deliveryDate"
-          label="Дата доставки"
-          type="date"
-          value={formData.deliveryDate || ''}
-          onChange={handleChange}
-          fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            mb: 2,
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
+        <CustomDatePicker
+          value={formData.deliveryDate || null}
+          onChange={(newValue) => {
+            handleChange({
+              target: { name: 'deliveryDate', value: newValue },
+            });
           }}
-          InputLabelProps={{ shrink: true }}
+          label={UA.deliveries_delivery_date}
           error={!!formErrors.deliveryDate}
           helperText={formErrors.deliveryDate || ' '}
+          sx={{ mb: 2 }}
+          disabled={isLoading}
         />
-
         <TextField
           name="supplier"
-          label="Постачальник"
+          label={UA.deliveries_supplier}
           value={formData.supplier || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
-          sx={{
-            '& .MuiInputBase-input': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-            '& .MuiInputLabel-root': {
-              fontSize: isMobile ? '1rem' : '1rem',
-            },
-          }}
+          variant={FORM_FIELDS.textField.variant}
           helperText=" "
+          disabled={isLoading}
         />
       </DialogContent>
-
-      <DialogActions
-        sx={{
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2,
-          gap: isMobile ? 1 : 1,
-          flexDirection: isMobile ? 'column-reverse' : 'row',
-          '& .MuiButton-root': {
-            minWidth: isMobile ? 'auto' : '80px',
-            fontSize: isMobile ? '1rem' : '0.875rem',
-            height: isMobile ? '44px' : '36px',
-          },
-        }}
-      >
+      <DialogActions sx={theme.mixins.dialogActions}>
         <Button
           variant="outlined"
           onClick={handleClose}
           fullWidth={isMobile}
-          sx={{
-            order: isMobile ? 1 : 0,
-          }}
+          disabled={isLoading}
+          sx={{ order: isMobile ? 1 : 0 }}
         >
-          Скасувати
+          {UA.common_cancel}
         </Button>
         <Button
           variant="contained"
           onClick={handleSubmit}
           fullWidth={isMobile}
-          sx={{
-            order: isMobile ? 0 : 1,
-            marginLeft: '0 !important',
-          }}
+          sx={{ order: isMobile ? 0 : 1, marginLeft: '0 !important' }}
+          disabled={isLoading}
         >
-          Зберегти
+          {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Зберегти'}
         </Button>
       </DialogActions>
     </Dialog>

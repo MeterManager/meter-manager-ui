@@ -1,76 +1,65 @@
 import { useState, useCallback, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import * as locationApi from '../api/locationsApi';
-import { useAuthContext } from '../contexts/AuthContext';
-
-const fetcher = async (url, getToken, search = '') => {
-  const token = await getToken();
-  if (!token) throw new Error('No token available');
-  
-  const response = await locationApi.getLocations(token, search);
-  return (response.data || []).map((loc) => ({
-    ...loc,
-    isActive: loc.is_active === true,
-  }));
-};
+import { useAuthRequest } from './useAuthRequest';
+import { useErrorHandler } from './useErrorHandler';
 
 export const useLocations = () => {
-  const { isAuthenticated, isLoading, getToken, isBlocked } = useAuthContext();
-  const [search, setSearch] = useState('');
-  const [error, setError] = useState(null);
+  const { canRequest, withToken } = useAuthRequest();
+  const { error, setError, handleError } = useErrorHandler('Помилка при завантаженні локацій');
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
-  const swrKey = isAuthenticated && !isLoading && !isBlocked && getToken ? 
-    ['locations', getToken, search] : null;
+  const fetcher = useCallback(async () => {
+    const data = await withToken(locationApi.getLocations);
+    return (data || []).map((loc) => ({
+      ...loc,
+      isActive: loc.is_active === true,
+      tenant: loc.Tenant || null,
+    }));
+  }, [withToken]);
+
+  const swrKey = canRequest ? ['locations', null] : null;
 
   const {
     data: locations = [],
-    error: swrError,
     isLoading: loading,
     mutate: mutateLocations,
-  } = useSWR(swrKey, ([url, getToken, search]) => fetcher(url, getToken, search), {
-    onError: (err) => {
-      if (err.response?.status === 403) {
-        return;
-      }
-      setError('Помилка при завантаженні локацій');
-      console.error('SWR Error:', err);
-    },
+  } = useSWR(swrKey, fetcher, {
+    onError: handleError,
     revalidateOnFocus: false,
     dedupingInterval: 5000,
   });
 
-  const activeLocations = useMemo(() => {
-    return locations.filter((loc) => loc.isActive);
-  }, [locations]);
+  const activeLocations = useMemo(() => locations.filter((loc) => loc.isActive), [locations]);
 
   const addLocation = useCallback(
     async (data) => {
-      if (isBlocked) throw new Error('User is blocked');
-      
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-      
-      const transformedData = {
-        name: data.name,
-        address: data.address,
-        is_active: data.isActive ?? true,
-      };
-
       try {
+        setIsActionLoading(true);
         setError(null);
 
-        const tempId = Date.now();
+        const transformedData = {
+          name: data.name,
+          address: data.address,
+          is_active: data.isActive ?? true,
+          occupied_area: data.occupied_area,
+          tenant_id: data.tenant_id ?? null,
+        };
+
+        const tempId = `temp-${Date.now()}`;
         const optimisticLocation = {
           id: tempId,
           name: transformedData.name,
           address: transformedData.address,
           isActive: transformedData.is_active,
+          occupied_area: transformedData.occupied_area,
+          tenant: data.tenant_id ? { id: data.tenant_id, name: data.tenantName || '...' } : null,
           isOptimistic: true,
         };
 
-        mutateLocations([...locations, optimisticLocation], false);
+        mutateLocations((prev = []) => [...prev, optimisticLocation], false);
 
-        const response = await locationApi.createLocation(token, transformedData);
+        const response = await withToken(locationApi.createLocation, transformedData);
 
         mutateLocations();
         mutate('meters');
@@ -80,114 +69,142 @@ export const useLocations = () => {
         return response;
       } catch (err) {
         mutateLocations();
-        setError('Помилка при додаванні локації');
+        handleError(err, 'Помилка при додаванні локації');
         throw err;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [locations, mutateLocations, getToken, isBlocked]
+    [mutateLocations, withToken]
   );
 
   const editLocation = useCallback(
     async (id, data) => {
-      if (isBlocked) throw new Error('User is blocked');
-      
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-      
-      const transformedData = {
-        name: data.name,
-        address: data.address,
-        is_active: data.isActive,
-      };
-
       try {
+        setIsActionLoading(true);
         setError(null);
 
+        const transformedData = {
+          name: data.name,
+          address: data.address,
+          is_active: data.isActive,
+          occupied_area: data.occupied_area,
+          tenant_id: data.tenant_id ?? null,
+        };
+
         const updatedLocations = locations.map((loc) =>
-          loc.id === id ? { ...loc, ...transformedData, isActive: transformedData.is_active } : loc
+          loc.id === id
+            ? {
+                ...loc,
+                name: transformedData.name,
+                address: transformedData.address,
+                isActive: transformedData.is_active,
+                occupied_area: transformedData.occupied_area,
+                tenant: transformedData.tenant_id
+                  ? { id: transformedData.tenant_id, name: data.tenantName || loc.tenant?.name }
+                  : null,
+              }
+            : loc
         );
         mutateLocations(updatedLocations, false);
 
-        const response = await locationApi.updateLocation(token, id, transformedData);
+        const response = await withToken(locationApi.updateLocation, id, transformedData);
 
         mutateLocations();
-        mutate('meters');
-        mutate('tenants');
+        if (transformedData.is_active === false) {
+          mutate('meters');
+          mutate('tenants');
+        }
 
         return response;
       } catch (err) {
         mutateLocations();
-        setError('Помилка при редагуванні локації');
+        handleError(err, 'Помилка при редагуванні локації');
         throw err;
+      } finally {
+        setIsActionLoading(false);
       }
     },
-    [locations, mutateLocations, getToken, isBlocked]
+    [locations, mutateLocations, withToken]
   );
 
-    const removeLocation = useCallback(async (id) => {
-      if (isBlocked) throw new Error('User is blocked');
-      const token = await getToken();
-      if (!token) throw new Error('No token available');
-      
+  const removeLocation = useCallback(
+    async (id) => {
       try {
+        setIsActionLoading(true);
         setError(null);
-        await locationApi.deleteLocation(token, id);
+        await withToken(locationApi.deleteLocation, id);
         mutateLocations();
         mutate('meters');
         mutate('tenants');
         mutate('deliveries');
       } catch (err) {
         mutateLocations();
-        setError('Помилка при видаленні локації');
+        handleError(err, 'Помилка при видаленні локації');
+        throw err;
+      } finally {
+        setIsActionLoading(false);
+      }
+    },
+    [mutateLocations, withToken]
+  );
+
+  const updateLocationStatus = useCallback(
+    async (id, is_active, force = false) => {
+      const loc = locations.find((l) => l.id === id);
+      if (!loc) throw new Error('Локацію не знайдено');
+      try {
+        setError(null);
+        if (!is_active && !force) {
+          const dependencies = await withToken(locationApi.getLocationDependencies, id);
+          const hasDependencies = dependencies.data.active_meters > 0 || dependencies.data.active_tenants > 0;
+          if (hasDependencies) {
+            return {
+              requiresConfirmation: true,
+              dependencies: dependencies.data,
+            };
+          }
+        }
+        const payload = { name: loc.name, address: loc.address, is_active };
+        const updatedLocations = locations.map((location) =>
+          location.id === id ? { ...location, isActive: is_active } : location
+        );
+        mutateLocations(updatedLocations, false);
+
+        const response = await withToken(locationApi.updateLocation, id, payload);
+
+        mutateLocations();
+        if (!is_active) {
+          mutate('meters');
+          mutate('tenants');
+        }
+
+        return {
+          requiresConfirmation: false,
+          data: response,
+        };
+      } catch (err) {
+        mutateLocations();
+        handleError(err, 'Помилка при оновленні статусу локації');
         throw err;
       }
-    }, [mutateLocations, getToken, isBlocked]);
+    },
+    [locations, mutateLocations, withToken, handleError, setError]
+  );
 
-  const updateLocationStatus = useCallback(async (id, is_active) => {
-    if (isBlocked) throw new Error('User is blocked');
-    const token = await getToken();
-    if (!token) throw new Error('No token available');
-    const loc = locations.find((l) => l.id === id);
-    if (!loc) throw new Error('Локацію не знайдено');
-    try {
-      setError(null);
-      if (!is_active) {
-        const dependencies = await locationApi.getLocationDependencies(token, id);
-        if (dependencies.data.active_meters > 0) {
-          const confirm = window.confirm(
-            `Ця дія деактивує ${dependencies.data.active_meters} активних лічильників. Продовжити?`
-          );
-          if (!confirm) return;
-        }
+  const getDependencies = useCallback(
+    async (id) => {
+      try {
+        setError(null);
+        const response = await withToken(locationApi.getLocationDependencies, id);
+        return response.data;
+      } catch (err) {
+        handleError(err, 'Помилка при отриманні залежностей локації');
+        throw err;
       }
-      const payload = { name: loc.name, address: loc.address, is_active };
-      const updatedLocations = locations.map((location) =>
-        location.id === id ? { ...location, isActive: is_active } : location
-      );
-      mutateLocations(updatedLocations, false);
-      const response = await locationApi.updateLocation(token, id, payload);
-      mutateLocations();
-      mutate('meters');
-      return response;
-    } catch (err) {
-      mutateLocations();
-      setError('Помилка при оновленні статусу локації');
-      throw err;
-    }
-  }, [locations, mutateLocations, getToken, isBlocked]);
-
-  const getDependencies = useCallback(async (id) => {
-    const token = await getToken();
-    if (!token) throw new Error('No token available');
-    try {
-      setError(null);
-      const response = await locationApi.getLocationDependencies(token, id);
-      return response.data;
-    } catch (err) {
-      setError('Помилка при отриманні залежностей локації');
-      throw err;
-    }
-  }, [getToken]);
+    },
+    [withToken]
+  );
 
   const refreshLocations = useCallback(() => {
     mutateLocations();
@@ -196,16 +213,14 @@ export const useLocations = () => {
   return {
     locations,
     activeLocations,
-    loading,
-    search,
-    setSearch,
+    loading: loading || isActionLoading,
     addLocation,
     editLocation,
     removeLocation,
     updateLocationStatus,
     refreshLocations,
     getDependencies,
-    error: error || swrError,
+    error,
     setError,
   };
 };

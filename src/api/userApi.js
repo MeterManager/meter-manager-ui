@@ -8,19 +8,14 @@ export const getUsers = async (token, search = '') => {
   return response.data;
 };
 
-export const getUserById = async (token, id) => {
-  const api = createApi(token);
-  const response = await api.get(`/users/${id}`);
-  return response.data;
-};
-
 export const updateUser = async (token, id, data) => {
   const api = createApi(token);
   const response = await api.put(`/users/${id}`, data);
   return response.data;
 };
 
-export const deleteUser = async (token, id) => {
+export const verifyUser = async (token) => {
   const api = createApi(token);
-  await api.delete(`/users/${id}`);
+  const response = await api.get('/auth/verify-token');
+  return response.data;
 };

@@ -1,21 +1,14 @@
 import { useState } from 'react';
-import {
-  Paper,
-  Box,
-  Typography,
-  Collapse,
-  IconButton,
-  Divider,
-  Snackbar,
-  Alert,
-} from '@mui/material';
+import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import UsersTable from './UsersTable';
 import { useUsers } from '../../hooks/useUsers';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
 
 const UsersSection = ({ initialExpanded = true }) => {
-  const { users, search, setSearch, editUser, updateUserStatus, error, setError } = useUsers();
+  const { users, search, setSearch, updateUserStatus, loading, setError } = useUsers();
   const { user } = useAuthContext();
   const currentUserId = user?.sub;
 
@@ -29,32 +22,14 @@ const UsersSection = ({ initialExpanded = true }) => {
       await updateUserStatus(id, isActive);
       setSnackbar({
         open: true,
-        message: `Користувача успішно ${isActive ? 'активовано' : 'деактивовано'}`,
+        message: `${UA.users_success_status_updated} ${isActive ? UA.users_activated : UA.users_deactivated}`,
         severity: 'success',
       });
     } catch (err) {
-      setError(err.message || 'Помилка при оновленні статусу користувача');
+      const userMessage = translateErrorMessage(err.message || UA.users_status_update_error);
       setSnackbar({
         open: true,
-        message: err.message || 'Помилка при оновленні статусу користувача',
-        severity: 'error',
-      });
-    }
-  };
-
-  const handleEditUser = async (id, data) => {
-    try {
-      await editUser(id, data);
-      setSnackbar({
-        open: true,
-        message: 'Дані користувача успішно оновлено',
-        severity: 'success',
-      });
-    } catch (err) {
-      setError(err.message || 'Помилка при редагуванні користувача');
-      setSnackbar({
-        open: true,
-        message: err.message || 'Помилка при редагуванні користувача',
+        message: userMessage,
         severity: 'error',
       });
     }
@@ -78,7 +53,9 @@ const UsersSection = ({ initialExpanded = true }) => {
           }}
           onClick={handleToggle}
         >
-          <Typography variant="h5">Користувачі ({users.length})</Typography>
+          <Typography variant="h5">
+            {UA.users_title} ({users.filter((u) => u.role !== 'admin').length})
+          </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
         <Divider />
@@ -88,16 +65,22 @@ const UsersSection = ({ initialExpanded = true }) => {
               users={users}
               search={search}
               setSearch={setSearch}
-              editUser={handleEditUser}
               updateUserStatus={handleUpdateStatus}
-              setLocalError={setError}
               currentUserId={currentUserId}
+              isLoading={loading}
+              isActionLoadingUserId={null}
+              setLocalError={setError}
             />
           </Box>
         </Collapse>
       </Paper>
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>

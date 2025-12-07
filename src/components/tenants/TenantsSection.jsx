@@ -8,14 +8,21 @@ import {
   Divider,
   Snackbar,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import TenantsTable from '../tenants/TenantsTable';
 import TenantForm from '../tenants/TenantForm';
 import { useTenants } from '../../hooks/useTenants';
 import { useLocations } from '../../hooks/useLocations';
+import { translateErrorMessage } from '../../utils/translateError';
+import ConfirmDialog from '../ui/ConfirmDialog';
+import { UA } from '../../utils/uaDictionary';
+import { DEFAULTS } from '../../constants';
+import { useTheme } from '@mui/material/styles';
 
 const TenantsSection = ({ initialExpanded = true }) => {
+  const theme = useTheme();
   const {
     tenants,
     search,
@@ -27,6 +34,8 @@ const TenantsSection = ({ initialExpanded = true }) => {
     getTenantDependencies,
     error,
     setError,
+    loading: tenantsLoading,
+    isActionLoading,
   } = useTenants();
 
   const { locations, loading: locationsLoading, error: locationsError } = useLocations();
@@ -35,53 +44,90 @@ const TenantsSection = ({ initialExpanded = true }) => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [locationFilter, setLocationFilter] = useState('');
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null, action: null, dependencies: null });
+
+  const handleServiceError = (err, defaultMessage = null) => {
+    const userMessage = translateErrorMessage(err.message || defaultMessage || UA.error_action_default);
+    setSnackbar({ open: true, message: userMessage, severity: 'error' });
+    setError(userMessage);
+  };
 
   const handleToggle = () => setExpanded(!expanded);
 
   const handleAdd = () => {
     setEditingTenant(null);
+    setError(null);
     setFormOpen(true);
   };
 
   const handleEdit = (tenant) => {
     setEditingTenant(tenant);
+    setError(null);
     setFormOpen(true);
   };
 
   const handleSubmit = async (data) => {
     try {
-      if (editingTenant) {
+      if (editingTenant?.id) {
         await editTenant(editingTenant.id, data);
-        setSnackbar({ open: true, message: 'Орендаря успішно оновлено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.tenants_success_updated, severity: 'success' });
       } else {
         await addTenant(data);
-        setSnackbar({ open: true, message: 'Орендаря успішно додано', severity: 'success' });
+        setSnackbar({ open: true, message: UA.tenants_success_added, severity: 'success' });
       }
+    } catch (err) {
+      handleServiceError(err, UA.error_save_tenant);
+    } finally {
       setFormOpen(false);
       setEditingTenant(null);
-    } catch (err) {
-      setError(err.message || 'Помилка при збереженні орендаря');
-      setSnackbar({ open: true, message: err.message || 'Помилка при збереженні орендаря', severity: 'error' });
+      setError(null);
     }
+  };
+
+  const handleFormClose = () => {
+    setFormOpen(false);
+    setEditingTenant(null);
+    setError(null);
   };
 
   const handleRemove = async (id) => {
     try {
-      await removeTenant(id);
-      setSnackbar({ open: true, message: 'Орендаря видалено', severity: 'success' });
+      const dependencies = await getTenantDependencies(id);
+
+      const hasDependencies = dependencies.active_meter_tenants > 0;
+
+      setConfirmDialog({
+        open: true,
+        id,
+        action: 'delete',
+        dependencies: hasDependencies ? dependencies : null,
+      });
     } catch (err) {
-      setError(err.message || 'Помилка при видаленні орендаря');
-      setSnackbar({ open: true, message: err.message || 'Помилка при видаленні орендаря', severity: 'error' });
+      handleServiceError(err, UA.error_check_dependencies);
     }
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await removeTenant(confirmDialog.id);
+      setSnackbar({ open: true, message: UA.tenants_success_deleted, severity: 'success' });
+      handleCloseConfirmDialog();
+    } catch (err) {
+      handleServiceError(err, UA.error_delete_tenant);
+    }
+  };
+
+  const handleCloseConfirmDialog = () => {
+    setConfirmDialog({ open: false, id: null, action: null, dependencies: null });
   };
 
   const handleStatusUpdate = async (id, statusData) => {
     try {
       await updateTenantStatus(id, statusData);
-      setSnackbar({ open: true, message: 'Статус орендаря оновлено', severity: 'success' });
+      setSnackbar({ open: true, message: UA.tenants_success_status, severity: 'success' });
     } catch (err) {
-      setError(err.message || 'Помилка при оновленні статусу');
-      setSnackbar({ open: true, message: err.message || 'Помилка при оновленні статусу', severity: 'error' });
+      handleServiceError(err, UA.error_update_status);
     }
   };
 
@@ -89,39 +135,64 @@ const TenantsSection = ({ initialExpanded = true }) => {
     setSnackbar({ open: false, message: '', severity: 'success' });
   };
 
-  if (locationsLoading) return <Typography>Завантаження локацій...</Typography>;
-  if (locationsError) return <Typography color="error">Помилка при завантаженні локацій</Typography>;
+  const isLoading = tenantsLoading || locationsLoading;
+
+  if (locationsError)
+    return (
+      <Typography color="error">
+        {UA.locations_load_error}: {locationsError.message}
+      </Typography>
+    );
+
+  if (isLoading && tenants.length === 0) return <CircularProgress />;
 
   return (
     <>
-      <Paper sx={{ mb: 3, borderRadius: 2 }} elevation={1}>
+      <Paper
+        sx={{
+          mb: 2.5,
+          borderRadius: 1.5,
+          overflow: 'hidden',
+        }}
+        elevation={2}
+      >
         <Box
           display="flex"
           alignItems="center"
           justifyContent="space-between"
-          p={2}
-          sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' } }}
+          px={2.5}
+          py={1.75}
+          sx={{
+            cursor: 'pointer',
+            transition: 'background-color 0.2s',
+            '&:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.02)',
+            },
+          }}
           onClick={handleToggle}
         >
-          <Typography variant="h5" fontWeight={600}>
-            Орендарі ({tenants.length})
+          <Typography variant="h6" fontWeight={600} fontSize="1.125rem">
+            {UA.tenants_title} ({tenants.length})
           </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
         <Divider />
         <Collapse in={expanded} timeout="auto">
-          <Box p={3}>
+          <Box px={2.5} py={2.5}>
             <TenantsTable
               tenants={tenants}
               search={search}
               setSearch={setSearch}
+              locationFilter={locationFilter}
+              setLocationFilter={setLocationFilter}
+              locations={locations}
               onAdd={handleAdd}
               onEdit={handleEdit}
               removeTenant={handleRemove}
               updateTenantStatus={handleStatusUpdate}
               getTenantDependencies={getTenantDependencies}
               setLocalError={setError}
-              locations={locations}
+              isLoading={isLoading || isActionLoading}
             />
           </Box>
         </Collapse>
@@ -129,18 +200,30 @@ const TenantsSection = ({ initialExpanded = true }) => {
 
       <TenantForm
         open={formOpen}
-        onClose={() => {
-          setFormOpen(false);
-          setEditingTenant(null);
-        }}
+        onClose={handleFormClose}
         onSubmit={handleSubmit}
         initialData={editingTenant || {}}
         error={error}
         tenants={tenants}
-        locations={locations}
+        locations={locations.filter((l) => l.isActive)}
       />
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onClose={handleCloseConfirmDialog}
+        onConfirm={handleConfirmDelete}
+        action={confirmDialog.action}
+        entity="tenant"
+        dependencies={confirmDialog.dependencies}
+        isLoading={isActionLoading}
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={DEFAULTS.snackbarDuration}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>

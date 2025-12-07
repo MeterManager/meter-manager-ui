@@ -9,70 +9,59 @@ import MetersSection from '../components/meters/MetersSection';
 import MeterTenantsSection from '../components/meter-tenants/MeterTenantsSection';
 import UsersSection from '../components/users/UsersSection';
 import { useAuthContext } from '../contexts/AuthContext';
+import { UA } from '../utils/uaDictionary';
+
+const ALL_SECTIONS = [
+  { path: 'locations', Component: LocationsSection },
+  { path: 'resource-types', Component: ResourceTypesSection },
+  { path: 'tenants', Component: TenantsSection },
+  { path: 'resource-delivery', Component: ResourceDeliverySection },
+  { path: 'tariffs', Component: TariffsSection },
+  { path: 'meters', Component: MetersSection },
+  { path: 'meter-tenants', Component: MeterTenantsSection },
+  { path: 'users', Component: UsersSection },
+];
 
 const DashboardPage = () => {
   const { section } = useParams();
   const { isAdmin, loading: authLoading } = useAuthContext();
 
-  if (!isAdmin && !authLoading) {
+  const renderSection = () => {
+    if (section) {
+      const Section = ALL_SECTIONS.find((s) => s.path === section);
+      if (Section) {
+        return <Section.Component initialExpanded={true} />;
+      }
+    }
+
+    return (
+      <Stack spacing={3} direction={{ xs: 'column', md: 'row' }} flexWrap="wrap">
+        {ALL_SECTIONS.map(({ path, Component }) => (
+          <Box key={path} flex={1} minWidth={{ xs: '100%', md: '300px' }}>
+            <Component initialExpanded={false} />
+          </Box>
+        ))}
+      </Stack>
+    );
+  };
+
+  if (authLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!isAdmin) {
     return (
       <Container maxWidth="lg">
         <Typography variant="h5" align="center" sx={{ my: 4 }}>
-          У вас немає доступу до дашборду
+          {UA.dashboard_no_access}
         </Typography>
       </Container>
     );
   }
-
-  const renderSection = () => {
-    switch (section) {
-      case 'locations':
-        return <LocationsSection initialExpanded={true} />;
-      case 'resource-types':
-        return <ResourceTypesSection initialExpanded={true} />;
-      case 'tenants':
-        return <TenantsSection initialExpanded={true} />;
-      case 'resource-delivery':
-        return <ResourceDeliverySection initialExpanded={true} />;
-      case 'tariffs':
-        return <TariffsSection initialExpanded={true} />;
-      case 'meters':
-        return <MetersSection initialExpanded={true} />;
-      case 'meter-tenants':
-        return <MeterTenantsSection initialExpanded={true} />;
-      case 'users':
-        return <UsersSection initialExpanded={true} />;
-      default:
-        return (
-          <Stack spacing={3} direction={{ xs: 'column', md: 'row' }} flexWrap="wrap">
-            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-              <LocationsSection initialExpanded={false} />
-            </Box>
-            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-              <ResourceTypesSection initialExpanded={false} />
-            </Box>
-            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-              <TenantsSection initialExpanded={false} />
-            </Box>
-            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-              <ResourceDeliverySection initialExpanded={false} />
-            </Box>
-            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-              <TariffsSection initialExpanded={false} />
-            </Box>
-            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-              <MetersSection initialExpanded={false} />
-            </Box>
-            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-              <MeterTenantsSection initialExpanded={false} />
-            </Box>
-            <Box flex={1} minWidth={{ xs: '100%', md: '300px' }}>
-              <UsersSection initialExpanded={false} />
-            </Box>
-          </Stack>
-        );
-    }
-  };
 
   return (
     <Container maxWidth="lg">
@@ -84,15 +73,9 @@ const DashboardPage = () => {
           fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
         }}
       >
-        Панель керування
+        {UA.dashboard_title}
       </Typography>
-      {authLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        renderSection()
-      )}
+      {renderSection()}
     </Container>
   );
 };

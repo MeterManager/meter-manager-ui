@@ -6,20 +6,22 @@ import {
   Collapse,
   IconButton,
   Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   Snackbar,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import ResourceTypesTable from '../resourceTypes/ResourceTypesTable';
 import ResourceTypeForm from '../resourceTypes/ResourceTypeForm';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import { useResourceTypes } from '../../hooks/useResourceTypes';
+import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
+import { DEFAULTS } from '../../constants';
+import { useTheme } from '@mui/material/styles';
 
 const ResourceTypesSection = ({ initialExpanded = true }) => {
+  const theme = useTheme();
   const {
     resourceTypes,
     search,
@@ -28,27 +30,35 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
     editResourceType,
     removeResourceType,
     updateResourceTypeStatus,
-    getDependencies,
     error,
     setError,
+    loading,
+    isActionLoading,
   } = useResourceTypes();
 
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [editingResourceType, setEditingResourceType] = useState(null);
-
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null, action: null, dependencies: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  const handleServiceError = (err, defaultMessage = null) => {
+    const userMessage = translateErrorMessage(err.message || defaultMessage || UA.error_action_default);
+    setSnackbar({ open: true, message: userMessage, severity: 'error' });
+    setError(userMessage);
+  };
 
   const handleToggle = () => setExpanded(!expanded);
 
   const handleAdd = () => {
     setEditingResourceType(null);
+    setError(null);
     setFormOpen(true);
   };
 
   const handleEdit = (resourceType) => {
     setEditingResourceType(resourceType);
+    setError(null);
     setFormOpen(true);
   };
 
@@ -56,36 +66,33 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
     try {
       if (editingResourceType?.id) {
         await editResourceType(editingResourceType.id, formData);
-        setSnackbar({ open: true, message: 'Тип ресурсу успішно оновлено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.resourceTypes_success_updated, severity: 'success' });
       } else {
         await addResourceType(formData);
-        setSnackbar({ open: true, message: 'Тип ресурсу успішно створено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.resourceTypes_success_created, severity: 'success' });
       }
+    } catch (err) {
+      handleServiceError(err, UA.error_save_resource_type);
+    } finally {
       setFormOpen(false);
       setEditingResourceType(null);
-    } catch (err) {
-      setError(err.message || 'Помилка при збереженні типу ресурсу');
-      setSnackbar({ open: true, message: err.message || 'Помилка при збереженні типу ресурсу', severity: 'error' });
+      setError(null);
     }
   };
 
   const handleFormClose = () => {
     setFormOpen(false);
     setEditingResourceType(null);
+    setError(null);
   };
 
-  const handleRemove = async (id) => {
-    try {
-      const dependencies = await getDependencies(id);
-      if (dependencies.resources > 0 || dependencies.meters > 0) {
-        setConfirmDialog({ open: true, id, action: 'delete', dependencies });
-      } else {
-        await removeResourceType(id);
-        setSnackbar({ open: true, message: 'Тип ресурсу успішно видалено', severity: 'success' });
-      }
-    } catch (err) {
-      setSnackbar({ open: true, message: err.message, severity: 'error' });
-    }
+  const handleRemove = (id) => {
+    setConfirmDialog({
+      open: true,
+      id,
+      action: 'delete',
+      dependencies: null,
+    });
   };
 
   const handleUpdateStatus = async (id, isActive) => {
@@ -93,12 +100,11 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
       await updateResourceTypeStatus(id, isActive);
       setSnackbar({
         open: true,
-        message: `Тип ресурсу успішно ${isActive ? 'активовано' : 'деактивовано'}`,
+        message: `${UA.resourceTypes_success_status} ${isActive ? UA.status_activated : UA.status_deactivated}`,
         severity: 'success',
       });
     } catch (err) {
-      setError(err.message || 'Помилка при оновленні статусу');
-      setSnackbar({ open: true, message: err.message || 'Помилка при оновленні статусу', severity: 'error' });
+      handleServiceError(err, UA.error_update_status);
     }
   };
 
@@ -106,14 +112,11 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
     try {
       if (confirmDialog.action === 'delete') {
         await removeResourceType(confirmDialog.id);
-        setSnackbar({ open: true, message: 'Тип ресурсу успішно видалено', severity: 'success' });
-      } else if (confirmDialog.action === 'deactivate') {
-        await updateResourceTypeStatus(confirmDialog.id, false);
-        setSnackbar({ open: true, message: 'Тип ресурсу успішно деактивовано', severity: 'success' });
+        setSnackbar({ open: true, message: UA.resourceTypes_success_deleted, severity: 'success' });
       }
       setConfirmDialog({ open: false, id: null, action: null, dependencies: null });
     } catch (err) {
-      setSnackbar({ open: true, message: err.message || 'Помилка при виконанні дії', severity: 'error' });
+      handleServiceError(err, UA.error_confirm_action);
     }
   };
 
@@ -127,19 +130,11 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
 
   return (
     <>
-      <Paper sx={{ mb: 3, borderRadius: 2 }} elevation={1}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            p: 2,
-            cursor: 'pointer',
-            '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' },
-          }}
-          onClick={handleToggle}
-        >
-          <Typography variant="h5">Типи ресурсів ({resourceTypes.length})</Typography>
+      <Paper sx={theme.mixins.sectionPaper} elevation={DEFAULTS.paperElevation}>
+        <Box sx={theme.mixins.sectionHeader} onClick={handleToggle}>
+          <Typography variant="h5">
+            {UA.resourceTypes_title} ({resourceTypes.length})
+          </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
 
@@ -156,6 +151,7 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
               onRemove={handleRemove}
               onStatusChange={handleUpdateStatus}
               setLocalError={setError}
+              isLoading={loading || isActionLoading}
             />
           </Box>
         </Collapse>
@@ -168,30 +164,25 @@ const ResourceTypesSection = ({ initialExpanded = true }) => {
         initialData={editingResourceType || {}}
         error={error}
         resourceTypes={resourceTypes}
+        isLoading={isActionLoading}
       />
 
-      <Dialog open={confirmDialog.open} onClose={handleCloseConfirmDialog}>
-        <DialogTitle>
-          {confirmDialog.action === 'delete' ? 'Підтвердження видалення' : 'Підтвердження деактивації'}
-        </DialogTitle>
-        <DialogContent>
-          <Typography>
-            {confirmDialog.action === 'delete'
-              ? `Ви впевнені, що хочете видалити цей тип ресурсу? Це може вплинути на ${
-                  confirmDialog.dependencies?.resources || 0
-                } ресурсів та ${confirmDialog.dependencies?.meters || 0} лічильників.`
-              : `Ви впевнені, що хочете деактивувати цей тип ресурсу? Це може вплинути на пов'язані дані.`}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseConfirmDialog}>Скасувати</Button>
-          <Button onClick={handleConfirmAction} color="error" variant="contained">
-            {confirmDialog.action === 'delete' ? 'Видалити' : 'Деактивувати'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onClose={handleCloseConfirmDialog}
+        onConfirm={handleConfirmAction}
+        action={confirmDialog.action}
+        dependencies={null}
+        isLoading={isActionLoading}
+        entity="resourceType"
+      />
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={DEFAULTS.snackbarDuration}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>

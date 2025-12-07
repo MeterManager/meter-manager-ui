@@ -1,29 +1,45 @@
 import { useState } from 'react';
-import { Paper, Box, Typography, Collapse, IconButton, Divider, Dialog, DialogTitle, DialogContent, DialogActions, Button, Snackbar, Alert } from '@mui/material';
+import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
 import LocationsTable from '../locations/LocationsTable';
 import LocationForm from '../locations/LocationForm';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import { useLocations } from '../../hooks/useLocations';
+import { useTenants } from '../../hooks/useTenants';
+import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
+import { DEFAULTS } from '../../constants';
 
 const LocationsSection = ({ initialExpanded = true }) => {
+  const theme = useTheme();
   const {
     locations,
-    search,
-    setSearch,
     addLocation,
     editLocation,
     removeLocation,
     updateLocationStatus,
+
     getDependencies,
     error,
     setError,
+    loading,
   } = useLocations();
+  const { tenants: simpleTenants } = useTenants();
 
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null, action: null, dependencies: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [search, setSearch] = useState('');
+  const [tenantFilter, setTenantFilter] = useState('');
+
+  const handleServiceError = (err) => {
+    const userMessage = translateErrorMessage(err.message);
+    setError(userMessage);
+    setSnackbar({ open: true, message: userMessage, severity: 'error' });
+  };
 
   const handleToggle = () => {
     setExpanded(!expanded);
@@ -43,29 +59,31 @@ const LocationsSection = ({ initialExpanded = true }) => {
     try {
       if (editingLocation?.id) {
         await editLocation(editingLocation.id, formData);
-        setSnackbar({ open: true, message: 'Локацію успішно оновлено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.locations_success_updated, severity: 'success' });
       } else {
         await addLocation(formData);
-        setSnackbar({ open: true, message: 'Локацію успішно створено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.locations_success_created, severity: 'success' });
       }
+    } catch (err) {
+      handleServiceError(err);
+    } finally {
       setFormOpen(false);
       setEditingLocation(null);
-    } catch (err) {
-      setError(err.message || 'Помилка при збереженні локації');
-      setSnackbar({ open: true, message: err.message || 'Помилка при збереженні локації', severity: 'error' });
+      setError(null);
     }
   };
 
   const handleFormClose = () => {
     setFormOpen(false);
     setEditingLocation(null);
+    setError(null);
   };
 
   const handleRemove = async (id) => {
     try {
       const dependencies = await getDependencies(id);
-      
-      if (dependencies.active_meters > 0 || dependencies.deliveries > 0) {
+
+      if (dependencies.active_meters > 0 || dependencies.deliveries > 0 || dependencies.active_tenants > 0) {
         setConfirmDialog({
           open: true,
           id,
@@ -74,57 +92,68 @@ const LocationsSection = ({ initialExpanded = true }) => {
         });
       } else {
         await removeLocation(id);
-        setSnackbar({ open: true, message: 'Локацію видалено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.locations_success_deleted, severity: 'success' });
       }
     } catch (err) {
-      setSnackbar({ open: true, message: err.message, severity: 'error' });
+      handleServiceError(err);
     }
   };
 
   const handleUpdateStatus = async (id, isActive) => {
+    if (isActive) {
+      try {
+        await updateLocationStatus(id, true);
+        setSnackbar({ open: true, message: UA.locations_success_activated, severity: 'success' });
+      } catch (err) {
+        handleServiceError(err);
+      }
+      return;
+    }
+
     try {
-      const response = await updateLocationStatus(id, isActive);
-      if (response?.requiresConfirmation) {
+      const result = await updateLocationStatus(id, isActive);
+
+      if (result.requiresConfirmation) {
         setConfirmDialog({
           open: true,
           id,
           action: 'deactivate',
-          dependencies: response.dependencies,
+          dependencies: result.dependencies,
         });
       } else {
         setSnackbar({
           open: true,
-          message: response?.message || `Локацію успішно ${isActive ? 'активовано' : 'деактивовано'}`,
+          message: UA.locations_success_deactivated,
           severity: 'success',
         });
       }
     } catch (err) {
-      setError(err.message || 'Помилка при оновленні статусу локації');
-      setSnackbar({ open: true, message: err.message || 'Помилка при оновленні статусу локації', severity: 'error' });
+      handleServiceError(err);
     }
   };
 
   const handleConfirmAction = async () => {
     try {
       if (confirmDialog.action === 'delete') {
-        const response = await removeLocation(confirmDialog.id, true);
+        await removeLocation(confirmDialog.id);
         setSnackbar({
           open: true,
-          message: response?.message || 'Локацію успішно видалено',
+          message: UA.locations_success_deleted_with_deps,
           severity: 'success',
         });
       } else if (confirmDialog.action === 'deactivate') {
-        const response = await updateLocationStatus(confirmDialog.id, false, true);
+        await updateLocationStatus(confirmDialog.id, false, true);
         setSnackbar({
           open: true,
-          message: response?.message || 'Локацію успішно деактивовано',
+          message: UA.locations_success_deactivated_with_deps,
           severity: 'success',
         });
       }
       setConfirmDialog({ open: false, id: null, action: null, dependencies: null });
     } catch (err) {
-      setError(err.message || 'Помилка при виконанні дії');
-      setSnackbar({ open: true, message: err.message || 'Помилка при виконанні дії', severity: 'error' });
+      handleServiceError(err);
+    } finally {
+      setError(null);
     }
   };
 
@@ -138,21 +167,11 @@ const LocationsSection = ({ initialExpanded = true }) => {
 
   return (
     <>
-      <Paper sx={{ mb: 3, borderRadius: 2 }} elevation={1}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            p: 2,
-            cursor: 'pointer',
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.02)',
-            },
-          }}
-          onClick={handleToggle}
-        >
-          <Typography variant="h5">Локації ({locations.length})</Typography>
+      <Paper sx={theme.mixins.sectionPaper} elevation={DEFAULTS.paperElevation}>
+        <Box sx={theme.mixins.sectionHeader} onClick={handleToggle}>
+          <Typography variant="h5">
+            {UA.locations_title} ({locations.length})
+          </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
 
@@ -164,11 +183,15 @@ const LocationsSection = ({ initialExpanded = true }) => {
               locations={locations}
               search={search}
               setSearch={setSearch}
+              tenantFilter={tenantFilter}
+              setTenantFilter={setTenantFilter}
+              tenants={simpleTenants}
               onAdd={handleAdd}
               onEdit={handleEdit}
-              onRemove={handleRemove}          
+              onRemove={handleRemove}
               onStatusChange={handleUpdateStatus}
               setLocalError={setError}
+              isLoading={loading}
             />
           </Box>
         </Collapse>
@@ -181,47 +204,24 @@ const LocationsSection = ({ initialExpanded = true }) => {
         initialData={editingLocation || {}}
         error={error}
         locations={locations}
+        isLoading={loading}
+        tenants={simpleTenants}
       />
 
-      <Dialog
+      <ConfirmDialog
         open={confirmDialog.open}
         onClose={handleCloseConfirmDialog}
-        aria-labelledby="confirm-dialog-title"
-      >
-        <DialogTitle id="confirm-dialog-title">
-          {confirmDialog.action === 'delete' ? 'Підтвердження видалення' : 'Підтвердження деактивації'}
-        </DialogTitle>
-        <DialogContent>
-          <Typography>
-            {confirmDialog.action === 'delete'
-              ? `Ви впевнені, що хочете видалити цю локацію? Це також видалить: ${
-                  confirmDialog.dependencies?.active_meters
-                    ? `${confirmDialog.dependencies.active_meters} лічильників`
-                    : ''
-                }${
-                  confirmDialog.dependencies?.deliveries
-                    ? `${confirmDialog.dependencies.active_meters ? ', ' : ''}${
-                        confirmDialog.dependencies.deliveries
-                      } поставок`
-                    : ''
-                }. Ця дія незворотна!`
-              : `Ви впевнені, що хочете деактивувати цю локацію? Це також деактивує ${
-                  confirmDialog.dependencies?.active_meters
-                } активних лічильників.`}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseConfirmDialog}>Скасувати</Button>
-          <Button onClick={handleConfirmAction} color="error" variant="contained">
-            {confirmDialog.action === 'delete' ? 'Видалити' : 'Деактивувати'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleConfirmAction}
+        action={confirmDialog.action}
+        dependencies={confirmDialog.dependencies}
+        isLoading={loading}
+      />
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={6000}
+        autoHideDuration={DEFAULTS.snackbarDuration}
         onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}

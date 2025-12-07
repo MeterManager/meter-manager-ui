@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -12,74 +13,35 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
 } from '@mui/material';
-import { useMemo } from 'react';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
-import { useAuthContext } from '../../contexts/AuthContext';
+import MobileUserCard from './MobileUserCard';
+import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
 
-const UsersTable = ({ users, search, setSearch, updateUserStatus, setLocalError }) => {
+const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId, isLoading, setLocalError }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:600px)');
-  const isTablet = useMediaQuery('(max-width:960px)');
-  const { user, isAdmin } = useAuthContext();
+  const [loadingUserId, setLoadingUserId] = useState(null);
 
   const handleStatusChange = async (u) => {
-    if (u.auth0_user_id === user?.sub && isAdmin) return;
+    setLoadingUserId(u.id);
     try {
       await updateUserStatus(u.id, !u.isActive);
     } catch (err) {
-      setLocalError(err.message || 'Помилка при зміні статусу користувача');
+      const userMessage = translateErrorMessage(err.message || UA.users_status_error);
+      setLocalError?.(userMessage);
+    } finally {
+      setLoadingUserId(null);
     }
   };
 
   const filteredUsers = useMemo(
     () => users.filter((u) => u.full_name.toLowerCase().includes(search.toLowerCase()) && u.role !== 'admin'),
     [users, search]
-  );
-
-  const MobileUserCard = ({ user: userItem }) => (
-    <Card
-      sx={{
-        mb: 2,
-        border: `1px solid ${theme.palette.divider}`,
-        '&:hover': {
-          boxShadow: 2,
-        },
-      }}
-    >
-      <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-            {userItem.full_name}
-          </Typography>
-          <Chip
-            label={userItem.isActive ? 'Активний' : 'Неактивний'}
-            color={userItem.isActive ? 'success' : 'default'}
-            size="small"
-            sx={{ ml: 1, flexShrink: 0 }}
-          />
-        </Box>
-
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          <strong>Роль:</strong> {userItem.role}
-        </Typography>
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Switch
-              checked={userItem.isActive}
-              onChange={() => handleStatusChange(userItem)}
-              color="primary"
-              size="small"
-              disabled={userItem.auth0_user_id === user?.sub && isAdmin}
-            />
-            <Typography variant="body2">{userItem.isActive ? 'Активний' : 'Неактивний'}</Typography>
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
   );
 
   return (
@@ -90,7 +52,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, setLocalError 
           flexDirection: isMobile ? 'column' : 'row',
           gap: 2,
           alignItems: isMobile ? 'stretch' : 'center',
-          justifyContent: isMobile ? 'stretch' : 'flex-end',
+          justifyContent: 'flex-end',
           mb: 3,
         }}
       >
@@ -98,30 +60,38 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, setLocalError 
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           fullWidth={isMobile}
-          placeholder="Пошук за ПІБ користувача..."
+          placeholder={UA.users_search_placeholder}
           sx={{
-            width: '100%',
+            width: isMobile ? '100%' : '350px',
             maxWidth: '100%',
-            flexShrink: 1,
           }}
+          disabled={isLoading}
         />
       </Box>
 
       {search && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Знайдено: {filteredUsers.length} з {users.filter((u) => u.role !== 'admin').length}
+          {UA.common_found}: {filteredUsers.length} {UA.common_of} {users.filter((u) => u.role !== 'admin').length}
         </Typography>
       )}
 
       {isMobile ? (
         <Box>
           {filteredUsers.length > 0 ? (
-            filteredUsers.map((userItem) => <MobileUserCard key={userItem.id} user={userItem} />)
+            filteredUsers.map((userItem) => (
+              <MobileUserCard
+                key={userItem.id}
+                user={userItem}
+                onToggleStatus={() => handleStatusChange(userItem)}
+                disabled={isLoading || loadingUserId !== null || userItem.auth0_user_id === currentUserId}
+                isLoading={loadingUserId === userItem.id}
+              />
+            ))
           ) : (
             <Card>
               <CardContent>
                 <Typography variant="body1" align="center" color="text.secondary">
-                  {search ? 'За вашим запитом нічого не знайдено' : 'Користувачів не знайдено'}
+                  {search ? UA.users_not_found_search : UA.users_not_found}
                 </Typography>
               </CardContent>
             </Card>
@@ -132,43 +102,15 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, setLocalError 
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '40%' : '40%',
-                    fontWeight: 600,
-                  }}
-                >
-                  ПІБ
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '30%' : '30%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Роль
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: isTablet ? '30%' : '30%',
-                    fontWeight: 600,
-                  }}
-                >
-                  Статус
-                </TableCell>
+                <TableCell sx={{ width: '40%', fontWeight: 600 }}>{UA.users_full_name}</TableCell>
+                <TableCell sx={{ width: '30%', fontWeight: 600 }}>{UA.users_role}</TableCell>
+                <TableCell sx={{ width: '30%', fontWeight: 600 }}>{UA.users_status}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((u) => (
-                  <TableRow
-                    key={u.id}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: theme.palette.action.hover,
-                      },
-                    }}
-                  >
+                  <TableRow key={u.id} sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}>
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
                         {u.full_name}
@@ -181,15 +123,19 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, setLocalError 
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Switch
-                          checked={u.isActive}
-                          onChange={() => handleStatusChange(u)}
-                          color="primary"
-                          size="small"
-                          disabled={u.auth0_user_id === user?.sub && isAdmin}
-                        />
+                        {loadingUserId === u.id ? (
+                          <CircularProgress size={20} />
+                        ) : (
+                          <Switch
+                            checked={u.isActive}
+                            onChange={() => handleStatusChange(u)}
+                            color="primary"
+                            size="small"
+                            disabled={isLoading || loadingUserId !== null || u.auth0_user_id === currentUserId}
+                          />
+                        )}
                         <Chip
-                          label={u.isActive ? 'Активний' : 'Неактивний'}
+                          label={u.isActive ? UA.status_active : UA.status_inactive}
                           color={u.isActive ? 'success' : 'default'}
                           size="small"
                           variant="outlined"
@@ -202,7 +148,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, setLocalError 
                 <TableRow>
                   <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                      {search ? 'За вашим запитом нічого не знайдено' : 'Користувачів не знайдено'}
+                      {search ? UA.users_not_found_search : UA.users_not_found}
                     </Typography>
                   </TableCell>
                 </TableRow>

@@ -1,16 +1,11 @@
 import createApi from './baseApi';
 
 export const getTenants = async (token, search = '') => {
-  try {
-    const api = createApi(token);
-    const params = {};
-    if (search) params.search = search;
-    const response = await api.get('/tenants', { params });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching tenants:', error.message, error.response?.data);
-    throw error;
-  }
+  const api = createApi(token);
+  const params = {};
+  if (search) params.search = search;
+  const response = await api.get('/tenants', { params });
+  return response.data;
 };
 
 export const createTenant = async (token, data) => {
@@ -34,4 +29,10 @@ export const getTenantDependencies = async (token, id) => {
   const api = createApi(token);
   const response = await api.get(`/tenants/${id}/dependencies`);
   return response.data;
+};
+
+export const getSimpleTenants = async (token) => {
+  const api = createApi(token);
+  const response = await api.get('/tenants/simple');
+  return response.data.data;
 };

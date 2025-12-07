@@ -1,10 +1,18 @@
-import { Box, Button, Typography, Paper } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Button, Typography, Paper, Container, CircularProgress } from '@mui/material'; // Додано Container та CircularProgress, видалено DialogContent
 import { useAuthContext } from '../contexts/AuthContext';
+import MeterReadingSection from '../components/meterReadings/MeterReadingSection';
 
 const SubmitMetricsPage = () => {
   const { isAuthenticated, loginWithRedirect, isLoading } = useAuthContext();
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '70vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -25,6 +33,7 @@ const SubmitMetricsPage = () => {
             textAlign: 'center',
             maxWidth: 400,
             borderRadius: 3,
+            mx: 'auto',
           }}
         >
           <Typography variant="h5" gutterBottom fontWeight={600}>
@@ -33,13 +42,7 @@ const SubmitMetricsPage = () => {
           <Typography variant="body2" color="text.secondary" gutterBottom>
             Щоб подавати показники, увійдіть у свій акаунт
           </Typography>
-          <Button
-            onClick={loginWithRedirect}
-            variant="contained"
-            color="primary"
-            size="large"
-            sx={{ mt: 3 }}
-          >
+          <Button onClick={loginWithRedirect} variant="contained" color="primary" size="large" sx={{ mt: 3 }}>
             Увійти / Зареєструватися
           </Button>
         </Paper>
@@ -48,17 +51,16 @@ const SubmitMetricsPage = () => {
   }
 
   return (
-    <Paper sx={{ p: 4, maxWidth: 600, mx: 'auto', mt: 5 }}>
-      <Typography variant="h4" gutterBottom>
-        Подача показників
-      </Typography>
-      <Typography variant="body1" gutterBottom>
-        Тут у майбутньому буде форма для подачі показників лічильників.
-      </Typography>
-      <Button variant="contained" color="primary" disabled>
-        Подати показники
-      </Button>
-    </Paper>
+    <Container maxWidth="lg" sx={{ py: { xs: 3, sm: 4 } }}>
+      <Paper sx={{ p: { xs: 2, sm: 4 } }}>
+        <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+          Подача показників
+        </Typography>
+        <Box sx={{ mt: 3 }}>
+          <MeterReadingSection initialExpanded={true} />
+        </Box>
+      </Paper>
+    </Container>
   );
 };
 
