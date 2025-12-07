@@ -85,17 +85,17 @@ export const useResourceDeliveries = () => {
       try {
         setError(null);
         const deliveryData = {
-          location_id: data.locationId,
-          energy_resource_type_id: data.resourceTypeId,
-          delivery_date: data.deliveryDate,
+          location_id: data.location_id,
+          energy_resource_type_id: data.energy_resource_type_id,
+          delivery_date: data.delivery_date,
           quantity: data.quantity,
           unit: data.unit,
-          price_per_unit: data.pricePerUnit,
-          total_cost: data.totalCost,
+          price_per_unit: data.price_per_unit,
+          total_cost: data.total_cost,
           supplier: data.supplier,
         };
 
-        const response = await withToken(resourceDeliveriesApi.createResourceDelivery, deliveryData);
+        const response = await withToken((token) => resourceDeliveriesApi.createResourceDelivery(token, deliveryData));
         mutateDeliveries();
         return response;
       } catch (error) {
@@ -114,17 +114,19 @@ export const useResourceDeliveries = () => {
       try {
         setError(null);
         const deliveryData = {
-          location_id: data.locationId,
-          energy_resource_type_id: data.resourceTypeId,
-          delivery_date: data.deliveryDate,
+          location_id: data.location_id,
+          energy_resource_type_id: data.energy_resource_type_id,
+          delivery_date: data.delivery_date,
           quantity: data.quantity,
           unit: data.unit,
-          price_per_unit: data.pricePerUnit,
-          total_cost: data.totalCost,
+          price_per_unit: data.price_per_unit,
+          total_cost: data.total_cost,
           supplier: data.supplier,
         };
 
-        const response = await withToken(resourceDeliveriesApi.updateResourceDelivery, id, deliveryData);
+        const response = await withToken((token) =>
+          resourceDeliveriesApi.updateResourceDelivery(token, id, deliveryData)
+        );
         mutateDeliveries();
         return response;
       } catch (error) {
@@ -142,7 +144,7 @@ export const useResourceDeliveries = () => {
       setIsActionLoading(true);
       try {
         setError(null);
-        await withToken(resourceDeliveriesApi.deleteResourceDelivery, id);
+        await withToken((token) => resourceDeliveriesApi.deleteResourceDelivery(token, id));
         mutateDeliveries();
       } catch (error) {
         handleError(error, 'Помилка при видаленні поставки');

@@ -47,7 +47,6 @@ const ResourceDeliveryForm = ({
         pricePerUnit: initialData.price_per_unit || initialData.pricePerUnit || '',
         supplier: initialData.supplier || '',
         id: initialData.id,
-
         deliveryDate: dateValue ? new Date(dateValue).toISOString().split('T')[0] : '',
       };
       setFormData(mappedData);
@@ -72,6 +71,7 @@ const ResourceDeliveryForm = ({
     }
 
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: errorMsg }));
+    return errorMsg;
   };
 
   const handleChange = (e) => {
@@ -86,9 +86,11 @@ const ResourceDeliveryForm = ({
   const validateForm = () => {
     const errors = {};
     ['locationId', 'resourceTypeId', 'quantity', 'unit', 'pricePerUnit', 'deliveryDate'].forEach((field) => {
-      const errorMsg = validateField(field, formData[field]);
+      const value = formData[field];
+      const errorMsg = validateField(field, value);
       if (errorMsg) errors[field] = errorMsg;
     });
+    setFormErrors(errors);
     return errors;
   };
 
@@ -96,21 +98,48 @@ const ResourceDeliveryForm = ({
     e.preventDefault();
     const errors = validateForm();
     if (Object.keys(errors).length) {
-      setFormErrors(errors);
+      return;
+    }
+
+    const quantity = parseFloat(formData.quantity);
+    const pricePerUnit = parseFloat(formData.pricePerUnit);
+
+    if (isNaN(quantity) || quantity <= 0) {
+      setFormErrors({ ...formErrors, quantity: UA.deliveries_positive_number });
+      return;
+    }
+
+    if (isNaN(pricePerUnit) || pricePerUnit <= 0) {
+      setFormErrors({ ...formErrors, pricePerUnit: UA.deliveries_positive_number });
+      return;
+    }
+
+    const locationId = Number(formData.locationId);
+    const resourceTypeId = Number(formData.resourceTypeId);
+
+    if (!locationId || !resourceTypeId) {
+      setFormErrors({
+        ...formErrors,
+        locationId: !locationId ? UA.deliveries_location_required : '',
+        resourceTypeId: !resourceTypeId ? UA.deliveries_resource_type_required : '',
+      });
       return;
     }
 
     const submitData = {
-      location_id: Number(formData.locationId),
-      energy_resource_type_id: Number(formData.resourceTypeId),
-      quantity: parseFloat(formData.quantity),
-      unit: formData.unit,
-      price_per_unit: parseFloat(formData.pricePerUnit),
-      total_cost: parseFloat(formData.quantity) * parseFloat(formData.pricePerUnit),
+      location_id: locationId,
+      energy_resource_type_id: resourceTypeId,
+      quantity: quantity,
+      unit: String(formData.unit).trim(),
+      price_per_unit: pricePerUnit,
+      total_cost: quantity * pricePerUnit,
       delivery_date: new Date(formData.deliveryDate).toISOString(),
-      supplier: formData.supplier || null,
-      id: formData.id,
+      supplier: formData.supplier ? String(formData.supplier).trim() : null,
     };
+
+    if (formData.id) {
+      submitData.id = formData.id;
+    }
 
     await onSubmit(submitData);
   };

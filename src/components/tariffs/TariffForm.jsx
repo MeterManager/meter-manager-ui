@@ -111,13 +111,11 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
     }
 
     const payload = {
-      ...formData,
-      price: parseFloat(formData.price),
       location_id: Number(formData.location_id),
       energy_resource_type_id: Number(formData.energy_resource_type_id),
-
-      valid_from: formData.valid_from,
-      valid_to: formData.valid_to || null,
+      price: parseFloat(formData.price),
+      valid_from: formatISODate(formData.valid_from),
+      valid_to: formData.valid_to ? formatISODate(formData.valid_to) : null,
     };
 
     onSubmit(payload);
