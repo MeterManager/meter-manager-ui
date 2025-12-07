@@ -17,6 +17,7 @@ const CustomDatePicker = ({ value, onChange, label, minDate, maxDate, error, hel
           error,
           helperText,
           sx,
+          size: 'small',
         },
         popper: {
           sx: {

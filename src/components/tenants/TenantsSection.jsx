@@ -17,8 +17,12 @@ import { useTenants } from '../../hooks/useTenants';
 import { useLocations } from '../../hooks/useLocations';
 import { translateErrorMessage } from '../../utils/translateError';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import { UA } from '../../utils/uaDictionary';
+import { DEFAULTS } from '../../constants';
+import { useTheme } from '@mui/material/styles';
 
 const TenantsSection = ({ initialExpanded = true }) => {
+  const theme = useTheme();
   const {
     tenants,
     search,
@@ -43,9 +47,8 @@ const TenantsSection = ({ initialExpanded = true }) => {
   const [locationFilter, setLocationFilter] = useState('');
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null, action: null, dependencies: null });
 
-  const handleServiceError = (err, defaultMessage = 'Помилка при виконанні дії') => {
-    console.error('Tenant Service Action Failed:', err);
-    const userMessage = translateErrorMessage(err.message || defaultMessage);
+  const handleServiceError = (err, defaultMessage = null) => {
+    const userMessage = translateErrorMessage(err.message || defaultMessage || UA.error_action_default);
     setSnackbar({ open: true, message: userMessage, severity: 'error' });
     setError(userMessage);
   };
@@ -68,13 +71,13 @@ const TenantsSection = ({ initialExpanded = true }) => {
     try {
       if (editingTenant?.id) {
         await editTenant(editingTenant.id, data);
-        setSnackbar({ open: true, message: 'Орендаря успішно оновлено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.tenants_success_updated, severity: 'success' });
       } else {
         await addTenant(data);
-        setSnackbar({ open: true, message: 'Орендаря успішно додано', severity: 'success' });
+        setSnackbar({ open: true, message: UA.tenants_success_added, severity: 'success' });
       }
     } catch (err) {
-      handleServiceError(err, 'Помилка збереження орендаря');
+      handleServiceError(err, UA.error_save_tenant);
     } finally {
       setFormOpen(false);
       setEditingTenant(null);
@@ -101,17 +104,17 @@ const TenantsSection = ({ initialExpanded = true }) => {
         dependencies: hasDependencies ? dependencies : null,
       });
     } catch (err) {
-      handleServiceError(err, 'Помилка перевірки залежностей');
+      handleServiceError(err, UA.error_check_dependencies);
     }
   };
 
   const handleConfirmDelete = async () => {
     try {
       await removeTenant(confirmDialog.id);
-      setSnackbar({ open: true, message: 'Орендаря успішно видалено', severity: 'success' });
+      setSnackbar({ open: true, message: UA.tenants_success_deleted, severity: 'success' });
       handleCloseConfirmDialog();
     } catch (err) {
-      handleServiceError(err, 'Помилка видалення орендаря');
+      handleServiceError(err, UA.error_delete_tenant);
     }
   };
 
@@ -122,9 +125,9 @@ const TenantsSection = ({ initialExpanded = true }) => {
   const handleStatusUpdate = async (id, statusData) => {
     try {
       await updateTenantStatus(id, statusData);
-      setSnackbar({ open: true, message: 'Статус орендаря оновлено', severity: 'success' });
+      setSnackbar({ open: true, message: UA.tenants_success_status, severity: 'success' });
     } catch (err) {
-      handleServiceError(err, 'Помилка оновлення статусу');
+      handleServiceError(err, UA.error_update_status);
     }
   };
 
@@ -135,29 +138,47 @@ const TenantsSection = ({ initialExpanded = true }) => {
   const isLoading = tenantsLoading || locationsLoading;
 
   if (locationsError)
-    return <Typography color="error">Помилка при завантаженні локацій: {locationsError.message}</Typography>;
+    return (
+      <Typography color="error">
+        {UA.locations_load_error}: {locationsError.message}
+      </Typography>
+    );
 
   if (isLoading && tenants.length === 0) return <CircularProgress />;
 
   return (
     <>
-      <Paper sx={{ mb: 3, borderRadius: 2 }} elevation={1}>
+      <Paper
+        sx={{
+          mb: 2.5,
+          borderRadius: 1.5,
+          overflow: 'hidden',
+        }}
+        elevation={2}
+      >
         <Box
           display="flex"
           alignItems="center"
           justifyContent="space-between"
-          p={2}
-          sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' } }}
+          px={2.5}
+          py={1.75}
+          sx={{
+            cursor: 'pointer',
+            transition: 'background-color 0.2s',
+            '&:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.02)',
+            },
+          }}
           onClick={handleToggle}
         >
-          <Typography variant="h5" fontWeight={600}>
-            Орендарі ({tenants.length})
+          <Typography variant="h6" fontWeight={600} fontSize="1.125rem">
+            {UA.tenants_title} ({tenants.length})
           </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
         <Divider />
         <Collapse in={expanded} timeout="auto">
-          <Box p={3}>
+          <Box px={2.5} py={2.5}>
             <TenantsTable
               tenants={tenants}
               search={search}
@@ -199,7 +220,7 @@ const TenantsSection = ({ initialExpanded = true }) => {
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={6000}
+        autoHideDuration={DEFAULTS.snackbarDuration}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >

@@ -13,19 +13,18 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 import MobileUserCard from './MobileUserCard';
 import { translateErrorMessage } from '../../utils/translateError';
-
+import { UA } from '../../utils/uaDictionary';
 
 const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId, isLoading, setLocalError }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:600px)');
-  const isTablet = useMediaQuery('(max-width:960px)');
   const [loadingUserId, setLoadingUserId] = useState(null);
 
   const handleStatusChange = async (u) => {
@@ -33,8 +32,8 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId,
     try {
       await updateUserStatus(u.id, !u.isActive);
     } catch (err) {
-       const userMessage = translateErrorMessage(err.message || 'Помилка зміни статусу');
-       setLocalError?.(userMessage);
+      const userMessage = translateErrorMessage(err.message || UA.users_status_error);
+      setLocalError?.(userMessage);
     } finally {
       setLoadingUserId(null);
     }
@@ -61,7 +60,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId,
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           fullWidth={isMobile}
-          placeholder="Пошук за ПІБ користувача..."
+          placeholder={UA.users_search_placeholder}
           sx={{
             width: isMobile ? '100%' : '350px',
             maxWidth: '100%',
@@ -72,7 +71,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId,
 
       {search && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Знайдено: {filteredUsers.length} з {users.filter((u) => u.role !== 'admin').length}
+          {UA.common_found}: {filteredUsers.length} {UA.common_of} {users.filter((u) => u.role !== 'admin').length}
         </Typography>
       )}
 
@@ -92,7 +91,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId,
             <Card>
               <CardContent>
                 <Typography variant="body1" align="center" color="text.secondary">
-                  {search ? 'За вашим запитом нічого не знайдено' : 'Користувачів не знайдено'}
+                  {search ? UA.users_not_found_search : UA.users_not_found}
                 </Typography>
               </CardContent>
             </Card>
@@ -103,18 +102,15 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId,
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell sx={{ width: '40%', fontWeight: 600 }}>ПІБ</TableCell>
-                <TableCell sx={{ width: '30%', fontWeight: 600 }}>Роль</TableCell>
-                <TableCell sx={{ width: '30%', fontWeight: 600 }}>Статус</TableCell>
+                <TableCell sx={{ width: '40%', fontWeight: 600 }}>{UA.users_full_name}</TableCell>
+                <TableCell sx={{ width: '30%', fontWeight: 600 }}>{UA.users_role}</TableCell>
+                <TableCell sx={{ width: '30%', fontWeight: 600 }}>{UA.users_status}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((u) => (
-                  <TableRow
-                    key={u.id}
-                    sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}
-                  >
+                  <TableRow key={u.id} sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}>
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
                         {u.full_name}
@@ -127,7 +123,9 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId,
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {loadingUserId === u.id ? <CircularProgress size={20} /> : (
+                        {loadingUserId === u.id ? (
+                          <CircularProgress size={20} />
+                        ) : (
                           <Switch
                             checked={u.isActive}
                             onChange={() => handleStatusChange(u)}
@@ -137,7 +135,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId,
                           />
                         )}
                         <Chip
-                          label={u.isActive ? 'Активний' : 'Неактивний'}
+                          label={u.isActive ? UA.status_active : UA.status_inactive}
                           color={u.isActive ? 'success' : 'default'}
                           size="small"
                           variant="outlined"
@@ -150,7 +148,7 @@ const UsersTable = ({ users, search, setSearch, updateUserStatus, currentUserId,
                 <TableRow>
                   <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                      {search ? 'За вашим запитом нічого не знайдено' : 'Користувачів не знайдено'}
+                      {search ? UA.users_not_found_search : UA.users_not_found}
                     </Typography>
                   </TableCell>
                 </TableRow>

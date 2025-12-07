@@ -1,7 +1,7 @@
 import { Card, CardContent, Box, Typography, IconButton, Stack, Tooltip, Divider } from '@mui/material';
 import { Edit, Delete, LocationOn } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
-
+import { UA } from '../../utils/uaDictionary';
 const MobileDeliveryCard = ({
   delivery,
   onEdit,
@@ -22,7 +22,9 @@ const MobileDeliveryCard = ({
 
   const formattedTotalCost = safeNumber(getTotalCost(delivery)).toFixed(2).toLocaleString('uk-UA');
 
-  const formattedDate = delivery.delivery_date ? new Date(delivery.delivery_date).toLocaleDateString('uk-UA') : '—';
+  const formattedDate = delivery.delivery_date
+    ? new Date(delivery.delivery_date).toLocaleDateString('uk-UA')
+    : UA.common_empty_dash;
 
   return (
     <Card
@@ -80,7 +82,7 @@ const MobileDeliveryCard = ({
               color="text.secondary"
               sx={{ fontWeight: 500, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', mb: 0.5 }}
             >
-              Кількість
+              {UA.deliveries_quantity}
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
               {formattedQuantity} {delivery.unit}
@@ -92,7 +94,7 @@ const MobileDeliveryCard = ({
               color="text.secondary"
               sx={{ fontWeight: 500, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', mb: 0.5 }}
             >
-              Загальна сума
+              {UA.deliveries_total_sum}
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main', fontSize: '0.875rem' }}>
               {formattedTotalCost} ₴
@@ -104,7 +106,7 @@ const MobileDeliveryCard = ({
               color="text.secondary"
               sx={{ fontWeight: 500, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', mb: 0.5 }}
             >
-              Ціна за одиницю
+              {UA.deliveries_price_per_unit}
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.primary', fontSize: '0.875rem' }}>
               {formattedPricePerUnit} ₴
@@ -116,7 +118,7 @@ const MobileDeliveryCard = ({
               color="text.secondary"
               sx={{ fontWeight: 500, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', mb: 0.5 }}
             >
-              Постачальник
+              {UA.deliveries_supplier}
             </Typography>
             <Typography
               variant="body2"
@@ -129,7 +131,7 @@ const MobileDeliveryCard = ({
                 whiteSpace: 'nowrap',
               }}
             >
-              {delivery.supplier || 'Не вказано'}
+              {delivery.supplier || UA.deliveries_supplier_not_specified}
             </Typography>
           </Box>
         </Box>
@@ -138,7 +140,7 @@ const MobileDeliveryCard = ({
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Stack direction="row" spacing={1}>
-            <Tooltip title="Редагувати">
+            <Tooltip title={UA.common_edit}>
               <span>
                 <IconButton
                   size="small"
@@ -160,7 +162,7 @@ const MobileDeliveryCard = ({
                 </IconButton>
               </span>
             </Tooltip>
-            <Tooltip title="Видалити">
+            <Tooltip title={UA.common_delete}>
               <span>
                 <IconButton
                   size="small"

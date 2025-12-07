@@ -25,6 +25,8 @@ import { Edit, Delete } from '@mui/icons-material';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
+import { UA } from '../../utils/uaDictionary';
+import { BREAKPOINTS, FORM_FIELDS } from '../../constants';
 
 const LocationsTable = ({
   locations,
@@ -40,11 +42,11 @@ const LocationsTable = ({
   setLocalError,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:800px)');
-  const isTablet = useMediaQuery('(max-width:960px)');
+  const isMobile = useMediaQuery(BREAKPOINTS.mobileWide);
+  const isTablet = useMediaQuery(BREAKPOINTS.tablet);
 
   const handleActionError = (err) => {
-    const message = err.message || 'Помилка при виконанні дії';
+    const message = err.message || UA.error_action_default;
     setLocalError(message);
   };
 
@@ -80,37 +82,31 @@ const LocationsTable = ({
     });
 
   const MobileLocationCard = ({ location }) => (
-    <Card
-      sx={{
-        mb: 2,
-        border: `1px solid ${theme.palette.divider}`,
-        '&:hover': {
-          boxShadow: 2,
-        },
-      }}
-    >
-      <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
+    <Card sx={theme.mixins.card}>
+      <CardContent sx={theme.mixins.cardContent}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+            <Typography variant="h6" component="div" sx={theme.mixins.mobileCardTitle}>
               {location.name}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {location.address}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Відсоток Площі: {location.occupied_area ? `${location.occupied_area}%` : '—'}
+              {UA.locations_area_percent}:{' '}
+              {location.occupied_area ? `${location.occupied_area}${UA.common_percent}` : UA.common_empty_dash}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              Орендар: <strong>{location.tenant ? location.tenant.name : '— Вільна —'}</strong>
+              {UA.locations_tenant}:{' '}
+              <strong>{location.tenant ? location.tenant.name : UA.locations_tenant_free}</strong>
             </Typography>
           </Box>
 
           <Chip
-            label={location.isActive ? 'Активна' : 'Неактивна'}
+            label={location.isActive ? UA.locations_status_active_f : UA.locations_status_inactive_f}
             color={location.isActive ? 'success' : 'default'}
             size="small"
-            sx={{ ml: 1, flexShrink: 0 }}
+            sx={theme.mixins.chipStatus}
           />
         </Box>
 
@@ -125,12 +121,12 @@ const LocationsTable = ({
           </Box>
 
           <Stack direction="row" spacing={1}>
-            <Tooltip title="Редагувати">
+            <Tooltip title={UA.common_edit}>
               <IconButton size="small" onClick={() => onEdit(location)} color="primary">
                 <Edit fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title={location.isActive ? 'Спочатку деактивуйте локацію' : 'Видалити'}>
+            <Tooltip title={location.isActive ? UA.locations_deactivate_first : UA.common_delete}>
               <span>
                 <IconButton
                   size="small"
@@ -160,18 +156,8 @@ const LocationsTable = ({
           mb: 3,
         }}
       >
-        <Button
-          variant="contained"
-          onClick={onAdd}
-          fullWidth={isMobile}
-          sx={{
-            minWidth: isMobile ? 'auto' : '160px',
-            height: '40px',
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-          }}
-        >
-          Додати локацію
+        <Button variant="contained" onClick={onAdd} fullWidth={isMobile} sx={theme.mixins.buttonPrimary}>
+          {UA.locations_add}
         </Button>
 
         <Box
@@ -184,16 +170,16 @@ const LocationsTable = ({
         >
           <FormControl
             variant="outlined"
-            size="small"
+            size={FORM_FIELDS.select.size}
             sx={{
               width: isMobile ? '100%' : '200px',
               flexShrink: 0,
             }}
           >
-            <InputLabel>Орендар</InputLabel>
-            <Select value={tenantFilter} onChange={(e) => setTenantFilter(e.target.value)} label="Орендар">
-              <MenuItem value="">— Всі орендарі —</MenuItem>
-              <MenuItem value="null">— Вільні локації —</MenuItem>
+            <InputLabel>{UA.locations_tenant}</InputLabel>
+            <Select value={tenantFilter} onChange={(e) => setTenantFilter(e.target.value)} label={UA.locations_tenant}>
+              <MenuItem value="">{UA.locations_all_tenants}</MenuItem>
+              <MenuItem value="null">{UA.locations_free_locations}</MenuItem>
               {tenants.map((t) => (
                 <MenuItem key={t.id} value={t.id}>
                   {t.name}
@@ -216,7 +202,7 @@ const LocationsTable = ({
 
       {search && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Знайдено: {filteredLocations.length} з {locations.length}
+          {UA.common_found}: {filteredLocations.length} {UA.common_of} {locations.length}
         </Typography>
       )}
 
@@ -228,7 +214,7 @@ const LocationsTable = ({
             <Card>
               <CardContent>
                 <Typography variant="body1" align="center" color="text.secondary">
-                  {search ? 'За вашим запитом нічого не знайдено' : 'Локації не знайдено'}
+                  {search ? UA.locations_not_found_search : UA.locations_not_found}
                 </Typography>
               </CardContent>
             </Card>
@@ -239,26 +225,19 @@ const LocationsTable = ({
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell sx={{ width: isTablet ? '20%' : '18%', fontWeight: 600 }}>Назва</TableCell>
-                <TableCell sx={{ width: isTablet ? '30%' : '32%', fontWeight: 600 }}>Адреса</TableCell>
-                <TableCell sx={{ width: '10%', fontWeight: 600 }}>Відсоток Площі (%)</TableCell>
-                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Орендар</TableCell>
-                <TableCell sx={{ width: isTablet ? '20%' : '20%', fontWeight: 600 }}>Статус</TableCell>
-                <TableCell sx={{ width: '5%', fontWeight: 600 }}>Дії</TableCell>
+                <TableCell sx={{ width: isTablet ? '20%' : '18%', fontWeight: 600 }}>{UA.locations_name}</TableCell>
+                <TableCell sx={{ width: isTablet ? '30%' : '32%', fontWeight: 600 }}>{UA.locations_address}</TableCell>
+                <TableCell sx={{ width: '10%', fontWeight: 600 }}>{UA.locations_occupied_area}</TableCell>
+                <TableCell sx={{ width: '20%', fontWeight: 600 }}>{UA.locations_tenant}</TableCell>
+                <TableCell sx={{ width: isTablet ? '20%' : '20%', fontWeight: 600 }}>{UA.meters_status}</TableCell>
+                <TableCell sx={{ width: '5%', fontWeight: 600 }}>{UA.meters_actions}</TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody>
               {filteredLocations.length > 0 ? (
                 filteredLocations.map((loc) => (
-                  <TableRow
-                    key={loc.id}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: theme.palette.action.hover,
-                      },
-                    }}
-                  >
+                  <TableRow key={loc.id} sx={theme.mixins.tableRow}>
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
                         {loc.name}
@@ -272,11 +251,13 @@ const LocationsTable = ({
                     </TableCell>
 
                     <TableCell>
-                      <Typography variant="body2">{loc.occupied_area ? `${loc.occupied_area}%` : '—'}</Typography>
+                      <Typography variant="body2">
+                        {loc.occupied_area ? `${loc.occupied_area}${UA.common_percent}` : UA.common_empty_dash}
+                      </Typography>
                     </TableCell>
 
                     <TableCell>
-                      <Typography variant="body2">{loc.tenant ? loc.tenant.name : '— Вільна —'}</Typography>
+                      <Typography variant="body2">{loc.tenant ? loc.tenant.name : UA.locations_tenant_free}</Typography>
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -287,7 +268,7 @@ const LocationsTable = ({
                           size="small"
                         />
                         <Chip
-                          label={loc.isActive ? 'Активна' : 'Неактивна'}
+                          label={loc.isActive ? UA.locations_status_active_f : UA.locations_status_inactive_f}
                           color={loc.isActive ? 'success' : 'default'}
                           size="small"
                           variant="outlined"
@@ -297,13 +278,13 @@ const LocationsTable = ({
 
                     <TableCell>
                       <Stack direction="row" spacing={1}>
-                        <Tooltip title="Редагувати локацію">
+                        <Tooltip title={UA.locations_edit_tooltip}>
                           <IconButton size="small" onClick={() => onEdit(loc)} color="primary">
                             <Edit fontSize="small" />
                           </IconButton>
                         </Tooltip>
 
-                        <Tooltip title={loc.isActive ? 'Спочатку деактивуйте локацію' : 'Видалити локацію'}>
+                        <Tooltip title={loc.isActive ? UA.locations_deactivate_first : UA.locations_delete_tooltip}>
                           <span>
                             <IconButton
                               size="small"
@@ -323,11 +304,11 @@ const LocationsTable = ({
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                      {search ? 'За вашим запитом нічого не знайдено' : 'Локації не знайдено'}
+                      {search ? UA.locations_not_found_search : UA.locations_not_found}
                     </Typography>
                     {!search && (
                       <Button variant="outlined" onClick={onAdd} sx={{ mt: 2 }}>
-                        Додати першу локацію
+                        {UA.locations_add_first}
                       </Button>
                     )}
                   </TableCell>

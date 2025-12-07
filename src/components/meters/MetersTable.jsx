@@ -28,6 +28,8 @@ import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
+import { BREAKPOINTS, TABLE_COLUMNS, SIZES, FORM_FIELDS } from '../../constants';
 
 const MetersTable = ({
   meters,
@@ -41,8 +43,8 @@ const MetersTable = ({
   isLoading,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:800px)');
-  const isTablet = useMediaQuery('(max-width:960px)');
+  const isMobile = useMediaQuery(BREAKPOINTS.mobileWide);
+  const isTablet = useMediaQuery(BREAKPOINTS.tablet);
 
   const [search, setSearch] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
@@ -50,7 +52,7 @@ const MetersTable = ({
   const [loadingMeterId, setLoadingMeterId] = useState(null);
 
   const handleActionFailure = (err) => {
-    const userMessage = translateErrorMessage(err.message || 'Помилка виконання дії');
+    const userMessage = translateErrorMessage(err.message || UA.error_action_failed);
     setLocalError?.(userMessage);
   };
 
@@ -71,9 +73,10 @@ const MetersTable = ({
     removeMeter(meterId);
   };
 
-  const getLocationName = (locationId) => locations.find((l) => l.id === locationId)?.name || 'Невідома локація';
+  const getLocationName = (locationId) =>
+    locations.find((l) => l.id === locationId)?.name || UA.status_unknown_location;
   const getResourceName = (resourceId) =>
-    energyResourceTypes.find((rt) => rt.id === resourceId)?.name || 'Невідомий ресурс';
+    energyResourceTypes.find((rt) => rt.id === resourceId)?.name || UA.status_unknown_resource;
 
   const filteredMeters = meters.filter((meter) => {
     const serial = (meter.serial_number || '').toLowerCase();
@@ -94,32 +97,26 @@ const MetersTable = ({
     const isRowLoading = loadingMeterId === meter.id;
 
     return (
-      <Card
-        sx={{
-          mb: 2,
-          border: `1px solid ${theme.palette.divider}`,
-          '&:hover': { boxShadow: 2 },
-        }}
-      >
+      <Card sx={theme.mixins.card}>
         <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
             <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
               {meter.serial_number}
             </Typography>
             <Chip
-              label={meter.isActive ? 'Активний' : 'Неактивний'}
+              label={meter.isActive ? UA.status_active : UA.status_inactive}
               color={meter.isActive ? 'success' : 'default'}
               size="small"
-              sx={{ ml: 1, flexShrink: 0 }}
+              sx={theme.mixins.chipStatus}
             />
           </Box>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>Локація:</strong> {getLocationName(meter.location_id)}
+            <strong>{UA.meters_location}:</strong> {getLocationName(meter.location_id)}
           </Typography>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            <strong>Тип ресурсу:</strong> {getResourceName(meter.energy_resource_type_id)}
+            <strong>{UA.meters_resource_type}:</strong> {getResourceName(meter.energy_resource_type_id)}
           </Typography>
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -135,11 +132,11 @@ const MetersTable = ({
                   disabled={isLoading || loadingMeterId !== null}
                 />
               )}
-              <Typography variant="body2">{meter.isActive ? 'Активний' : 'Неактивний'}</Typography>
+              <Typography variant="body2">{meter.isActive ? UA.status_active : UA.status_inactive}</Typography>
             </Box>
 
             <Stack direction="row" spacing={1}>
-              <Tooltip title="Редагувати">
+              <Tooltip title={UA.common_edit}>
                 <span>
                   <IconButton
                     size="small"
@@ -151,7 +148,7 @@ const MetersTable = ({
                   </IconButton>
                 </span>
               </Tooltip>
-              <Tooltip title={meter.isActive ? 'Спочатку деактивуйте лічильник' : 'Видалити'}>
+              <Tooltip title={meter.isActive ? UA.meters_deactivate_first : UA.common_delete}>
                 <span>
                   <IconButton
                     size="small"
@@ -172,41 +169,51 @@ const MetersTable = ({
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          flexWrap: 'wrap',
-          gap: 2,
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          mb: 3,
-        }}
-      >
-        <Button
-          variant="contained"
-          onClick={onAdd}
-          sx={{
-            width: isMobile ? '100%' : 'auto',
-            minWidth: '160px',
-            height: '40px',
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-            order: isMobile ? 1 : 0,
-          }}
-          disabled={isLoading}
-        >
-          Додати лічильник
-        </Button>
-
+      <Box sx={{ mb: 3 }}>
         <Box
-          sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto', order: isMobile ? 0 : 1 }}
+          sx={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2,
+            mb: 2,
+          }}
         >
-          <FormControl size="small" sx={{ minWidth: 150, flexGrow: 1 }} disabled={isLoading}>
-            <InputLabel>Локація</InputLabel>
-            <Select value={selectedLocation} label="Локація" onChange={(e) => setSelectedLocation(e.target.value)}>
+          <Button variant="contained" onClick={onAdd} sx={theme.mixins.buttonPrimary} disabled={isLoading}>
+            {UA.meters_add}
+          </Button>
+
+          <SearchField
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={UA.common_search}
+            sx={theme.mixins.searchField}
+            disabled={isLoading}
+          />
+        </Box>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            flexWrap: 'wrap',
+            gap: 2,
+            alignItems: 'center',
+          }}
+        >
+          <FormControl
+            size={FORM_FIELDS.select.size}
+            sx={{ minWidth: FORM_FIELDS.select.minWidth, flexGrow: 1 }}
+            disabled={isLoading}
+          >
+            <InputLabel>{UA.meters_location}</InputLabel>
+            <Select
+              value={selectedLocation}
+              label={UA.meters_location}
+              onChange={(e) => setSelectedLocation(e.target.value)}
+            >
               <MenuItem value="">
-                <em>Всі локації</em>
+                <em>{UA.filter_all_locations}</em>
               </MenuItem>
               {locations
                 .filter((l) => l.isActive)
@@ -218,15 +225,19 @@ const MetersTable = ({
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 150, flexGrow: 1 }} disabled={isLoading}>
-            <InputLabel>Тип ресурсу</InputLabel>
+          <FormControl
+            size={FORM_FIELDS.select.size}
+            sx={{ minWidth: FORM_FIELDS.select.minWidth, flexGrow: 1 }}
+            disabled={isLoading}
+          >
+            <InputLabel>{UA.meters_resource_type}</InputLabel>
             <Select
               value={selectedResourceType}
-              label="Тип ресурсу"
+              label={UA.meters_resource_type}
               onChange={(e) => setSelectedResourceType(e.target.value)}
             >
               <MenuItem value="">
-                <em>Всі типи</em>
+                <em>{UA.filter_all_types}</em>
               </MenuItem>
               {energyResourceTypes
                 .filter((rt) => rt.isActive)
@@ -238,22 +249,11 @@ const MetersTable = ({
             </Select>
           </FormControl>
         </Box>
-
-        <SearchField
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Пошук..."
-          sx={{
-            width: isMobile ? '100%' : '300px',
-            order: isMobile ? 2 : 2,
-          }}
-          disabled={isLoading}
-        />
       </Box>
 
       {(search || selectedLocation || selectedResourceType) && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Знайдено: {filteredMeters.length} з {meters.length}
+          {UA.common_found}: {filteredMeters.length} {UA.common_of} {meters.length}
         </Typography>
       )}
 
@@ -267,7 +267,7 @@ const MetersTable = ({
             <Card>
               <CardContent>
                 <Typography variant="body1" align="center" color="text.secondary">
-                  За вашими фільтрами нічого не знайдено
+                  {UA.common_no_results}
                 </Typography>
               </CardContent>
             </Card>
@@ -278,11 +278,19 @@ const MetersTable = ({
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Серійний номер</TableCell>
-                <TableCell sx={{ width: '25%', fontWeight: 600 }}>Локація</TableCell>
-                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Тип ресурсу</TableCell>
-                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Статус</TableCell>
-                <TableCell sx={{ width: '15%', fontWeight: 600, textAlign: 'center' }}>Дії</TableCell>
+                <TableCell sx={{ width: TABLE_COLUMNS.meters.serialNumber, fontWeight: 600 }}>
+                  {UA.meters_serial_number}
+                </TableCell>
+                <TableCell sx={{ width: TABLE_COLUMNS.meters.location, fontWeight: 600 }}>
+                  {UA.meters_location}
+                </TableCell>
+                <TableCell sx={{ width: TABLE_COLUMNS.meters.resourceType, fontWeight: 600 }}>
+                  {UA.meters_resource_type}
+                </TableCell>
+                <TableCell sx={{ width: TABLE_COLUMNS.meters.status, fontWeight: 600 }}>{UA.meters_status}</TableCell>
+                <TableCell sx={{ width: TABLE_COLUMNS.meters.actions, fontWeight: 600, textAlign: 'center' }}>
+                  {UA.meters_actions}
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -292,7 +300,7 @@ const MetersTable = ({
                   const isDisabled = isLoading || loadingMeterId !== null;
 
                   return (
-                    <TableRow key={meter.id} sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}>
+                    <TableRow key={meter.id} sx={theme.mixins.tableRow}>
                       <TableCell>
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
                           {meter.serial_number}
@@ -311,7 +319,7 @@ const MetersTable = ({
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {isRowLoading ? (
-                            <CircularProgress size={20} />
+                            <CircularProgress size={SIZES.circularProgress.small} />
                           ) : (
                             <Switch
                               checked={meter.isActive}
@@ -322,7 +330,7 @@ const MetersTable = ({
                             />
                           )}
                           <Chip
-                            label={meter.isActive ? 'Активний' : 'Неактивний'}
+                            label={meter.isActive ? UA.status_active : UA.status_inactive}
                             color={meter.isActive ? 'success' : 'default'}
                             size="small"
                             variant="outlined"
@@ -331,7 +339,7 @@ const MetersTable = ({
                       </TableCell>
                       <TableCell sx={{ textAlign: 'center' }}>
                         <Stack direction="row" spacing={0} justifyContent="center">
-                          <Tooltip title="Редагувати лічильник">
+                          <Tooltip title={UA.meters_edit_tooltip}>
                             <span>
                               <IconButton
                                 size="small"
@@ -343,7 +351,7 @@ const MetersTable = ({
                               </IconButton>
                             </span>
                           </Tooltip>
-                          <Tooltip title={meter.isActive ? 'Спочатку деактивуйте лічильник' : 'Видалити лічильник'}>
+                          <Tooltip title={meter.isActive ? UA.meters_deactivate_first : UA.meters_delete_tooltip}>
                             <span>
                               <IconButton
                                 size="small"
@@ -364,7 +372,7 @@ const MetersTable = ({
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                      За вашими фільтрами нічого не знайдено
+                      {UA.common_no_results}
                     </Typography>
                   </TableCell>
                 </TableRow>

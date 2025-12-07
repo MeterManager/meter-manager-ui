@@ -22,6 +22,7 @@ import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
 
 const ResourceTypesTable = ({
   resourceTypes,
@@ -74,7 +75,7 @@ const ResourceTypesTable = ({
             {resourceType.name}
           </Typography>
           <Chip
-            label={resourceType.isActive ? 'Активний' : 'Неактивний'}
+            label={resourceType.isActive ? UA.status_active : UA.status_inactive}
             color={resourceType.isActive ? 'success' : 'default'}
             size="small"
             sx={{ ml: 1, flexShrink: 0 }}
@@ -82,7 +83,7 @@ const ResourceTypesTable = ({
         </Box>
 
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          <strong>Одиниця:</strong> {resourceType.unit}
+          <strong>{UA.resourceTypes_unit_label}:</strong> {resourceType.unit}
         </Typography>
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -94,16 +95,16 @@ const ResourceTypesTable = ({
               size="small"
               disabled={isLoading}
             />
-            <Typography variant="body2">{resourceType.isActive ? 'Активний' : 'Неактивний'}</Typography>
+            <Typography variant="body2">{resourceType.isActive ? UA.status_active : UA.status_inactive}</Typography>
           </Box>
 
           <Stack direction="row" spacing={1}>
-            <Tooltip title="Редагувати">
+            <Tooltip title={UA.common_edit}>
               <IconButton size="small" onClick={() => onEdit(resourceType)} color="primary" disabled={isLoading}>
                 <Edit fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title={resourceType.isActive ? 'Неможливо видалити активний тип ресурсу' : 'Видалити'}>
+            <Tooltip title={resourceType.isActive ? UA.resourceTypes_cannot_delete_active : UA.common_delete}>
               <span>
                 <IconButton
                   size="small"
@@ -145,14 +146,14 @@ const ResourceTypesTable = ({
             flexShrink: 0,
           }}
         >
-          Додати тип ресурсу
+          {UA.resourceTypes_add}
         </Button>
 
         <SearchField
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           fullWidth={isMobile}
-          placeholder="Пошук за типом чи одиницею"
+          placeholder={UA.resourceTypes_search_placeholder}
           sx={{
             width: isMobile ? '100%' : '350px',
             maxWidth: isMobile ? '100%' : '400px',
@@ -164,7 +165,7 @@ const ResourceTypesTable = ({
 
       {search && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Знайдено: {filteredTypes.length} з {resourceTypes?.length || 0}
+          {UA.common_found}: {filteredTypes.length} {UA.common_of} {resourceTypes?.length || 0}
         </Typography>
       )}
 
@@ -178,7 +179,7 @@ const ResourceTypesTable = ({
             <Card>
               <CardContent>
                 <Typography variant="body1" align="center" color="text.secondary">
-                  {search ? 'За вашим запитом нічого не знайдено' : 'Типи ресурсів не знайдено'}
+                  {search ? UA.resourceTypes_not_found_search : UA.resourceTypes_not_found}
                 </Typography>
               </CardContent>
             </Card>
@@ -189,10 +190,10 @@ const ResourceTypesTable = ({
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell sx={{ width: isTablet ? '35%' : '30%', fontWeight: 600 }}>Тип ресурсу</TableCell>
-                <TableCell sx={{ width: isTablet ? '35%' : '30%', fontWeight: 600 }}>Одиниця вимірювання</TableCell>
-                <TableCell sx={{ width: isTablet ? '20%' : '20%', fontWeight: 600 }}>Статус</TableCell>
-                <TableCell sx={{ width: '15%', fontWeight: 600 }}>Дії</TableCell>
+                <TableCell sx={{ width: isTablet ? '35%' : '30%', fontWeight: 600 }}>{UA.resourceTypes_name}</TableCell>
+                <TableCell sx={{ width: isTablet ? '35%' : '30%', fontWeight: 600 }}>{UA.resourceTypes_unit}</TableCell>
+                <TableCell sx={{ width: isTablet ? '20%' : '20%', fontWeight: 600 }}>{UA.meters_status}</TableCell>
+                <TableCell sx={{ width: '15%', fontWeight: 600 }}>{UA.meters_actions}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -219,7 +220,7 @@ const ResourceTypesTable = ({
                           disabled={isLoading}
                         />
                         <Chip
-                          label={type.isActive ? 'Активний' : 'Неактивний'}
+                          label={type.isActive ? UA.status_active : UA.status_inactive}
                           color={type.isActive ? 'success' : 'default'}
                           size="small"
                           variant="outlined"
@@ -228,12 +229,14 @@ const ResourceTypesTable = ({
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
-                        <Tooltip title="Редагувати тип ресурсу">
+                        <Tooltip title={UA.resourceTypes_edit_tooltip}>
                           <IconButton size="small" onClick={() => onEdit(type)} color="primary" disabled={isLoading}>
                             <Edit fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title={type.isActive ? 'Спочатку деактивуйте тип ресурсу' : 'Видалити тип ресурсу'}>
+                        <Tooltip
+                          title={type.isActive ? UA.resourceTypes_deactivate_first : UA.resourceTypes_delete_tooltip}
+                        >
                           <span>
                             <IconButton
                               size="small"
@@ -253,11 +256,11 @@ const ResourceTypesTable = ({
                 <TableRow>
                   <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                      {search ? 'За вашим запитом нічого не знайдено' : 'Типи ресурсів не знайдено'}
+                      {search ? UA.resourceTypes_not_found_search : UA.resourceTypes_not_found}
                     </Typography>
                     {!search && (
                       <Button variant="outlined" onClick={onAdd} sx={{ mt: 2 }} disabled={isLoading}>
-                        Додати перший тип ресурсу
+                        {UA.resourceTypes_add_first}
                       </Button>
                     )}
                   </TableCell>

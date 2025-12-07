@@ -10,7 +10,7 @@ export default function ActsPage() {
         py: { xs: 3, sm: 4 },
       }}
     >
-      <ActsTable/>
+      <ActsTable />
     </Container>
   );
 }

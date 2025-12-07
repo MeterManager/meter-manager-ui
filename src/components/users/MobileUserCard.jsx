@@ -1,4 +1,5 @@
 import { Card, CardContent, Box, Typography, Chip, Switch, CircularProgress } from '@mui/material';
+import { UA } from '../../utils/uaDictionary';
 
 const MobileUserCard = ({ user, onToggleStatus, disabled, isLoading }) => {
   return (
@@ -15,7 +16,7 @@ const MobileUserCard = ({ user, onToggleStatus, disabled, isLoading }) => {
             {user.full_name}
           </Typography>
           <Chip
-            label={user.isActive ? 'Активний' : 'Неактивний'}
+            label={user.isActive ? UA.status_active : UA.status_inactive}
             color={user.isActive ? 'success' : 'default'}
             size="small"
             sx={{ ml: 1, flexShrink: 0 }}
@@ -23,21 +24,23 @@ const MobileUserCard = ({ user, onToggleStatus, disabled, isLoading }) => {
         </Box>
 
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          <strong>Роль:</strong> {user.role}
+          <strong>{UA.users_role}:</strong> {user.role}
         </Typography>
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {isLoading ? <CircularProgress size={20} /> : (
-                <Switch
-                    checked={user.isActive}
-                    onChange={onToggleStatus}
-                    color="primary"
-                    size="small"
-                    disabled={disabled}
-                 />
+            {isLoading ? (
+              <CircularProgress size={20} />
+            ) : (
+              <Switch
+                checked={user.isActive}
+                onChange={onToggleStatus}
+                color="primary"
+                size="small"
+                disabled={disabled}
+              />
             )}
-            <Typography variant="body2">{user.isActive ? 'Активний' : 'Неактивний'}</Typography>
+            <Typography variant="body2">{user.isActive ? UA.status_active : UA.status_inactive}</Typography>
           </Box>
         </Box>
       </CardContent>

@@ -6,7 +6,7 @@ import { useErrorHandler } from './useErrorHandler';
 
 const fetcher = async (token, search = '') => {
   const response = await usersApi.getUsers(token, search);
-  return (response.data || []).map(u => ({ ...u, isActive: u.is_active }));
+  return (response.data || []).map((u) => ({ ...u, isActive: u.is_active }));
 };
 
 export const useUsers = () => {
@@ -21,15 +21,11 @@ export const useUsers = () => {
     data: users = [],
     isLoading: loadingSWR,
     mutate: mutateUsers,
-  } = useSWR(
-    swrKey,
-    async () => withToken(fetcher),
-    {
-      onError: handleError,
-      revalidateOnFocus: false,
-      dedupingInterval: 5000,
-    }
-  );
+  } = useSWR(swrKey, async () => withToken(fetcher), {
+    onError: handleError,
+    revalidateOnFocus: false,
+    dedupingInterval: 5000,
+  });
 
   const updateUserStatus = useCallback(
     async (id, isActive) => {
@@ -37,7 +33,7 @@ export const useUsers = () => {
       try {
         setError(null);
         mutateUsers(
-          (currentUsers = []) => currentUsers.map(u => u.id === id ? { ...u, isActive, is_active: isActive } : u),
+          (currentUsers = []) => currentUsers.map((u) => (u.id === id ? { ...u, isActive, is_active: isActive } : u)),
           false
         );
         await withToken(usersApi.updateUser, id, { is_active: isActive });

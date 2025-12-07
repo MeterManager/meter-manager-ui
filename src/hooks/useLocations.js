@@ -9,17 +9,14 @@ export const useLocations = () => {
   const { error, setError, handleError } = useErrorHandler('Помилка при завантаженні локацій');
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  const fetcher = useCallback(
-    async ( ) => {
-      const data = await withToken(locationApi.getLocations);
-      return (data || []).map((loc) => ({
-        ...loc,
-        isActive: loc.is_active === true,
-        tenant: loc.Tenant || null,
-      }));
-    },
-    [withToken]
-  );
+  const fetcher = useCallback(async () => {
+    const data = await withToken(locationApi.getLocations);
+    return (data || []).map((loc) => ({
+      ...loc,
+      isActive: loc.is_active === true,
+      tenant: loc.Tenant || null,
+    }));
+  }, [withToken]);
 
   const swrKey = canRequest ? ['locations', null] : null;
 
@@ -181,10 +178,10 @@ export const useLocations = () => {
           mutate('meters');
           mutate('tenants');
         }
-        
+
         return {
-            requiresConfirmation: false,
-            data: response
+          requiresConfirmation: false,
+          data: response,
         };
       } catch (err) {
         mutateLocations();

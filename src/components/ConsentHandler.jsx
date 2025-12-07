@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { Button, Alert } from '@mui/material';
+import { UA } from '../utils/uaDictionary';
 
 const ConsentHandler = () => {
   const { loginWithRedirect } = useAuth0();
@@ -19,8 +20,7 @@ const ConsentHandler = () => {
           prompt: 'consent',
         },
       });
-    } catch (err) {
-      console.error('Consent error:', err);
+    } catch {
       setIsGettingConsent(false);
     }
   };
@@ -30,11 +30,11 @@ const ConsentHandler = () => {
       severity="info"
       action={
         <Button color="inherit" size="small" onClick={handleGetConsent} disabled={isGettingConsent}>
-          {isGettingConsent ? 'Переходимо...' : 'Продовжити'}
+          {isGettingConsent ? UA.consent_button_redirecting : UA.consent_button_continue}
         </Button>
       }
     >
-      Щоб отримати доступ до даних, натисніть «Продовжити»
+      {UA.consent_info_message}
     </Alert>
   );
 };

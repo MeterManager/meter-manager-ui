@@ -20,6 +20,7 @@ import { Edit, Delete } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import React from 'react';
+import { UA } from '../../utils/uaDictionary';
 
 const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, handleSort }) => {
   const theme = useTheme();
@@ -27,9 +28,9 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   const categoryLabels = {
-    CA: 'СА',
-    CP: 'СР',
-    GR: 'ГР',
+    CA: UA.acts_category_ca,
+    CP: UA.acts_category_cp,
+    GR: UA.acts_category_gr,
   };
 
   const getTenantLocationInfo = (reading) => {
@@ -37,11 +38,11 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
     if (location) {
       return {
         id: location.id,
-        name: location.name || 'Невідома',
+        name: location.name || UA.status_unknown_location,
         address: location.address || '',
       };
     }
-    return { id: null, name: 'Невідома', address: '' };
+    return { id: null, name: UA.status_unknown_location, address: '' };
   };
 
   const getDistributionByCategory = (reading, category) => {
@@ -69,14 +70,14 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
         <CardContent sx={{ '&:last-child': { pb: 2 } }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              {r.MeterTenant?.Meter?.serial_number || 'Невідомий'}
+              {r.MeterTenant?.Meter?.serial_number || UA.status_unknown}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {r.reading_date}
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary">
-            Локація: {location.name} – {location.address}
+            {UA.meterReadings_location}: {location.name} – {location.address}
           </Typography>
 
           {distributions.map((dist) => (
@@ -87,29 +88,32 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
                 sx={{ mb: 0.5, fontWeight: 'bold' }}
               />
               <Typography variant="body2">
-                Поточний: {dist.current_reading} | Попередній: {dist.previous_reading}
+                {UA.meterReadings_current}: {dist.current_reading} | {UA.meterReadings_previous}:{' '}
+                {dist.previous_reading}
               </Typography>
               <Typography variant="body2">
-                Різниця: {dist.difference} | Спожито: {dist.consumed_energy}
+                {UA.acts_difference}: {dist.difference} | {UA.acts_consumption_electricity}: {dist.consumed_energy}
               </Typography>
-              <Typography variant="body2">Тариф (грн): {dist.unit_price}</Typography>
+              <Typography variant="body2">
+                {UA.acts_cost}: {dist.unit_price}
+              </Typography>
             </Box>
           ))}
 
           <Typography variant="body2" sx={{ mt: 1, fontWeight: 600 }}>
-            Виконавець: {r.executor_name || '-'}
+            {UA.meterReadings_executor_name}: {r.executor_name || UA.common_empty_dash}
           </Typography>
           <Typography variant="body1" sx={{ mt: 1, fontWeight: 'bold' }}>
-            Разом спожито: {totalConsumed.toFixed(2)}
+            {UA.acts_total}: {totalConsumed.toFixed(2)}
           </Typography>
 
           <Stack direction="row" spacing={1} justifyContent="flex-end" mt={2}>
-            <Tooltip title="Редагувати">
+            <Tooltip title={UA.common_edit}>
               <IconButton size="small" onClick={() => onEdit?.(r)}>
                 <Edit fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Видалити">
+            <Tooltip title={UA.common_delete}>
               <IconButton size="small" color="error" onClick={() => onDelete?.(r.id)}>
                 <Delete fontSize="small" />
               </IconButton>
@@ -127,7 +131,7 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
           readings.map((r) => <MobileReadingCard key={r.id} r={r} />)
         ) : (
           <Typography variant="body2" color="text.secondary" align="center">
-            Показники не знайдено
+            {UA.common_no_results}
           </Typography>
         )
       ) : (
@@ -144,58 +148,58 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
                     direction={orderBy === 'reading_date' ? order : 'asc'}
                     onClick={() => handleSort('reading_date')}
                   >
-                    Дата
+                    {UA.meterReadings_reading_date}
                   </TableSortLabel>
                 </TableCell>
                 <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
-                  № лічильника
+                  {UA.acts_meter_number}
                 </TableCell>
                 <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
-                  Об'єкт/Локація
+                  {UA.acts_installation_place}
                 </TableCell>
                 <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
-                  Тип Ресурсу
+                  {UA.acts_resource_type}
                 </TableCell>
                 <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
-                  Категорія
+                  {UA.acts_category}
                 </TableCell>
                 <TableCell
                   colSpan={4}
                   align="center"
                   sx={{ fontWeight: 'bold', borderBottom: 0, bgcolor: theme.palette.action.hover }}
                 >
-                  Показники
+                  {UA.acts_indicators}
                 </TableCell>
                 <TableCell
                   colSpan={1}
                   align="center"
                   sx={{ fontWeight: 'bold', borderBottom: 0, bgcolor: theme.palette.action.selected }}
                 >
-                  Розрахунок
+                  {UA.meterReadings_calculation_method}
                 </TableCell>
 
                 <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
-                  Виконавець
+                  {UA.meterReadings_executor_name}
                 </TableCell>
                 <TableCell align="center" rowSpan={2} sx={{ fontWeight: 'bold' }}>
-                  Дії
+                  {UA.meters_actions}
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>
-                  Поточний
+                  {UA.acts_current}
                 </TableCell>
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>
-                  Попередній
+                  {UA.acts_previous}
                 </TableCell>
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>
-                  Різниця
+                  {UA.acts_difference}
                 </TableCell>
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>
-                  Спожито
+                  {UA.acts_consumption_electricity}
                 </TableCell>
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>
-                  Тариф (грн)
+                  {UA.acts_cost}
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -240,7 +244,7 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
                                 {r.reading_date}
                               </TableCell>
                               <TableCell rowSpan={rowCount} align="center">
-                                {r.MeterTenant?.Meter?.serial_number || 'Н/Д'}
+                                {r.MeterTenant?.Meter?.serial_number || UA.common_empty_dash}
                               </TableCell>
                               <TableCell rowSpan={rowCount} align="center">
                                 <Typography variant="body1">{location.name}</Typography>
@@ -249,14 +253,14 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
                                 </Typography>
                               </TableCell>
                               <TableCell rowSpan={rowCount} align="center">
-                                {r.MeterTenant?.Meter?.EnergyResourceType?.name || 'Н/Д'}
+                                {r.MeterTenant?.Meter?.EnergyResourceType?.name || UA.common_empty_dash}
                               </TableCell>
                             </>
                           )}
 
                           <TableCell align="center">
                             {dist.category === 'General' ? (
-                              '—'
+                              UA.common_empty_dash
                             ) : (
                               <Chip
                                 label={categoryLabels[dist.category]}
@@ -281,19 +285,19 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
 
                           {distIndex === 0 && (
                             <TableCell rowSpan={rowCount} align="center">
-                              {r.executor_name || '-'}
+                              {r.executor_name || UA.common_empty_dash}
                             </TableCell>
                           )}
 
                           {distIndex === 0 && (
                             <TableCell rowSpan={rowCount} align="center" sx={{ whiteSpace: 'nowrap' }}>
                               <Stack direction="row" spacing={1} justifyContent="center">
-                                <Tooltip title="Редагувати">
+                                <Tooltip title={UA.common_edit}>
                                   <IconButton size="small" onClick={() => onEdit?.(r)}>
                                     <Edit fontSize="small" />
                                   </IconButton>
                                 </Tooltip>
-                                <Tooltip title="Видалити">
+                                <Tooltip title={UA.common_delete}>
                                   <IconButton size="small" color="error" onClick={() => onDelete?.(r.id)}>
                                     <Delete fontSize="small" />
                                   </IconButton>
@@ -307,7 +311,7 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
                       {rowCount > 0 && (
                         <TableRow key={`${r.id}-total`} sx={{ bgcolor: theme.palette.action.hover }}>
                           <TableCell colSpan={10} align="right" sx={{ fontWeight: 600, borderBottom: 0 }}>
-                            Разом спожито:
+                            {UA.acts_total}:
                           </TableCell>
                           <TableCell align="center" sx={{ fontWeight: 'bold', borderBottom: 0 }}>
                             {totalConsumedForReading.toFixed(2)}
@@ -322,7 +326,7 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
                 <TableRow>
                   <TableCell colSpan={13} align="center" sx={{ p: 2 }}>
                     <Typography variant="body2" color="text.secondary">
-                      Показники не знайдено
+                      {UA.common_no_results}
                     </Typography>
                   </TableCell>
                 </TableRow>

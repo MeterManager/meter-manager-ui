@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
 import LocationsTable from '../locations/LocationsTable';
 import LocationForm from '../locations/LocationForm';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import { useLocations } from '../../hooks/useLocations';
 import { useTenants } from '../../hooks/useTenants';
 import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
+import { DEFAULTS } from '../../constants';
 
 const LocationsSection = ({ initialExpanded = true }) => {
+  const theme = useTheme();
   const {
     locations,
     addLocation,
@@ -55,10 +59,10 @@ const LocationsSection = ({ initialExpanded = true }) => {
     try {
       if (editingLocation?.id) {
         await editLocation(editingLocation.id, formData);
-        setSnackbar({ open: true, message: 'Локацію успішно оновлено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.locations_success_updated, severity: 'success' });
       } else {
         await addLocation(formData);
-        setSnackbar({ open: true, message: 'Локацію успішно створено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.locations_success_created, severity: 'success' });
       }
     } catch (err) {
       handleServiceError(err);
@@ -88,7 +92,7 @@ const LocationsSection = ({ initialExpanded = true }) => {
         });
       } else {
         await removeLocation(id);
-        setSnackbar({ open: true, message: 'Локацію успішно видалено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.locations_success_deleted, severity: 'success' });
       }
     } catch (err) {
       handleServiceError(err);
@@ -99,7 +103,7 @@ const LocationsSection = ({ initialExpanded = true }) => {
     if (isActive) {
       try {
         await updateLocationStatus(id, true);
-        setSnackbar({ open: true, message: 'Локацію успішно активовано', severity: 'success' });
+        setSnackbar({ open: true, message: UA.locations_success_activated, severity: 'success' });
       } catch (err) {
         handleServiceError(err);
       }
@@ -119,7 +123,7 @@ const LocationsSection = ({ initialExpanded = true }) => {
       } else {
         setSnackbar({
           open: true,
-          message: 'Локацію успішно деактивовано',
+          message: UA.locations_success_deactivated,
           severity: 'success',
         });
       }
@@ -134,14 +138,14 @@ const LocationsSection = ({ initialExpanded = true }) => {
         await removeLocation(confirmDialog.id);
         setSnackbar({
           open: true,
-          message: 'Локацію та повʼязані обʼєкти успішно видалено',
+          message: UA.locations_success_deleted_with_deps,
           severity: 'success',
         });
       } else if (confirmDialog.action === 'deactivate') {
         await updateLocationStatus(confirmDialog.id, false, true);
         setSnackbar({
           open: true,
-          message: 'Локацію успішно деактивовано (з залежностями)',
+          message: UA.locations_success_deactivated_with_deps,
           severity: 'success',
         });
       }
@@ -163,21 +167,11 @@ const LocationsSection = ({ initialExpanded = true }) => {
 
   return (
     <>
-      <Paper sx={{ mb: 3, borderRadius: 2 }} elevation={1}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            p: 2,
-            cursor: 'pointer',
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.02)',
-            },
-          }}
-          onClick={handleToggle}
-        >
-          <Typography variant="h5">Локації ({locations.length})</Typography>
+      <Paper sx={theme.mixins.sectionPaper} elevation={DEFAULTS.paperElevation}>
+        <Box sx={theme.mixins.sectionHeader} onClick={handleToggle}>
+          <Typography variant="h5">
+            {UA.locations_title} ({locations.length})
+          </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
 
@@ -225,7 +219,7 @@ const LocationsSection = ({ initialExpanded = true }) => {
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={6000}
+        autoHideDuration={DEFAULTS.snackbarDuration}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >

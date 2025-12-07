@@ -6,7 +6,6 @@ export const useErrorHandler = (defaultMessage) => {
   const handleError = (err, customMessage) => {
     if (err.response?.status === 403) return;
     setError(customMessage || err.message || defaultMessage);
-    console.error('Error:', err);
   };
 
   return { error, setError, handleError };

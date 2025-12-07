@@ -15,6 +15,8 @@ import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import CustomDatePicker from '../ui/DatePicker';
 import { Close } from '@mui/icons-material';
+import { UA } from '../../utils/uaDictionary';
+import { BREAKPOINTS, DIALOG_CONFIG, SIZES } from '../../constants';
 
 const MeterTenantForm = ({
   open,
@@ -29,8 +31,8 @@ const MeterTenantForm = ({
   isLoading,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:600px)');
-  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
+  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down(BREAKPOINTS.md));
 
   const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
@@ -66,17 +68,17 @@ const MeterTenantForm = ({
 
   const validateField = (name, value, currentFormData) => {
     let errorMsg = '';
-    if (name === 'tenantId' && !value) errorMsg = "Орендар обов'язковий.";
-    if (name === 'meterId' && !value) errorMsg = "Лічильник обов'язковий.";
-    if (name === 'startDate' && !value) errorMsg = "Дата початку обов'язкова.";
+    if (name === 'tenantId' && !value) errorMsg = UA.meterTenants_tenant_required;
+    if (name === 'meterId' && !value) errorMsg = UA.meterTenants_meter_required;
+    if (name === 'startDate' && !value) errorMsg = UA.meterTenants_start_date_required;
 
     const startDate = name === 'startDate' ? value : currentFormData.startDate;
     const endDate = name === 'endDate' ? value : currentFormData.endDate;
 
     if (endDate && startDate && new Date(endDate) < new Date(startDate)) {
-      if (name === 'endDate') errorMsg = 'Дата завершення не може бути раніше дати початку.';
+      if (name === 'endDate') errorMsg = UA.meterTenants_end_date_before_start;
       else if (name === 'startDate')
-        setFormErrors((prev) => ({ ...prev, endDate: 'Дата завершення не може бути раніше дати початку.' }));
+        setFormErrors((prev) => ({ ...prev, endDate: UA.meterTenants_end_date_before_start }));
     } else {
       if (name === 'endDate' && formErrors.startDate?.includes('пізніше'))
         setFormErrors((prev) => ({ ...prev, startDate: '' }));
@@ -111,13 +113,13 @@ const MeterTenantForm = ({
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.tenantId) errors.tenantId = "Орендар обов'язковий.";
-    if (!selectedLocationId) errors.locationId = 'Спочатку виберіть локацію.';
-    if (!formData.meterId) errors.meterId = "Лічильник обов'язковий.";
-    if (!formData.startDate) errors.startDate = "Дата початку обов'язкова.";
+    if (!formData.tenantId) errors.tenantId = UA.meterTenants_tenant_required;
+    if (!selectedLocationId) errors.locationId = UA.meterTenants_location_first;
+    if (!formData.meterId) errors.meterId = UA.meterTenants_meter_required;
+    if (!formData.startDate) errors.startDate = UA.meterTenants_start_date_required;
 
     if (formData.endDate && formData.startDate && new Date(formData.endDate) < new Date(formData.startDate)) {
-      errors.endDate = 'Дата завершення не може бути раніше дати початку.';
+      errors.endDate = UA.meterTenants_end_date_before_start;
     }
     return errors;
   };
@@ -155,13 +157,13 @@ const MeterTenantForm = ({
     <Dialog
       open={open}
       onClose={handleClose}
-      fullWidth
-      maxWidth="sm"
+      fullWidth={DIALOG_CONFIG.fullWidth}
+      maxWidth={DIALOG_CONFIG.maxWidth.sm}
       fullScreen={isMobile}
       PaperProps={{
         sx: {
-          width: isMobile ? '100%' : isMobileOrTablet ? '90%' : '500px',
-          maxWidth: isMobile ? '100%' : '500px',
+          width: isMobile ? '100%' : isMobileOrTablet ? DIALOG_CONFIG.paperMaxWidthTablet : DIALOG_CONFIG.paperMaxWidth,
+          maxWidth: isMobile ? '100%' : DIALOG_CONFIG.paperMaxWidth,
           margin: isMobile ? 0 : 'auto',
         },
       }}
@@ -177,7 +179,7 @@ const MeterTenantForm = ({
           alignItems: 'center',
         }}
       >
-        {formData.id ? 'Редагувати призначення' : 'Додати призначення'}
+        {formData.id ? UA.meterTenants_edit : UA.meterTenants_add}
         <IconButton onClick={handleClose} size="small" disabled={isLoading}>
           <Close />
         </IconButton>
@@ -193,7 +195,7 @@ const MeterTenantForm = ({
         <TextField
           select
           name="locationId"
-          label="Локація (для фільтру лічильників)"
+          label={UA.meterTenants_location_filter}
           value={selectedLocationId || ''}
           onChange={handleLocationChange}
           fullWidth
@@ -205,7 +207,7 @@ const MeterTenantForm = ({
           disabled={isLoading}
         >
           <MenuItem value="">
-            <em>-- Виберіть локацію --</em>
+            <em>{UA.meterTenants_select_location}</em>
           </MenuItem>
           {locations.map((loc) => (
             <MenuItem key={loc.id} value={loc.id.toString()}>
@@ -217,7 +219,7 @@ const MeterTenantForm = ({
         <TextField
           select
           name="meterId"
-          label="Лічильник"
+          label={UA.meterTenants_meter}
           value={formData.meterId || ''}
           onChange={handleChange}
           fullWidth
@@ -230,16 +232,16 @@ const MeterTenantForm = ({
         >
           {!selectedLocationId ? (
             <MenuItem disabled value="">
-              Спочатку виберіть локацію
+              {UA.meterTenants_select_location_first}
             </MenuItem>
           ) : availableMeters.length === 0 ? (
             <MenuItem disabled value="">
-              Немає доступних лічильників для цієї локації
+              {UA.meterTenants_no_meters}
             </MenuItem>
           ) : (
             availableMeters.map((m) => (
               <MenuItem key={m.id} value={m.id.toString()}>
-                {`${m.serial_number || `ID:${m.id}`} - ${resourceTypeMap[m.energy_resource_type_id] || 'Невідомий тип'}`}
+                {`${m.serial_number || `ID:${m.id}`} - ${resourceTypeMap[m.energy_resource_type_id] || UA.status_unknown_resource}`}
               </MenuItem>
             ))
           )}
@@ -248,7 +250,7 @@ const MeterTenantForm = ({
         <TextField
           select
           name="tenantId"
-          label="Орендар"
+          label={UA.meterTenants_tenant}
           value={formData.tenantId || ''}
           onChange={handleChange}
           fullWidth
@@ -271,7 +273,7 @@ const MeterTenantForm = ({
           onChange={(newValue) => {
             handleChange({ target: { name: 'startDate', value: newValue } });
           }}
-          label="Дата початку"
+          label={UA.meterTenants_start_date}
           maxDate={formData.endDate || undefined}
           error={!!formErrors.startDate}
           helperText={formErrors.startDate || ' '}
@@ -285,10 +287,10 @@ const MeterTenantForm = ({
           onChange={(newValue) => {
             handleChange({ target: { name: 'endDate', value: newValue } });
           }}
-          label="Дата завершення (необов'язково)"
+          label={UA.meterTenants_end_date}
           minDate={formData.startDate || undefined}
           error={!!formErrors.endDate}
-          helperText={formErrors.endDate || 'Залиште порожнім, якщо безстроково'}
+          helperText={formErrors.endDate || UA.meterTenants_end_date_optional}
           disabled={isLoading}
           slotProps={{ textField: { size: 'medium', fullWidth: true } }}
         />
@@ -303,7 +305,7 @@ const MeterTenantForm = ({
           '& .MuiButton-root': {
             minWidth: isMobile ? 'auto' : '80px',
             fontSize: isMobile ? '1rem' : '0.875rem',
-            height: isMobile ? '44px' : '36px',
+            height: isMobile ? SIZES.button.mobileHeight : SIZES.button.desktopHeight,
           },
         }}
       >
@@ -314,7 +316,7 @@ const MeterTenantForm = ({
           sx={{ order: isMobile ? 1 : 0 }}
           disabled={isLoading}
         >
-          Скасувати
+          {UA.common_cancel}
         </Button>
         <Button
           variant="contained"
@@ -323,7 +325,7 @@ const MeterTenantForm = ({
           sx={{ order: isMobile ? 0 : 1, marginLeft: '0 !important' }}
           disabled={isLoading}
         >
-          {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Зберегти'}
+          {isLoading ? <CircularProgress size={SIZES.circularProgress.medium} color="inherit" /> : UA.common_save}
         </Button>
       </DialogActions>
     </Dialog>

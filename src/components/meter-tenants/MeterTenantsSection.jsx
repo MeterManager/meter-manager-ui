@@ -20,6 +20,8 @@ import { useTenants } from '../../hooks/useTenants';
 import { useLocations } from '../../hooks/useLocations';
 import { useResourceTypes } from '../../hooks/useResourceTypes';
 import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
+import { DEFAULTS, ENTITY_TYPES, DIALOG_ACTIONS } from '../../constants';
 
 const MeterTenantsSection = ({ initialExpanded = true }) => {
   const {
@@ -50,8 +52,7 @@ const MeterTenantsSection = ({ initialExpanded = true }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
 
-  const handleServiceError = (err, defaultMessage = 'Помилка при виконанні дії') => {
-    console.error('MeterTenant Service Action Failed:', err);
+  const handleServiceError = (err, defaultMessage = UA.error_action_default) => {
     const userMessage = translateErrorMessage(err.message || defaultMessage);
     setSnackbar({ open: true, message: userMessage, severity: 'error' });
     setError(userMessage);
@@ -81,14 +82,14 @@ const MeterTenantsSection = ({ initialExpanded = true }) => {
     try {
       if (editing?.id) {
         await editMeterTenant(editing.id, data);
-        setSnackbar({ open: true, message: 'Призначення оновлено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.meterTenants_success_updated, severity: 'success' });
       } else {
         await addMeterTenant(data);
-        setSnackbar({ open: true, message: 'Призначення додано', severity: 'success' });
+        setSnackbar({ open: true, message: UA.meterTenants_success_added, severity: 'success' });
       }
       handleFormClose();
     } catch (err) {
-      handleServiceError(err, 'Помилка при збереженні');
+      handleServiceError(err, UA.error_save_meter_tenant);
     }
   };
 
@@ -99,10 +100,10 @@ const MeterTenantsSection = ({ initialExpanded = true }) => {
   const handleConfirmDelete = async () => {
     try {
       await removeMeterTenant(confirmDialog.id);
-      setSnackbar({ open: true, message: 'Призначення видалено', severity: 'success' });
+      setSnackbar({ open: true, message: UA.meterTenants_success_deleted, severity: 'success' });
       handleCloseConfirmDialog();
     } catch (err) {
-      handleServiceError(err, 'Помилка при видаленні');
+      handleServiceError(err, UA.error_delete_meter_tenant);
     }
   };
 
@@ -124,7 +125,7 @@ const MeterTenantsSection = ({ initialExpanded = true }) => {
 
   return (
     <>
-      <Paper sx={{ borderRadius: 2, mb: 3 }} elevation={1}>
+      <Paper sx={{ borderRadius: DEFAULTS.borderRadius, mb: 3 }} elevation={DEFAULTS.paperElevation}>
         <Box
           display="flex"
           alignItems="center"
@@ -134,7 +135,7 @@ const MeterTenantsSection = ({ initialExpanded = true }) => {
           onClick={handleToggle}
         >
           <Typography variant="h5" fontWeight={600}>
-            Призначення лічильників ({meterTenants.length})
+            {UA.meterTenants_title} ({meterTenants.length})
           </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
@@ -194,15 +195,15 @@ const MeterTenantsSection = ({ initialExpanded = true }) => {
         open={confirmDialog.open}
         onClose={handleCloseConfirmDialog}
         onConfirm={handleConfirmDelete}
-        action="delete"
-        entity="meterTenant"
+        action={DIALOG_ACTIONS.delete}
+        entity={ENTITY_TYPES.meterTenant}
         dependencies={null}
         isLoading={isActionLoading}
       />
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={6000}
+        autoHideDuration={DEFAULTS.snackbarDuration}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >

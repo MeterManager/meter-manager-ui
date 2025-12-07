@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Paper,
   Box,
@@ -20,14 +20,13 @@ import MeterReadingForm from './MeterReadingForm';
 import { useMeterReadings } from '../../hooks/useMeterReadings';
 import CustomDatePicker from '../ui/DatePicker';
 import { useTheme } from '@mui/material/styles';
+import { UA } from '../../utils/uaDictionary';
 
 const MeterReadingsSection = ({ initialExpanded = true }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
-  const { meterReadings, loading, fetchReadings, removeReading, addReading, editReading, error, setError } =
-    useMeterReadings();
+  const { meterReadings, removeReading, addReading, editReading, setError } = useMeterReadings();
   const [expanded, setExpanded] = useState(initialExpanded);
   const [formOpen, setFormOpen] = useState(false);
   const [readingToEdit, setReadingToEdit] = useState(null);
@@ -50,18 +49,13 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
     }
   };
   const handleFormSubmit = async (formData) => {
-    try {
-      if (readingToEdit) {
-        await editReading(readingToEdit.id, formData);
-      } else {
-        await addReading(formData);
-      }
-
-      setFormOpen(false);
-      setReadingToEdit(null);
-    } catch (err) {
-      console.error('Помилка:', err);
+    if (readingToEdit) {
+      await editReading(readingToEdit.id, formData);
+    } else {
+      await addReading(formData);
     }
+    setFormOpen(false);
+    setReadingToEdit(null);
   };
 
   const handleCloseForm = () => {
@@ -122,7 +116,7 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
             fontWeight={600}
             sx={{ fontSize: { xs: '1.125rem', sm: '1.5rem' } }}
           >
-            Показники ({meterReadings.length})
+            {UA.meterReadings_title} ({meterReadings.length})
           </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
@@ -143,7 +137,7 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
                 fullWidth={isMobile}
                 size={isMobile ? 'medium' : 'large'}
               >
-                Додати показник
+                {UA.common_add}
               </Button>
 
               <Stack
@@ -155,7 +149,7 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
                 }}
               >
                 <SearchField
-                  placeholder={isMobile ? 'Пошук' : 'Пошук за орендарем або лічильником'}
+                  placeholder={isMobile ? UA.common_search : UA.common_search}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   sx={{ width: { xs: '100%', sm: 'auto' } }}
@@ -163,7 +157,7 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
                 <CustomDatePicker
                   value={dateFilter || null}
                   onChange={(newValue) => setDateFilter(newValue || '')}
-                  label="Фільтр по даті"
+                  label={UA.common_search}
                   sx={{
                     width: { xs: '100%', sm: 200 },
                   }}
@@ -201,7 +195,7 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
             py: { xs: 1.5, sm: 2 },
           }}
         >
-          {readingToEdit ? 'Редагувати показник' : 'Додати показник'}
+          {readingToEdit ? UA.common_edit : UA.common_add}
         </DialogTitle>
         <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
           <MeterReadingForm

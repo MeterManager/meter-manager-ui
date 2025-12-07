@@ -28,6 +28,8 @@ import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 import { useState } from 'react';
 import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
+import { BREAKPOINTS, SIZES, FORM_FIELDS } from '../../constants';
 
 const TenantsTable = ({
   tenants,
@@ -44,11 +46,11 @@ const TenantsTable = ({
   isLoading,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:800px)');
+  const isMobile = useMediaQuery(BREAKPOINTS.mobileWide);
   const [loadingTenantId, setLoadingTenantId] = useState(null);
 
   const handleActionFailure = (err) => {
-    const userMessage = translateErrorMessage(err.message || 'Помилка виконання дії');
+    const userMessage = translateErrorMessage(err.message || UA.error_action_failed);
     setLocalError(userMessage);
   };
 
@@ -104,78 +106,85 @@ const TenantsTable = ({
     return (
       <Card
         sx={{
-          mb: 2,
-          border: `1px solid ${theme.palette.divider}`,
+          mb: 1.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1.5,
+          transition: 'box-shadow 0.2s',
           '&:hover': {
-            boxShadow: 2,
+            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
           },
         }}
       >
-        <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="h6" component="div" sx={{ fontWeight: 600, mb: 0.5 }}>
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 0.25 }}>
                 {tenant.name}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {getTenantLocations(tenant).join(', ') || '—'}
+              <Typography variant="body2" color="text.secondary" fontSize="0.875rem">
+                {getTenantLocations(tenant).join(', ') || UA.common_empty_dash}
               </Typography>
             </Box>
             <Chip
-              label={tenant.isActive ? 'Активний' : 'Неактивний'}
+              label={tenant.isActive ? UA.status_active : UA.status_inactive}
               color={tenant.isActive ? 'success' : 'default'}
               size="small"
-              sx={{ ml: 1, flexShrink: 0 }}
+              sx={{ ml: 1.5, flexShrink: 0, height: 24 }}
             />
           </Box>
 
           {tenant.contactPerson && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                Контакт: {tenant.contactPerson}
+            <Box sx={{ mb: 1.5 }}>
+              <Typography variant="body2" color="text.secondary" fontSize="0.875rem">
+                {UA.tenants_contact_label}: {tenant.contactPerson}
               </Typography>
             </Box>
           )}
 
           {(tenant.phone || tenant.email) && (
-            <Box sx={{ mb: 2 }}>
+            <Box sx={{ mb: 1.5 }}>
               {tenant.phone && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                  <Phone fontSize="small" color="action" />
-                  <Typography variant="body2">{tenant.phone}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
+                  <Phone fontSize="small" sx={{ color: 'text.secondary' }} />
+                  <Typography variant="body2" fontSize="0.875rem">
+                    {tenant.phone}
+                  </Typography>
                 </Box>
               )}
               {tenant.email && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Email fontSize="small" color="action" />
-                  <Typography variant="body2">{tenant.email}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Email fontSize="small" sx={{ color: 'text.secondary' }} />
+                  <Typography variant="body2" fontSize="0.875rem">
+                    {tenant.email}
+                  </Typography>
                 </Box>
               )}
             </Box>
           )}
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               {isRowLoading ? (
-                <CircularProgress size={24} />
+                <CircularProgress size={20} />
               ) : (
                 <Switch
                   checked={tenant.isActive}
                   onChange={() => handleStatusChange(tenant)}
-                  color="primary"
                   size="small"
                   disabled={isDisabled}
                 />
               )}
             </Box>
 
-            <Stack direction="row" spacing={1}>
-              <Tooltip title="Редагувати">
+            <Stack direction="row" spacing={0.5}>
+              <Tooltip title={UA.common_edit}>
                 <IconButton size="small" onClick={() => onEdit(tenant)} color="primary" disabled={isDisabled}>
                   <Edit fontSize="small" />
                 </IconButton>
               </Tooltip>
-              <Tooltip title={tenant.isActive ? 'Неможливо видалити активного орендаря' : 'Видалити'}>
+              <Tooltip title={tenant.isActive ? UA.tenants_cannot_delete_active : UA.common_delete}>
                 <span>
                   <IconButton
                     size="small"
@@ -183,7 +192,7 @@ const TenantsTable = ({
                     color="error"
                     disabled={tenant.isActive || isDisabled}
                   >
-                    {isRowLoading ? <CircularProgress size={20} /> : <Delete fontSize="small" />}
+                    {isRowLoading ? <CircularProgress size={18} /> : <Delete fontSize="small" />}
                   </IconButton>
                 </span>
               </Tooltip>
@@ -200,10 +209,9 @@ const TenantsTable = ({
         sx={{
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
-          gap: 2,
+          gap: 1.5,
           alignItems: isMobile ? 'stretch' : 'center',
-          justifyContent: isMobile ? 'stretch' : 'space-between',
-          mb: 3,
+          mb: 2.5,
         }}
       >
         <Button
@@ -211,37 +219,42 @@ const TenantsTable = ({
           onClick={onAdd}
           fullWidth={isMobile}
           sx={{
-            minWidth: isMobile ? 'auto' : '160px',
-            height: '40px',
-            whiteSpace: 'nowrap',
+            minWidth: isMobile ? 'auto' : '140px',
+            height: 40,
+            fontSize: '0.9375rem',
+            fontWeight: 500,
             flexShrink: 0,
           }}
           disabled={loadingTenantId !== null || isLoading}
         >
-          Додати орендаря
+          {UA.tenants_add}
         </Button>
 
         <Box
           sx={{
             display: 'flex',
-            gap: 2,
+            gap: 1.5,
             flexDirection: isMobile ? 'column' : 'row',
-            width: '100%',
+            flex: 1,
           }}
         >
           <FormControl
             variant="outlined"
             size="small"
             sx={{
-              width: isMobile ? '100%' : '200px',
+              width: isMobile ? '100%' : '180px',
               flexShrink: 0,
             }}
             disabled={isLoading}
           >
-            <InputLabel>Локація</InputLabel>
-            <Select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} label="Локація">
-              <MenuItem value="">— Всі локації —</MenuItem>
-              <MenuItem value="null">— Без локації —</MenuItem>
+            <InputLabel>{UA.meters_location}</InputLabel>
+            <Select
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+              label={UA.meters_location}
+            >
+              <MenuItem value="">{UA.tenants_all_locations}</MenuItem>
+              <MenuItem value="null">{UA.tenants_no_location}</MenuItem>
               {locations.map((loc) => (
                 <MenuItem key={loc.id} value={loc.id}>
                   {loc.name}
@@ -254,19 +267,15 @@ const TenantsTable = ({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             fullWidth
-            placeholder="Пошук за назвою, контактом..."
-            sx={{
-              width: '100%',
-              maxWidth: '100%',
-            }}
+            placeholder={UA.tenants_search_placeholder}
             disabled={isLoading}
           />
         </Box>
       </Box>
 
       {search && (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Знайдено: {filteredTenants.length} з {tenants.length}
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }} fontSize="0.875rem">
+          {UA.common_found}: {filteredTenants.length} {UA.common_of} {tenants.length}
         </Typography>
       )}
 
@@ -275,25 +284,25 @@ const TenantsTable = ({
           {filteredTenants.length > 0 ? (
             filteredTenants.map((tenant) => <MobileTenantCard key={tenant.id} tenant={tenant} />)
           ) : (
-            <Card>
-              <CardContent>
+            <Card sx={{ boxShadow: 1 }}>
+              <CardContent sx={{ p: 3 }}>
                 <Typography variant="body1" align="center" color="text.secondary">
-                  {search ? 'За вашим запитом нічого не знайдено' : 'Орендарів не знайдено'}
+                  {search ? UA.tenants_not_found_search : UA.tenants_not_found}
                 </Typography>
               </CardContent>
             </Card>
           )}
         </Box>
       ) : (
-        <TableContainer component={Paper} sx={{ boxShadow: 1 }}>
+        <TableContainer component={Paper} sx={{ boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <Table>
             <TableHead>
-              <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Орендар</TableCell>
-                <TableCell sx={{ width: '25%', fontWeight: 600 }}>Локації</TableCell>
-                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Контакти</TableCell>
-                <TableCell sx={{ width: '20%', fontWeight: 600 }}>Статус</TableCell>
-                <TableCell sx={{ width: '15%', fontWeight: 600 }}>Дії</TableCell>
+              <TableRow sx={{ backgroundColor: 'grey.50' }}>
+                <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{UA.tenants_title.slice(0, -1)}</TableCell>
+                <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{UA.tenants_locations}</TableCell>
+                <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{UA.tenants_contacts}</TableCell>
+                <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{UA.meters_status}</TableCell>
+                <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{UA.meters_actions}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -306,34 +315,38 @@ const TenantsTable = ({
                     <TableRow
                       key={tenant.id}
                       sx={{
-                        '&:hover': {
-                          backgroundColor: theme.palette.action.hover,
-                        },
+                        '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' },
+                        transition: 'background-color 0.15s',
                       }}
                     >
-                      <TableCell>
+                      <TableCell sx={{ py: 1.5 }}>
                         <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          <Typography variant="body2" fontWeight={500} fontSize="0.9375rem">
                             {tenant.name}
                           </Typography>
                           {tenant.contactPerson && (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              fontSize="0.8125rem"
+                              sx={{ display: 'block', mt: 0.25 }}
+                            >
                               {tenant.contactPerson}
                             </Typography>
                           )}
                         </Box>
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell sx={{ py: 1.5 }}>
                         {getTenantLocations(tenant).length === 0 ? (
-                          <Typography variant="body2" color="text.secondary">
-                            —
+                          <Typography variant="body2" color="text.secondary" fontSize="0.875rem">
+                            {UA.common_empty_dash}
                           </Typography>
                         ) : (
-                          <ul style={{ paddingLeft: '16px', margin: 0, listStyleType: 'disc' }}>
+                          <ul style={{ paddingLeft: '20px', margin: 0 }}>
                             {getTenantLocations(tenant).map((loc, idx) => (
                               <li key={idx}>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography variant="body2" color="text.secondary" fontSize="0.875rem">
                                   {loc}
                                 </Typography>
                               </li>
@@ -342,55 +355,57 @@ const TenantsTable = ({
                         )}
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell sx={{ py: 1.5 }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                           {tenant.phone && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <Phone fontSize="small" color="action" />
-                              <Typography variant="caption">{tenant.phone}</Typography>
+                              <Phone fontSize="small" sx={{ color: 'text.secondary' }} />
+                              <Typography variant="body2" fontSize="0.875rem">
+                                {tenant.phone}
+                              </Typography>
                             </Box>
                           )}
                           {tenant.email && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <Email fontSize="small" color="action" />
-                              <Typography variant="caption" color="text.secondary">
+                              <Email fontSize="small" sx={{ color: 'text.secondary' }} />
+                              <Typography variant="body2" fontSize="0.875rem">
                                 {tenant.email}
                               </Typography>
                             </Box>
                           )}
                           {!tenant.phone && !tenant.email && (
-                            <Typography variant="body2" color="text.secondary">
-                              —
+                            <Typography variant="body2" color="text.secondary" fontSize="0.875rem">
+                              {UA.common_empty_dash}
                             </Typography>
                           )}
                         </Box>
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell sx={{ py: 1.5 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {isRowLoading ? (
-                            <CircularProgress size={24} />
+                            <CircularProgress size={20} />
                           ) : (
                             <Switch
                               checked={tenant.isActive}
                               onChange={() => handleStatusChange(tenant)}
-                              color="primary"
                               size="small"
                               disabled={isDisabled}
                             />
                           )}
                           <Chip
-                            label={tenant.isActive ? 'Активний' : 'Неактивний'}
+                            label={tenant.isActive ? UA.status_active : UA.status_inactive}
                             color={tenant.isActive ? 'success' : 'default'}
                             size="small"
                             variant="outlined"
+                            sx={{ height: 24 }}
                           />
                         </Box>
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell sx={{ py: 1.5 }}>
                         <Stack direction="row" spacing={0.5}>
-                          <Tooltip title="Редагувати орендаря">
+                          <Tooltip title={UA.tenants_edit_tooltip}>
                             <IconButton
                               size="small"
                               onClick={() => onEdit(tenant)}
@@ -400,7 +415,7 @@ const TenantsTable = ({
                               <Edit fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title={tenant.isActive ? 'Спочатку деактивуйте орендаря' : 'Видалити орендаря'}>
+                          <Tooltip title={tenant.isActive ? UA.tenants_deactivate_first : UA.tenants_delete_tooltip}>
                             <span>
                               <IconButton
                                 size="small"
@@ -408,7 +423,7 @@ const TenantsTable = ({
                                 disabled={tenant.isActive || isDisabled}
                                 color="error"
                               >
-                                {isRowLoading ? <CircularProgress size={20} /> : <Delete fontSize="small" />}
+                                {isRowLoading ? <CircularProgress size={18} /> : <Delete fontSize="small" />}
                               </IconButton>
                             </span>
                           </Tooltip>
@@ -419,8 +434,10 @@ const TenantsTable = ({
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    Немає доступних орендарів
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body1" color="text.secondary">
+                      {UA.tenants_no_available}
+                    </Typography>
                   </TableCell>
                 </TableRow>
               )}

@@ -16,11 +16,13 @@ import {
 import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
+import { UA } from '../../utils/uaDictionary';
+import { BREAKPOINTS, DIALOG_CONFIG, FORM_FIELDS, SIZES } from '../../constants';
 
 const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locations = [], tenants = [] }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:800px)');
-  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(BREAKPOINTS.mobileWide);
+  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down(BREAKPOINTS.md));
 
   const [formData, setFormData] = useState(initialData);
   const [formErrors, setFormErrors] = useState({});
@@ -47,23 +49,24 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
     switch (name) {
       case 'name':
         if (!value) {
-          error = "Назва обов'язкова.";
+          error = UA.locations_name_required;
         } else if (locations.some((loc) => loc.name.trim() === value.trim() && loc.id !== initialData.id)) {
-          error = 'Локація з такою назвою вже існує.';
+          error = UA.locations_name_exists;
         }
         break;
       case 'address':
         if (!value) {
-          error = "Адреса обов'язкова.";
+          error = UA.locations_address_required;
         }
         break;
-      case 'occupied_area':
+      case 'occupied_area': {
         const numValue = value ? parseFloat(String(value).trim()) : null;
 
         if (value && (isNaN(numValue) || numValue < 0 || numValue > 100)) {
-          error = 'Має бути числом від 0 до 100.';
+          error = UA.locations_area_error;
         }
         break;
+      }
       default:
         break;
     }
@@ -115,34 +118,24 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
       open={open}
       onClose={onClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth={DIALOG_CONFIG.maxWidth.sm}
       fullScreen={isMobile}
       PaperProps={{
         sx: {
-          width: isMobile ? '100%' : isMobileOrTablet ? '90%' : '500px',
-          maxWidth: isMobile ? '100%' : '500px',
+          width: isMobile ? '100%' : isMobileOrTablet ? DIALOG_CONFIG.paperMaxWidthTablet : DIALOG_CONFIG.paperMaxWidth,
+          maxWidth: isMobile ? '100%' : DIALOG_CONFIG.paperMaxWidth,
           margin: isMobile ? 0 : 'auto',
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          fontSize: isMobile ? '1.125rem' : '1.25rem',
-          fontWeight: 600,
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2.5,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        {initialData.id ? 'Редагувати локацію' : 'Додати локацію'}
+      <DialogTitle sx={theme.mixins.dialogTitle}>
+        {initialData.id ? UA.locations_edit : UA.locations_add}
         <IconButton onClick={onClose} size="small">
           <Close />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ px: isMobile ? 2 : 3, pb: 1 }}>
+      <DialogContent sx={theme.mixins.dialogContent}>
         {error && (
           <Alert severity="error" sx={{ mb: 2, fontSize: isMobile ? '0.875rem' : '1rem' }}>
             {error}
@@ -151,12 +144,12 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
 
         <TextField
           name="name"
-          label="Назва"
+          label={UA.locations_name}
           value={formData.name || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           sx={{ mt: 1, mb: 2 }}
           error={!!formErrors.name}
           helperText={formErrors.name || ' '}
@@ -164,12 +157,12 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
 
         <TextField
           name="address"
-          label="Адреса"
+          label={UA.locations_address}
           value={formData.address || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size={isMobile ? 'medium' : 'medium'}
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           multiline={!isMobile}
           rows={isMobile ? 1 : 2}
           sx={{ mb: 2 }}
@@ -178,26 +171,26 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
         />
         <TextField
           name="occupied_area"
-          label="Відсоток зайнятої площі (%)"
+          label={UA.locations_occupied_area}
           type="number"
           value={formData.occupied_area || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
+          variant={FORM_FIELDS.textField.variant}
           sx={{ mb: 2 }}
           helperText={formErrors.occupied_area || ' '}
         />
 
         <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel id="tenant-select-label">Орендар</InputLabel>
+          <InputLabel id="tenant-select-label">{UA.locations_tenant}</InputLabel>
           <Select
             labelId="tenant-select-label"
             value={formData.tenant_id ?? ''}
-            label="Орендар"
+            label={UA.locations_tenant}
             onChange={handleTenantChange}
             name="tenant_id"
           >
-            <MenuItem value="">— Вільна —</MenuItem>
+            <MenuItem value="">{UA.locations_tenant_free}</MenuItem>
             {tenants.map((t) => (
               <MenuItem key={t.id} value={t.id}>
                 {t.name}
@@ -207,14 +200,7 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
         </FormControl>
       </DialogContent>
 
-      <DialogActions
-        sx={{
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2,
-          gap: isMobile ? 1 : 1,
-          flexDirection: isMobile ? 'column-reverse' : 'row',
-        }}
-      >
+      <DialogActions sx={theme.mixins.dialogActions}>
         <Button
           variant="outlined"
           onClick={onClose}
@@ -223,7 +209,7 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
             order: isMobile ? 1 : 0,
           }}
         >
-          Скасувати
+          {UA.common_cancel}
         </Button>
         <Button
           variant="contained"
@@ -234,7 +220,7 @@ const LocationForm = ({ open, onClose, onSubmit, initialData = {}, error, locati
             marginLeft: '0 !important',
           }}
         >
-          Зберегти
+          {UA.common_save}
         </Button>
       </DialogActions>
     </Dialog>

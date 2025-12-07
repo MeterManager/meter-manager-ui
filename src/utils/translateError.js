@@ -1,103 +1,105 @@
+import { UA } from './uaDictionary';
+
 export const translateErrorMessage = (errorMessage) => {
   const error = String(errorMessage || '');
 
   if (error.includes('Meter with this serial number already exists')) {
-    return 'Лічильник з таким серійним номером вже існує.';
+    return UA.error_meter_serial_exists;
   }
   if (error.includes('Meter not found')) {
-    return 'Лічильник не знайдено.';
+    return UA.error_meter_not_found;
   }
   if (error.includes('Cannot create meter with inactive location')) {
-    return 'Неможливо створити лічильник - локація неактивна.';
+    return UA.error_meter_inactive_location;
   }
   if (error.includes('Cannot create meter with inactive energy resource type')) {
-    return 'Неможливо створити лічильник - тип ресурсу неактивний.';
+    return UA.error_meter_inactive_resource;
   }
   if (error.includes('Cannot update meter with inactive location')) {
-    return 'Неможливо оновити лічильник - локація неактивна.';
+    return UA.error_meter_update_inactive_location;
   }
   if (error.includes('Cannot update meter with inactive energy resource type')) {
-    return 'Неможливо оновити лічильник - тип ресурсу неактивний.';
+    return UA.error_meter_update_inactive_resource;
   }
   if (error.includes('Cannot delete active meter')) {
-    return 'Неможливо видалити активний лічильник. Спочатку деактивуйте його.';
+    return UA.error_meter_delete_active;
   }
 
   if (error.includes('Cannot assign inactive meter')) {
-    return 'Неможливо призначити неактивний лічильник.';
+    return UA.error_meter_tenant_inactive_meter;
   }
   if (error.includes('Cannot assign meter with inactive location')) {
-    return 'Неможливо призначити лічильник з неактивною локацією.';
+    return UA.error_meter_tenant_inactive_location;
   }
   if (error.includes('Cannot assign meter with inactive energy resource type')) {
-    return 'Неможливо призначити лічильник з неактивним типом ресурсу.';
+    return UA.error_meter_tenant_inactive_resource;
   }
   if (error.includes('Cannot assign to inactive tenant')) {
-    return 'Неможливо призначити лічильник неактивному орендарю.';
+    return UA.error_meter_tenant_inactive_tenant;
   }
   if (error.includes('Overlapping meter tenant assignment exists')) {
-    return 'Для цього лічильника та орендаря вже існує призначення на цей період.';
+    return UA.error_meter_tenant_overlapping;
   }
   if (error.includes('Meter tenant assignment not found')) {
-    return 'Призначення лічильника орендарю не знайдено.';
+    return UA.error_meter_tenant_not_found;
   }
 
   if (error.includes('Overlapping tariff period exists') || error.includes('Updated period overlaps')) {
-    return 'Тариф для цієї локації та ресурсу на цей період вже існує.';
+    return UA.error_tariff_overlapping;
   }
   if (error.includes('Tariff not found')) {
-    return 'Тариф не знайдено.';
+    return UA.error_tariff_not_found;
   }
   if (error.includes('location is inactive')) {
-    return 'Неможливо створити/оновити тариф - локація неактивна.';
+    return UA.error_tariff_inactive_location;
   }
   if (error.includes('energy resource type is inactive')) {
-    return 'Неможливо створити/оновити тариф - тип ресурсу неактивний.';
+    return UA.error_tariff_inactive_resource;
   }
   if (error.includes('No applicable tariff found')) {
-    return 'Для вказаної дати, локації та ресурсу не знайдено діючого тарифу.';
+    return UA.error_tariff_no_applicable;
   }
 
   if (error.includes('ResourceType with this name already exists')) {
-    return 'Тип ресурсу з такою назвою вже існує.';
+    return UA.error_resource_type_exists;
   }
   if (error.includes('Cannot delete active resource type')) {
-    return 'Неможливо видалити активний тип ресурсу. Спочатку деактивуйте його.';
+    return UA.error_resource_type_delete_active;
   }
   if (error.includes('ResourceType not found') || error.includes('Energy resource type not found')) {
-    return 'Тип ресурсу не знайдено.';
+    return UA.error_resource_type_not_found;
   }
 
   if (error.includes('Location with this name already exists')) {
-    return 'Локація з такою назвою вже існує.';
+    return UA.error_location_exists;
   }
   if (error.includes('Cannot delete active location')) {
-    return 'Неможливо видалити активну локацію. Спочатку деактивуйте її.';
+    return UA.error_location_delete_active;
   }
   if (error.includes('Location not found')) {
-    return 'Локацію не знайдено.';
+    return UA.error_location_not_found;
   }
   if (error.includes('Invalid tenant_id')) {
-    return 'Обраний орендар недійсний або не знайдений.';
+    return UA.error_tenant_invalid;
   }
 
   if (error.includes('Tenant with this name already exists')) {
-    return 'Орендар з такою назвою вже існує.';
+    return UA.error_tenant_exists;
   }
   if (error.includes('Cannot delete active tenant')) {
-    return 'Неможливо видалити активного орендаря. Спочатку деактивуйте його.';
+    return UA.error_tenant_delete_active;
   }
   if (error.includes('Tenant not found')) {
-    return 'Орендаря не знайдено.';
+    return UA.error_tenant_not_found;
   }
 
   if (error.includes('already exists')) {
-    return 'Елемент з такою назвою вже існує.';
+    return UA.error_already_exists;
   }
 
   if (error.includes('Failed to fetch') || error.includes('NetworkError')) {
-    return "Помилка мережі. Перевірте з'єднання з Інтернетом.";
+    return UA.error_network;
   }
 
-  return 'Сталася непередбачена помилка. Будь ласка, спробуйте пізніше.';
+  return UA.error_unexpected;
 };

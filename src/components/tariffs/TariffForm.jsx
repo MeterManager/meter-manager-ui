@@ -1,19 +1,31 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, MenuItem, IconButton, CircularProgress } from '@mui/material';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  Alert,
+  MenuItem,
+  IconButton,
+  CircularProgress,
+} from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import CustomDatePicker from '../ui/DatePicker';
+import { UA } from '../../utils/uaDictionary';
+import { BREAKPOINTS, DIALOG_CONFIG, FORM_FIELDS, SIZES } from '../../constants';
 
 const formatISODate = (dateValue) => {
-    if (!dateValue) return null;
-    return new Date(dateValue).toISOString().split('T')[0];
+  if (!dateValue) return null;
+  return new Date(dateValue).toISOString().split('T')[0];
 };
 
 const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, locations, resourceTypes, isLoading }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:600px)');
-  const isMobileOrTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
 
   const [formData, setFormData] = useState({});
   const [formErrors, setFormErrors] = useState({});
@@ -21,10 +33,10 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
   useEffect(() => {
     if (open) {
       setFormData({
-        location_id: initialData.location_id || '', 
+        location_id: initialData.location_id || '',
         energy_resource_type_id: initialData.energy_resource_type_id || '',
         price: initialData.price || '',
-        valid_from: initialData.valid_from ? formatISODate(initialData.valid_from) : '', 
+        valid_from: initialData.valid_from ? formatISODate(initialData.valid_from) : '',
         valid_to: initialData.valid_to ? formatISODate(initialData.valid_to) : null,
         id: initialData.id,
       });
@@ -32,31 +44,34 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
     }
   }, [open, initialData]);
 
-  const validateField = (name, value, currentFormData) => {
+  const validateField = (name, value) => {
     let errorMsg = '';
-    const trimmedValue = (typeof value === 'string') ? value.trim() : value;
+    const trimmedValue = typeof value === 'string' ? value.trim() : value;
 
-    if ((name === 'location_id' || name === 'energy_resource_type_id' || name === 'valid_from') && (!trimmedValue || trimmedValue === '')) {
-      if (name === 'valid_from') errorMsg = "Дата початку обов'язкова.";
-      else errorMsg = name.replace('_id', '').charAt(0).toUpperCase() + name.replace('_id', '').slice(1) + " обов'язковий.";
+    if (
+      (name === 'location_id' || name === 'energy_resource_type_id' || name === 'valid_from') &&
+      (!trimmedValue || trimmedValue === '')
+    ) {
+      if (name === 'valid_from') errorMsg = UA.tariffs_valid_from_required;
+      else if (name === 'location_id') errorMsg = UA.meters_location_required;
+      else if (name === 'energy_resource_type_id') errorMsg = UA.meters_resource_required;
     }
 
     if (name === 'price') {
       if (!trimmedValue) {
-        errorMsg = "Ціна обов'язкова.";
+        errorMsg = UA.tariffs_price_required;
       } else if (isNaN(trimmedValue) || Number(trimmedValue) <= 0) {
-        errorMsg = 'Ціна має бути позитивним числом.';
+        errorMsg = UA.validation_price_positive || 'Ціна має бути позитивним числом.';
       }
     }
-    
-    
+
     setFormErrors((prevErrors) => ({ ...prevErrors, [name]: errorMsg }));
     return errorMsg;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     const isIdField = name === 'location_id' || name === 'energy_resource_type_id';
     const processedValue = isIdField && value !== '' ? Number(value) : value;
 
@@ -70,7 +85,6 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
     setFormData(updatedFormData);
     validateField(name, value, updatedFormData);
   };
-
 
   const handleSubmit = () => {
     const fieldsToValidate = ['location_id', 'energy_resource_type_id', 'price', 'valid_from'];
@@ -86,25 +100,22 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
     });
 
     if (formData.valid_from && formData.valid_to && new Date(formData.valid_to) < new Date(formData.valid_from)) {
-      errors.valid_to = 'Дата завершення не може бути раніше дати початку.';
-      errors.valid_from = 'Дата початку повинна бути раніше дати завершення.';
+      errors.valid_to = UA.validation_date_end_before_start;
+      errors.valid_from = UA.validation_date_start_before_end;
       hasError = true;
     }
-
 
     if (hasError) {
       setFormErrors(errors);
       return;
     }
 
-    const payload = { 
-        ...formData,
-        price: parseFloat(formData.price),
-        location_id: Number(formData.location_id),
-        energy_resource_type_id: Number(formData.energy_resource_type_id),
-        
-        valid_from: formData.valid_from,
-        valid_to: formData.valid_to || null,
+    const payload = {
+      location_id: Number(formData.location_id),
+      energy_resource_type_id: Number(formData.energy_resource_type_id),
+      price: parseFloat(formData.price),
+      valid_from: formatISODate(formData.valid_from),
+      valid_to: formData.valid_to ? formatISODate(formData.valid_to) : null,
     };
 
     onSubmit(payload);
@@ -121,7 +132,7 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
       open={open}
       onClose={handleClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth={DIALOG_CONFIG.maxWidth.sm}
       fullScreen={isMobile}
       PaperProps={{
         sx: {
@@ -130,24 +141,14 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          fontSize: isMobile ? '1.125rem' : '1.25rem',
-          fontWeight: 600,
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2.5,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        {initialData.id ? 'Редагувати тариф' : 'Додати тариф'}
+      <DialogTitle sx={theme.mixins.dialogTitle}>
+        {initialData.id ? UA.tariffs_edit : UA.tariffs_add}
         <IconButton onClick={handleClose} size="small" disabled={isLoading}>
           <Close />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ px: isMobile ? 2 : 3, pb: 1 }}>
+      <DialogContent sx={theme.mixins.dialogContent}>
         {error && (
           <Alert severity="error" sx={{ mb: 2, fontSize: isMobile ? '0.875rem' : '1rem' }}>
             {error}
@@ -157,18 +158,20 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
         <TextField
           select
           name="location_id"
-          label="Локація"
+          label={UA.tariffs_location}
           value={formData.location_id || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size="medium"
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           sx={{ mt: 1, mb: 2 }}
           error={!!formErrors.location_id}
           helperText={formErrors.location_id || ' '}
           disabled={isLoading}
         >
-          <MenuItem value="">Оберіть локацію</MenuItem>
+          <MenuItem value="">
+            {UA.common_select} {UA.tariffs_location.toLowerCase()}
+          </MenuItem>
           {(locations || [])
             .filter((loc) => loc.isActive)
             .map((loc) => (
@@ -181,18 +184,20 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
         <TextField
           select
           name="energy_resource_type_id"
-          label="Тип ресурсу"
+          label={UA.tariffs_resource_type}
           value={formData.energy_resource_type_id || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size="medium"
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           sx={{ mb: 2 }}
           error={!!formErrors.energy_resource_type_id}
           helperText={formErrors.energy_resource_type_id || ' '}
           disabled={isLoading}
         >
-          <MenuItem value="">Оберіть тип ресурсу</MenuItem>
+          <MenuItem value="">
+            {UA.common_select} {UA.tariffs_resource_type.toLowerCase()}
+          </MenuItem>
           {(resourceTypes || [])
             .filter((res) => res.isActive)
             .map((res) => (
@@ -204,14 +209,14 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
 
         <TextField
           name="price"
-          label="Ціна (₴)"
+          label={UA.tariffs_price}
           type="number"
           inputProps={{ min: 0, step: 0.0001 }}
           value={formData.price || ''}
           onChange={handleChange}
           fullWidth
-          variant="outlined"
-          size="medium"
+          variant={FORM_FIELDS.textField.variant}
+          size={FORM_FIELDS.textField.size}
           sx={{ mb: 2 }}
           error={!!formErrors.price}
           helperText={formErrors.price || ' '}
@@ -223,7 +228,7 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
           onChange={(newValue) => {
             handleDateChange('valid_from', newValue);
           }}
-          label="Діє з"
+          label={UA.tariffs_valid_from}
           error={!!formErrors.valid_from}
           helperText={formErrors.valid_from || ' '}
           sx={{ mb: 2 }}
@@ -236,28 +241,16 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
           onChange={(newValue) => {
             handleDateChange('valid_to', newValue);
           }}
-          label="Діє до (необов'язково)"
+          label={UA.tariffs_valid_to}
           minDate={formData.valid_from ? new Date(formData.valid_from) : undefined}
           error={!!formErrors.valid_to}
-          helperText={formErrors.valid_to || 'Залиште порожнім для безстрокового тарифу'}
+          helperText={formErrors.valid_to || UA.tariffs_valid_to_optional}
           disabled={isLoading}
           slotProps={{ textField: { size: 'medium', fullWidth: true } }}
         />
       </DialogContent>
 
-      <DialogActions
-        sx={{
-          px: isMobile ? 2 : 3,
-          py: isMobile ? 2 : 2,
-          gap: isMobile ? 1 : 1,
-          flexDirection: isMobile ? 'column-reverse' : 'row',
-          '& .MuiButton-root': {
-            minWidth: isMobile ? 'auto' : '80px',
-            fontSize: isMobile ? '1rem' : '0.875rem',
-            height: isMobile ? '44px' : '36px',
-          },
-        }}
-      >
+      <DialogActions sx={theme.mixins.dialogActions}>
         <Button
           variant="outlined"
           onClick={handleClose}
@@ -265,7 +258,7 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
           sx={{ order: isMobile ? 1 : 0 }}
           disabled={isLoading}
         >
-          Скасувати
+          {UA.common_cancel}
         </Button>
         <Button
           variant="contained"
@@ -274,7 +267,7 @@ const TariffForm = ({ open, onClose, onSubmit, initialData = {}, error, location
           sx={{ order: isMobile ? 0 : 1, marginLeft: '0 !important' }}
           disabled={isLoading}
         >
-          {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Зберегти'}
+          {isLoading ? <CircularProgress size={SIZES.circularProgress.medium} color="inherit" /> : UA.common_save}
         </Button>
       </DialogActions>
     </Dialog>

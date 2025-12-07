@@ -5,9 +5,10 @@ import UsersTable from './UsersTable';
 import { useUsers } from '../../hooks/useUsers';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
 
 const UsersSection = ({ initialExpanded = true }) => {
-  const { users, search, setSearch, updateUserStatus, loading, isActionLoading, error, setError } = useUsers();
+  const { users, search, setSearch, updateUserStatus, loading, setError } = useUsers();
   const { user } = useAuthContext();
   const currentUserId = user?.sub;
 
@@ -21,11 +22,11 @@ const UsersSection = ({ initialExpanded = true }) => {
       await updateUserStatus(id, isActive);
       setSnackbar({
         open: true,
-        message: `Користувача успішно ${isActive ? 'активовано' : 'деактивовано'}`,
+        message: `${UA.users_success_status_updated} ${isActive ? UA.users_activated : UA.users_deactivated}`,
         severity: 'success',
       });
     } catch (err) {
-      const userMessage = translateErrorMessage(err.message || 'Помилка при оновленні статусу користувача');
+      const userMessage = translateErrorMessage(err.message || UA.users_status_update_error);
       setSnackbar({
         open: true,
         message: userMessage,
@@ -52,7 +53,9 @@ const UsersSection = ({ initialExpanded = true }) => {
           }}
           onClick={handleToggle}
         >
-          <Typography variant="h5">Користувачі ({users.filter(u => u.role !== 'admin').length})</Typography>
+          <Typography variant="h5">
+            {UA.users_title} ({users.filter((u) => u.role !== 'admin').length})
+          </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
         <Divider />

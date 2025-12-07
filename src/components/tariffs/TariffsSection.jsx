@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { Paper, Box, Typography, Collapse, IconButton, Divider, Snackbar, Alert, CircularProgress } from '@mui/material';
+import {
+  Paper,
+  Box,
+  Typography,
+  Collapse,
+  IconButton,
+  Divider,
+  Snackbar,
+  Alert,
+  CircularProgress,
+} from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import TariffsTable from '../tariffs/TariffsTable';
 import TariffForm from '../tariffs/TariffForm';
@@ -8,8 +18,12 @@ import { useTariffs } from '../../hooks/useTariffs';
 import { useLocations } from '../../hooks/useLocations';
 import { useResourceTypes } from '../../hooks/useResourceTypes';
 import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
+import { DEFAULTS } from '../../constants';
+import { useTheme } from '@mui/material/styles';
 
 const TariffsSection = ({ initialExpanded = true }) => {
+  const theme = useTheme();
   const {
     tariffs,
     search,
@@ -21,10 +35,10 @@ const TariffsSection = ({ initialExpanded = true }) => {
     addTariff,
     editTariff,
     removeTariff,
-    loading: tariffsLoading, 
+    loading: tariffsLoading,
     isActionLoading,
     error,
-    setError
+    setError,
   } = useTariffs();
 
   const { locations, loading: locationsLoading, error: locationsError } = useLocations();
@@ -36,11 +50,10 @@ const TariffsSection = ({ initialExpanded = true }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
 
-  const handleServiceError = (err, defaultMessage = 'Помилка при виконанні дії') => {
-      console.error("Tariff Service Action Failed:", err);
-      const userMessage = translateErrorMessage(err.message || defaultMessage);
-      setSnackbar({ open: true, message: userMessage, severity: 'error' });
-      setError(userMessage); 
+  const handleServiceError = (err, defaultMessage = null) => {
+    const userMessage = translateErrorMessage(err.message || defaultMessage || UA.error_action_default);
+    setSnackbar({ open: true, message: userMessage, severity: 'error' });
+    setError(userMessage);
   };
 
   const handleToggle = () => setExpanded((prev) => !prev);
@@ -61,13 +74,13 @@ const TariffsSection = ({ initialExpanded = true }) => {
     try {
       if (editingTariff?.id) {
         await editTariff(editingTariff.id, formData);
-        setSnackbar({ open: true, message: 'Тариф успішно оновлено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.tariffs_success_updated, severity: 'success' });
       } else {
         await addTariff(formData);
-        setSnackbar({ open: true, message: 'Тариф успішно додано', severity: 'success' });
+        setSnackbar({ open: true, message: UA.tariffs_success_added, severity: 'success' });
       }
     } catch (err) {
-      handleServiceError(err, 'Помилка збереження тарифу');
+      handleServiceError(err, UA.error_save_tariff);
     } finally {
       setFormOpen(false);
       setEditingTariff(null);
@@ -88,10 +101,10 @@ const TariffsSection = ({ initialExpanded = true }) => {
   const handleConfirmDelete = async () => {
     try {
       await removeTariff(confirmDialog.id);
-      setSnackbar({ open: true, message: 'Тариф видалено', severity: 'success' });
+      setSnackbar({ open: true, message: UA.tariffs_success_deleted, severity: 'success' });
       handleCloseConfirmDialog();
     } catch (err) {
-      handleServiceError(err, 'Помилка видалення тарифу');
+      handleServiceError(err, UA.error_delete_tariff);
     }
   };
 
@@ -102,36 +115,30 @@ const TariffsSection = ({ initialExpanded = true }) => {
   const handleCloseSnackbar = () => setSnackbar({ open: false, message: '', severity: 'success' });
 
   const isDataLoading = tariffsLoading || locationsLoading || typesLoading;
-  
+
   if (isDataLoading && tariffs.length === 0 && !formOpen) return <CircularProgress />;
-  if (locationsError) return <Typography color="error">Помилка при завантаженні локацій</Typography>;
-  if (typesError) return <Typography color="error">Помилка при завантаженні типів ресурсів</Typography>;
+  if (locationsError) return <Typography color="error">{UA.locations_load_error}</Typography>;
+  if (typesError) return <Typography color="error">{UA.error_load_unknown}</Typography>;
 
-  const locationsMap = locations?.reduce((acc, loc) => {
-    acc[loc.id] = loc.name;
-    return acc;
-  }, {}) || {};
+  const locationsMap =
+    locations?.reduce((acc, loc) => {
+      acc[loc.id] = loc.name;
+      return acc;
+    }, {}) || {};
 
-  const resourceTypesMap = resourceTypes?.reduce((acc, rt) => {
-    acc[rt.id] = rt.name;
-    return acc;
-  }, {}) || {};
+  const resourceTypesMap =
+    resourceTypes?.reduce((acc, rt) => {
+      acc[rt.id] = rt.name;
+      return acc;
+    }, {}) || {};
 
   return (
     <>
-      <Paper sx={{ mb: 3, borderRadius: 2 }} elevation={1}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            p: 2,
-            cursor: 'pointer',
-            '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' },
-          }}
-          onClick={handleToggle}
-        >
-          <Typography variant="h5">Тарифи ({tariffs.length})</Typography>
+      <Paper sx={theme.mixins.sectionPaper} elevation={DEFAULTS.paperElevation}>
+        <Box sx={theme.mixins.sectionHeader} onClick={handleToggle}>
+          <Typography variant="h5">
+            {UA.tariffs_title} ({tariffs.length})
+          </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
 
@@ -167,8 +174,8 @@ const TariffsSection = ({ initialExpanded = true }) => {
         onSubmit={handleFormSubmit}
         initialData={editingTariff || {}}
         error={error}
-        locations={locations.filter(l => l.isActive)}
-        resourceTypes={resourceTypes.filter(rt => rt.isActive)}
+        locations={locations.filter((l) => l.isActive)}
+        resourceTypes={resourceTypes.filter((rt) => rt.isActive)}
         isLoading={isActionLoading}
       />
 
@@ -182,7 +189,12 @@ const TariffsSection = ({ initialExpanded = true }) => {
         isLoading={isActionLoading}
       />
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={DEFAULTS.snackbarDuration}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>

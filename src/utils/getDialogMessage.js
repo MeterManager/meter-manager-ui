@@ -1,56 +1,63 @@
-import { pluralize } from './pluralize';
+import { pluralize } from './Pluralize';
+import { UA } from './uaDictionary';
 
 export const getDialogMessage = (action, dependencies, entity = 'location') => {
   if (entity === 'resourceType' && action === 'delete') {
-    return 'Ви впевнені, що хочете видалити цей тип ресурсу? Ця дія незворотна!';
+    return UA.confirm_delete_resource_type;
   }
   if (entity === 'delivery' && action === 'delete') {
-    return 'Ви впевнені, що хочете видалити цю поставку? Ця дія незворотна!';
+    return UA.confirm_delete_delivery;
   }
   if (entity === 'tariff' && action === 'delete') {
-    return 'Ви впевнені, що хочете видалити цей тариф? Ця дія незворотна!';
+    return UA.confirm_delete_tariff;
   }
   if (entity === 'meter' && action === 'delete') {
-      const meterTenantCount = dependencies?.active_meter_tenants || 0;
-      if (meterTenantCount > 0) {
-          const tenantText = `${meterTenantCount} ${pluralize(meterTenantCount, 'активне призначення орендарю', 'активні призначення орендарям', 'активних призначень орендарям')}`;
-          return `Ви впевнені, що хочете видалити цей лічильник? Це також видалить ${tenantText}. Ця дія незворотна!`;
-      } else {
-         return 'Ви впевнені, що хочете видалити цей лічильник? Ця дія незворотна!';
-      }
+    const meterTenantCount = dependencies?.active_meter_tenants || 0;
+    if (meterTenantCount > 0) {
+      const tenantText = `${meterTenantCount} ${pluralize(meterTenantCount, UA.confirm_active_meter_tenants, UA.confirm_active_meter_tenants_plural, UA.confirm_active_meter_tenants_genitive)}`;
+      return `${UA.confirm_delete_meter_with_tenants} ${tenantText}. ${UA.confirm_irreversible}`;
+    } else {
+      return UA.confirm_delete_meter;
+    }
   }
 
   const parts = [];
   const meterDependencyKey = entity === 'location' ? 'active_meters' : null;
   if (meterDependencyKey && dependencies?.[meterDependencyKey]) {
-     parts.push(`${dependencies[meterDependencyKey]} ${pluralize(dependencies[meterDependencyKey], 'активний лічильник', 'активні лічильники', 'активних лічильників')}`);
+    parts.push(
+      `${dependencies[meterDependencyKey]} ${pluralize(dependencies[meterDependencyKey], UA.confirm_active_meters, UA.confirm_active_meters_plural, UA.confirm_active_meters_genitive)}`
+    );
   }
 
   if (entity === 'location' && dependencies?.deliveries) {
-    parts.push(`${dependencies.deliveries} ${pluralize(dependencies.deliveries, 'поставку', 'поставки', 'поставок')}`);
+    parts.push(
+      `${dependencies.deliveries} ${pluralize(dependencies.deliveries, UA.confirm_deliveries, UA.confirm_deliveries_plural, UA.confirm_deliveries_genitive)}`
+    );
   }
   if (entity === 'location' && dependencies?.active_tenants) {
-    parts.push(`${dependencies.active_tenants} ${pluralize(dependencies.active_tenants, 'активного орендаря', 'активних орендарів', 'активних орендарів')}`);
+    parts.push(
+      `${dependencies.active_tenants} ${pluralize(dependencies.active_tenants, UA.confirm_active_tenants, UA.confirm_active_tenants_plural, UA.confirm_active_tenants_plural)}`
+    );
   }
 
   if (parts.length === 0 && entity === 'location') {
     if (action === 'delete') {
-      return 'Ви впевнені, що хочете видалити цю локацію? Ця дія незворотна!';
+      return UA.confirm_delete_location;
     } else {
-      return 'Ви впевнені, що хочете деактивувати цю локацію?';
+      return UA.confirm_deactivate_location;
     }
   } else if (parts.length > 0 && entity === 'location') {
-      const itemsText = parts.join(', ');
-      if (action === 'delete') {
-        return `Ви впевнені, що хочете видалити цю локацію? Це також видалить: ${itemsText}. Ця дія незворотна!`;
-      } else {
-        return `Ви впевнені, що хочете деактивувати цю локацію? Це також деактивує: ${itemsText}.`;
-      }
+    const itemsText = parts.join(', ');
+    if (action === 'delete') {
+      return `${UA.confirm_delete_location_with_deps}: ${itemsText}. ${UA.confirm_irreversible}`;
+    } else {
+      return `${UA.confirm_deactivate_location_with_deps}: ${itemsText}.`;
+    }
   }
 
   if (action === 'delete') {
-     return 'Ви впевнені, що хочете видалити цей елемент? Ця дія незворотна!';
+    return UA.confirm_delete_generic;
   } else {
-      return 'Ви впевнені, що хочете деактивувати цей елемент?';
+    return UA.confirm_deactivate_generic;
   }
 };

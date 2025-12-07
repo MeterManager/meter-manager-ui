@@ -18,6 +18,7 @@ import { useMeters } from '../../hooks/useMeters';
 import { useLocations } from '../../hooks/useLocations';
 import { useResourceTypes } from '../../hooks/useResourceTypes';
 import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
 
 const MetersSection = ({ initialExpanded = true }) => {
   const [expanded, setExpanded] = useState(initialExpanded);
@@ -42,9 +43,8 @@ const MetersSection = ({ initialExpanded = true }) => {
     getMeterDependencies,
   } = useMeters();
 
-  const handleServiceError = (err, defaultMessage = 'Помилка при виконанні дії') => {
-    console.error('Meter Service Action Failed:', err);
-    const userMessage = translateErrorMessage(err.message || defaultMessage);
+  const handleServiceError = (err, defaultMessage = null) => {
+    const userMessage = translateErrorMessage(err.message || defaultMessage || UA.error_action_default);
     setSnackbar({ open: true, message: userMessage, severity: 'error' });
     setError(userMessage);
   };
@@ -73,14 +73,14 @@ const MetersSection = ({ initialExpanded = true }) => {
     try {
       if (editingMeter?.id) {
         await editMeter(editingMeter.id, formData);
-        setSnackbar({ open: true, message: 'Лічильник успішно оновлено', severity: 'success' });
+        setSnackbar({ open: true, message: UA.meters_success_updated, severity: 'success' });
       } else {
         await addMeter(formData);
-        setSnackbar({ open: true, message: 'Лічильник успішно додано', severity: 'success' });
+        setSnackbar({ open: true, message: UA.meters_success_added, severity: 'success' });
       }
       handleFormClose();
     } catch (err) {
-      handleServiceError(err, 'Помилка збереження лічильника');
+      handleServiceError(err, UA.error_save_meter);
     }
   };
 
@@ -97,17 +97,17 @@ const MetersSection = ({ initialExpanded = true }) => {
         dependencies: hasDependencies ? deps : null,
       });
     } catch (err) {
-      handleServiceError(err, 'Помилка перевірки залежностей');
+      handleServiceError(err, UA.error_check_dependencies);
     }
   };
 
   const handleConfirmDelete = async () => {
     try {
       await removeMeter(confirmDialog.id);
-      setSnackbar({ open: true, message: 'Лічильник та повʼязані обʼєкти видалено', severity: 'success' });
+      setSnackbar({ open: true, message: UA.meters_success_deleted, severity: 'success' });
       handleCloseConfirmDialog();
     } catch (err) {
-      handleServiceError(err, 'Помилка видалення лічильника');
+      handleServiceError(err, UA.error_delete_meter);
     }
   };
 
@@ -120,11 +120,11 @@ const MetersSection = ({ initialExpanded = true }) => {
       await updateMeterStatus(id, isActive);
       setSnackbar({
         open: true,
-        message: `Лічильник успішно ${isActive ? 'активовано' : 'деактивовано'}`,
+        message: `${UA.meters_success_status} ${isActive ? UA.status_activated : UA.status_deactivated}`,
         severity: 'success',
       });
     } catch (err) {
-      handleServiceError(err, 'Помилка оновлення статусу');
+      handleServiceError(err, UA.error_update_status);
     }
   };
 
@@ -132,8 +132,12 @@ const MetersSection = ({ initialExpanded = true }) => {
   const dataLoading = locationsLoading || typesLoading;
 
   if (locationsError || resourceTypesError) {
-    const errorMsg = locationsError?.message || resourceTypesError?.message || 'Невідома помилка завантаження';
-    return <Typography color="error">Помилка при завантаженні: {errorMsg}</Typography>;
+    const errorMsg = locationsError?.message || resourceTypesError?.message || UA.error_load_unknown;
+    return (
+      <Typography color="error">
+        {UA.error_action_default}: {errorMsg}
+      </Typography>
+    );
   }
 
   if (dataLoading) return <CircularProgress />;
@@ -152,7 +156,9 @@ const MetersSection = ({ initialExpanded = true }) => {
           }}
           onClick={handleToggle}
         >
-          <Typography variant="h5">Лічильники ({meters.length})</Typography>
+          <Typography variant="h5">
+            {UA.meters_title} ({meters.length})
+          </Typography>
           <IconButton size="small">{expanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
         <Divider />

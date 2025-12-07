@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -26,6 +26,8 @@ import useMediaQuery from '../../hooks/useMediaQuery';
 import SearchField from '../ui/SearchField';
 import { useTheme } from '@mui/material/styles';
 import { translateErrorMessage } from '../../utils/translateError';
+import { UA } from '../../utils/uaDictionary';
+import { BREAKPOINTS, SIZES, TABLE_COLUMNS } from '../../constants';
 
 const MobileMeterTenantCard = ({ meterTenant, onEdit, onDelete, isLoading, getTenantName, getMeterInfo }) => {
   const theme = useTheme();
@@ -33,34 +35,40 @@ const MobileMeterTenantCard = ({ meterTenant, onEdit, onDelete, isLoading, getTe
   const tenantName = getTenantName(meterTenant.tenant_id);
   const meterInfo = getMeterInfo(meterTenant.meter_id);
 
-  const formatDate = (dateString) => (dateString ? new Date(dateString).toLocaleDateString('uk-UA') : '–');
+  const formatDate = (dateString) =>
+    dateString ? new Date(dateString).toLocaleDateString('uk-UA') : UA.common_empty_dash;
 
   return (
     <Card sx={{ mb: 2, border: `1px solid ${theme.palette.divider}` }}>
       <CardContent sx={{ pb: 1, '&:last-child': { pb: 2 } }}>
         <Box sx={{ mb: 1 }}>
           <Typography variant="body2" sx={{ fontWeight: 500 }}>
-            Орендар: <strong>{tenantName}</strong>
+            {UA.meterTenants_tenant}: <strong>{tenantName}</strong>
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Лічильник: {meterInfo.serial} ({meterInfo.resourceName})
+            {UA.meterTenants_meter}: {meterInfo.serial} ({meterInfo.resourceName})
           </Typography>
         </Box>
         <Typography variant="caption" display="block" color="text.secondary">
-          Період: {formatDate(meterTenant.assigned_from)} - {formatDate(meterTenant.assigned_to)}
+          {UA.meterReadings_reading_date}: {formatDate(meterTenant.assigned_from)} -{' '}
+          {formatDate(meterTenant.assigned_to)}
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-          <Tooltip title="Редагувати">
+          <Tooltip title={UA.common_edit}>
             <span>
               <IconButton size="small" onClick={() => onEdit(meterTenant)} color="primary" disabled={isLoading}>
                 <Edit fontSize="small" />
               </IconButton>
             </span>
           </Tooltip>
-          <Tooltip title="Видалити">
+          <Tooltip title={UA.common_delete}>
             <span>
               <IconButton size="small" onClick={() => onDelete(meterTenant.id)} color="error" disabled={isLoading}>
-                {isLoading ? <CircularProgress size={20} color="inherit" /> : <Delete fontSize="small" />}
+                {isLoading ? (
+                  <CircularProgress size={SIZES.iconButton.small} color="inherit" />
+                ) : (
+                  <Delete fontSize="small" />
+                )}
               </IconButton>
             </span>
           </Tooltip>
@@ -89,7 +97,7 @@ const MeterTenantsTable = ({
   setLocalError,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:800px)');
+  const isMobile = useMediaQuery(BREAKPOINTS.mobileWide);
   const [loadingItemId, setLoadingItemId] = useState(null);
 
   const tenantMap = useMemo(
@@ -100,6 +108,7 @@ const MeterTenantsTable = ({
       }, {}),
     [tenants]
   );
+
   const meterMap = useMemo(
     () =>
       meters.reduce((acc, m) => {
@@ -107,13 +116,14 @@ const MeterTenantsTable = ({
         acc[m.id] = {
           serial: m.serial_number || `ID:${m.id}`,
           locationId: m.location_id,
-          resourceName: resourceType?.name || 'Невідомий ресурс',
+          resourceName: resourceType?.name || UA.status_unknown_resource,
           unit: resourceType?.unit || '?',
         };
         return acc;
       }, {}),
     [meters, resourceTypes]
   );
+
   const locationMap = useMemo(
     () =>
       locations.reduce((acc, l) => {
@@ -123,9 +133,12 @@ const MeterTenantsTable = ({
     [locations]
   );
 
-  const getTenantName = (tenantId) => tenantMap[tenantId] || `ID: ${tenantId}`;
-  const getMeterInfo = (meterId) =>
-    meterMap[meterId] || { serial: `ID: ${meterId}`, locationId: null, resourceName: '?', unit: '?' };
+  const getTenantName = useCallback((tenantId) => tenantMap[tenantId] || `ID: ${tenantId}`, [tenantMap]);
+
+  const getMeterInfo = useCallback(
+    (meterId) => meterMap[meterId] || { serial: `ID: ${meterId}`, locationId: null, resourceName: '?', unit: '?' },
+    [meterMap]
+  );
 
   const filteredMeterTenants = useMemo(
     () =>
@@ -149,10 +162,10 @@ const MeterTenantsTable = ({
   );
 
   const formatDate = (dateString) => {
-    if (!dateString) return '–';
+    if (!dateString) return UA.common_empty_dash;
     try {
       return new Date(dateString).toLocaleDateString('uk-UA');
-    } catch (e) {
+    } catch {
       return 'Invalid Date';
     }
   };
@@ -162,7 +175,7 @@ const MeterTenantsTable = ({
     try {
       await onDelete(id);
     } catch (e) {
-      const userMessage = translateErrorMessage(e.message || 'Помилка видалення призначення');
+      const userMessage = translateErrorMessage(e.message || UA.error_delete_meter_tenant);
       setLocalError(userMessage);
     } finally {
       setLoadingItemId(null);
@@ -193,31 +206,35 @@ const MeterTenantsTable = ({
             onClick={onAdd}
             fullWidth={isMobile}
             sx={{
-              minWidth: isMobile ? 'auto' : '160px',
-              height: '40px',
+              minWidth: isMobile ? 'auto' : SIZES.button.minWidth,
+              height: SIZES.button.height,
               whiteSpace: 'nowrap',
               flexShrink: 0,
               order: isMobile ? 1 : 0,
             }}
             disabled={isLoading}
           >
-            Додати призначення
+            {UA.meterTenants_add}
           </Button>
           <SearchField
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             fullWidth={isMobile}
-            placeholder="Пошук..."
-            sx={{ width: isMobile ? '100%' : '350px', maxWidth: '100%', order: isMobile ? 0 : 1 }}
+            placeholder={UA.common_search}
+            sx={{ width: isMobile ? '100%' : SIZES.searchField.desktop, maxWidth: '100%', order: isMobile ? 0 : 1 }}
             disabled={isLoading}
           />
         </Box>
         <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 2 }}>
           <FormControl fullWidth size="small" disabled={isLoading}>
-            <InputLabel>Локація</InputLabel>
-            <Select value={locationFilter} label="Локація" onChange={(e) => setLocationFilter(e.target.value)}>
+            <InputLabel>{UA.filter_location}</InputLabel>
+            <Select
+              value={locationFilter}
+              label={UA.filter_location}
+              onChange={(e) => setLocationFilter(e.target.value)}
+            >
               <MenuItem value="">
-                <em>Всі локації</em>
+                <em>{UA.filter_all_locations}</em>
               </MenuItem>
               {locations
                 .filter((l) => l.isActive)
@@ -229,10 +246,14 @@ const MeterTenantsTable = ({
             </Select>
           </FormControl>
           <FormControl fullWidth size="small" disabled={isLoading}>
-            <InputLabel>Орендар</InputLabel>
-            <Select value={tenantFilter} label="Орендар" onChange={(e) => setTenantFilter(e.target.value)}>
+            <InputLabel>{UA.meterTenants_tenant}</InputLabel>
+            <Select
+              value={tenantFilter}
+              label={UA.meterTenants_tenant}
+              onChange={(e) => setTenantFilter(e.target.value)}
+            >
               <MenuItem value="">
-                <em>Всі орендарі</em>
+                <em>{UA.locations_all_tenants}</em>
               </MenuItem>
               {tenants
                 .filter((t) => t.isActive)
@@ -248,7 +269,7 @@ const MeterTenantsTable = ({
 
       {(search || locationFilter || tenantFilter) && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Знайдено: {filteredMeterTenants.length} з {meterTenants.length}
+          {UA.common_found}: {filteredMeterTenants.length} {UA.common_of} {meterTenants.length}
         </Typography>
       )}
 
@@ -270,7 +291,7 @@ const MeterTenantsTable = ({
             <Card>
               <CardContent>
                 <Typography variant="body1" align="center" color="text.secondary">
-                  За вашими фільтрами нічого не знайдено
+                  {UA.common_no_results}
                 </Typography>
               </CardContent>
             </Card>
@@ -281,12 +302,18 @@ const MeterTenantsTable = ({
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                <TableCell sx={{ width: '25%', fontWeight: 600 }}>Орендар</TableCell>
-                <TableCell sx={{ width: '25%', fontWeight: 600 }}>Лічильник</TableCell>
-                <TableCell sx={{ width: '15%', fontWeight: 600 }}>Локація</TableCell>
-                <TableCell sx={{ width: '15%', fontWeight: 600 }}>Дата початку</TableCell>
-                <TableCell sx={{ width: '15%', fontWeight: 600 }}>Дата завершення</TableCell>
-                <TableCell sx={{ width: '5%', fontWeight: 600, textAlign: 'center' }}>Дії</TableCell>
+                <TableCell sx={{ width: TABLE_COLUMNS.meters.resourceType, fontWeight: 600 }}>
+                  {UA.meterTenants_tenant}
+                </TableCell>
+                <TableCell sx={{ width: TABLE_COLUMNS.meters.resourceType, fontWeight: 600 }}>
+                  {UA.meterTenants_meter}
+                </TableCell>
+                <TableCell sx={{ width: '15%', fontWeight: 600 }}>{UA.filter_location}</TableCell>
+                <TableCell sx={{ width: '15%', fontWeight: 600 }}>{UA.meterTenants_start_date}</TableCell>
+                <TableCell sx={{ width: '15%', fontWeight: 600 }}>{UA.meterTenants_end_date}</TableCell>
+                <TableCell sx={{ width: TABLE_COLUMNS.meters.actions, fontWeight: 600, textAlign: 'center' }}>
+                  {UA.meters_actions}
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -327,14 +354,14 @@ const MeterTenantsTable = ({
                       </TableCell>
                       <TableCell sx={{ textAlign: 'center' }}>
                         <Stack direction="row" spacing={0} justifyContent="center">
-                          <Tooltip title="Редагувати">
+                          <Tooltip title={UA.common_edit}>
                             <span>
                               <IconButton size="small" onClick={() => onEdit(mt)} color="primary" disabled={isDisabled}>
                                 <Edit fontSize="small" />
                               </IconButton>
                             </span>
                           </Tooltip>
-                          <Tooltip title="Видалити">
+                          <Tooltip title={UA.common_delete}>
                             <span>
                               <IconButton
                                 size="small"
@@ -343,7 +370,7 @@ const MeterTenantsTable = ({
                                 disabled={isDisabled}
                               >
                                 {isLoadingRow ? (
-                                  <CircularProgress size={20} color="inherit" />
+                                  <CircularProgress size={SIZES.iconButton.small} color="inherit" />
                                 ) : (
                                   <Delete fontSize="small" />
                                 )}
@@ -359,7 +386,7 @@ const MeterTenantsTable = ({
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                      За вашими фільтрами нічого не знайдено
+                      {UA.common_no_results}
                     </Typography>
                   </TableCell>
                 </TableRow>

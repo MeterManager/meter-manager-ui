@@ -24,15 +24,11 @@ export const useResourceTypes = () => {
     data: resourceTypes = [],
     isLoading: loading,
     mutate: mutateResourceTypes,
-  } = useSWR(
-    swrKey,
-    async () => withToken(fetcher),
-    {
-      onError: handleError,
-      revalidateOnFocus: false,
-      dedupingInterval: 5000,
-    }
-  );
+  } = useSWR(swrKey, async () => withToken(fetcher), {
+    onError: handleError,
+    revalidateOnFocus: false,
+    dedupingInterval: 5000,
+  });
 
   const activeResourceTypes = useMemo(() => resourceTypes.filter((t) => t.isActive), [resourceTypes]);
 
@@ -76,7 +72,9 @@ export const useResourceTypes = () => {
         setIsActionLoading(true);
         const transformedData = { name: data.name, unit: data.unit, is_active: data.isActive };
         mutateResourceTypes(
-          resourceTypes.map((t) => (t.id === id ? { ...t, ...transformedData, isActive: transformedData.is_active } : t)),
+          resourceTypes.map((t) =>
+            t.id === id ? { ...t, ...transformedData, isActive: transformedData.is_active } : t
+          ),
           false
         );
         const response = await withToken(resourceTypeApi.updateResourceType, id, transformedData);
@@ -101,7 +99,10 @@ export const useResourceTypes = () => {
       try {
         setError(null);
         setIsActionLoading(true);
-        mutateResourceTypes(resourceTypes.filter((t) => t.id !== id), false);
+        mutateResourceTypes(
+          resourceTypes.filter((t) => t.id !== id),
+          false
+        );
         await withToken(resourceTypeApi.deleteResourceType, id);
         mutateResourceTypes();
         mutate('meters');
