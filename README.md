@@ -1,113 +1,53 @@
-## Вимоги до середовища виконання
+## Project Setup
 
-Для коректного запуску та роботи застосунку **Meter Manager UI** необхідне наступне програмне забезпечення:
-
-* **Node.js** версії **18.x** або новішої;
-* **npm**;
-* Будь-який сучасний браузер (**Chrome**, **Firefox**, **Edge**, **Safari**).
-
-
-## Інструкція з запуску проєкту
-
-### Клонування репозиторію
+### Clone the repository
 
 ```bash
 git clone https://github.com/MeterManager/meter-manager-ui.git
-```
-
-### Перехід до теки проєкту
-
-```bash
 cd meter-manager-ui
 ```
 
-### Встановлення залежностей
-
-Після клонування репозиторію необхідно встановити всі залежності проєкту:
+### Install dependencies
 
 ```bash
 npm install
 ```
 
+### Environment variables
 
-## Налаштування змінних середовища
-
-Для коректної роботи застосунку необхідно створити файл **.env** у кореневій директорії проєкту.
-
-Приклад необхідних змінних середовища наведено у файлі **.env.example**.
-
-Оскільки це клієнтська частина застосунку, всі змінні середовища, що використовуються у коді, мають префікс **VITE_**.
-
-### Основні змінні середовища
+Create a `.env` file in the project root. Refer to `.env.example` for the structure. All variables must use the `VITE_` prefix.
 
 ```env
-# Базова URL-адреса для взаємодії з Meter Manager API
 VITE_API_BASE_URL=http://localhost:5000/api
-
-# Налаштування Auth0 для автентифікації
 VITE_AUTH0_DOMAIN=your_auth0_domain
 VITE_AUTH0_CLIENT_ID=your_auth0_client_id
 VITE_AUTH0_AUDIENCE=your_api_audience
-
-# Порт для розробки (за замовчуванням Vite використовує 5173)
 VITE_PORT=5173
 ```
 
-> ⚠️ У реальному середовищі значення змінних середовища **не зберігаються у репозиторії** та передаються через безпечні механізми конфігурації.
+> ⚠️ Do not store sensitive values in the repository. Use secure configuration management in production.
 
+## Running the Application
 
-## Запуск застосунку
-
-### Режим розробки (з гарячою заміною модулів — HMR)
+### Development (with HMR)
 
 ```bash
 npm run dev
 ```
 
-Після успішного запуску застосунок буде доступний за адресою:
+Access at: `http://localhost:5173`
 
-```
-http://localhost:5173
-```
-
-## Збірка проєкту для продакшну
+### Production build
 
 ```bash
 npm run build
-```
-
-Результати збірки (статичні файли) будуть розміщені у директорії:
-
-```
-dist/
-```
-
-### Локальний перегляд зібраного проєкту
-
-Після виконання `npm run build`:
-
-```bash
 npm run preview
 ```
 
-## npm-скрипти проєкту
+Static files are in the `dist/` directory.
 
-У проєкті передбачено допоміжні npm-скрипти для розробки та контролю якості коду:
+## NPM Scripts
 
-* **Локальний перегляд продакшн-бандлу**:
-
-  ```bash
-  npm run preview
-  ```
-
-* **Перевірка коду за правилами ESLint**:
-
-  ```bash
-  npm run lint
-  ```
-
-* **Автоматичне форматування коду згідно з конфігурацією Prettier**:
-
-  ```bash
-  npm run format
-  ```
+* Preview production build: `npm run preview`
+* Lint code: `npm run lint`
+* Format code: `npm run format`
