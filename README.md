@@ -1,12 +1,113 @@
-# React + Vite
+## Вимоги до середовища виконання
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Для коректного запуску та роботи застосунку **Meter Manager UI** необхідне наступне програмне забезпечення:
 
-Currently, two official plugins are available:
+* **Node.js** версії **18.x** або новішої;
+* **npm**;
+* Будь-який сучасний браузер (**Chrome**, **Firefox**, **Edge**, **Safari**).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Expanding the ESLint configuration
+## Інструкція з запуску проєкту
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Клонування репозиторію
+
+```bash
+git clone https://github.com/MeterManager/meter-manager-ui.git
+```
+
+### Перехід до теки проєкту
+
+```bash
+cd meter-manager-ui
+```
+
+### Встановлення залежностей
+
+Після клонування репозиторію необхідно встановити всі залежності проєкту:
+
+```bash
+npm install
+```
+
+
+## Налаштування змінних середовища
+
+Для коректної роботи застосунку необхідно створити файл **.env** у кореневій директорії проєкту.
+
+Приклад необхідних змінних середовища наведено у файлі **.env.example**.
+
+Оскільки це клієнтська частина застосунку, всі змінні середовища, що використовуються у коді, мають префікс **VITE_**.
+
+### Основні змінні середовища
+
+```env
+# Базова URL-адреса для взаємодії з Meter Manager API
+VITE_API_BASE_URL=http://localhost:5000/api
+
+# Налаштування Auth0 для автентифікації
+VITE_AUTH0_DOMAIN=your_auth0_domain
+VITE_AUTH0_CLIENT_ID=your_auth0_client_id
+VITE_AUTH0_AUDIENCE=your_api_audience
+
+# Порт для розробки (за замовчуванням Vite використовує 5173)
+VITE_PORT=5173
+```
+
+> ⚠️ У реальному середовищі значення змінних середовища **не зберігаються у репозиторії** та передаються через безпечні механізми конфігурації.
+
+
+## Запуск застосунку
+
+### Режим розробки (з гарячою заміною модулів — HMR)
+
+```bash
+npm run dev
+```
+
+Після успішного запуску застосунок буде доступний за адресою:
+
+```
+http://localhost:5173
+```
+
+## Збірка проєкту для продакшну
+
+```bash
+npm run build
+```
+
+Результати збірки (статичні файли) будуть розміщені у директорії:
+
+```
+dist/
+```
+
+### Локальний перегляд зібраного проєкту
+
+Після виконання `npm run build`:
+
+```bash
+npm run preview
+```
+
+## npm-скрипти проєкту
+
+У проєкті передбачено допоміжні npm-скрипти для розробки та контролю якості коду:
+
+* **Локальний перегляд продакшн-бандлу**:
+
+  ```bash
+  npm run preview
+  ```
+
+* **Перевірка коду за правилами ESLint**:
+
+  ```bash
+  npm run lint
+  ```
+
+* **Автоматичне форматування коду згідно з конфігурацією Prettier**:
+
+  ```bash
+  npm run format
+  ```
