@@ -38,7 +38,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
     calculation_method: '',
     executor_name: '',
     tenant_representative: '',
-    calculation_coefficient: 1,
+    calculation_coefficient: '1',
     distributions: {
       CA: { current_reading: '', previous_reading: '', area_percentage: 100 },
       CP: { current_reading: '', previous_reading: '', area_percentage: 100 },
@@ -131,7 +131,8 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
         calculation_method: initialData.calculation_method || '',
         executor_name: initialData.executor_name || '',
         tenant_representative: initialData.tenant_representative || '',
-        calculation_coefficient: initialData.calculation_coefficient || 1,
+        calculation_coefficient:
+          initialData.calculation_coefficient !== undefined ? String(initialData.calculation_coefficient) : '1',
         distributions: loadedDistributions,
       });
 
@@ -164,7 +165,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
       value = '';
     }
     if (name === 'calculation_coefficient') {
-      value = Number(value);
+      return;
     }
     setFormData((prev) => ({
       ...prev,
@@ -228,6 +229,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
           });
         }
       });
+      const coefficient = formData.calculation_coefficient === '' ? 1 : Number(formData.calculation_coefficient);
 
       const payload = {
         meter_tenant_id: Number(formData.meter_tenant_id),
@@ -236,7 +238,7 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
         calculation_method: formData.calculation_method,
         area_based_consumption:
           formData.area_based_consumption !== '' ? Number(formData.area_based_consumption) : undefined,
-        calculation_coefficient: formData.calculation_coefficient || 1,
+        calculation_coefficient: coefficient,
         executor_name: formData.executor_name || null,
         tenant_representative: formData.tenant_representative || null,
         created_by: user?.id,
@@ -388,9 +390,18 @@ const MeterReadingForm = ({ onSuccess, initialData, onCancel }) => {
             type="number"
             name="calculation_coefficient"
             value={formData.calculation_coefficient}
-            onChange={handleChange}
-            inputProps={{ step: '0.01', min: '0' }}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '' || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
+                const formattedVal = val.replace(',', '.');
+                setFormData((prev) => ({ ...prev, calculation_coefficient: formattedVal }));
+              }
+            }}
+            inputProps={{
+              inputMode: 'decimal',
+            }}
             required
+            fullWidth
           />
 
           {selectedResource === 'Електроенергія' ? (
