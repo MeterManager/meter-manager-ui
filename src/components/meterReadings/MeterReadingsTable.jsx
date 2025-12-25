@@ -95,7 +95,7 @@ const MeterReadingsTable = ({ readings = [], onDelete, onEdit, orderBy, order, h
                 {UA.acts_difference}: {dist.difference} | {UA.acts_consumption_electricity}: {dist.consumed_energy}
               </Typography>
               <Typography variant="body2">
-                {UA.acts_cost}: {dist.unit_price}
+                {UA.acts_cost}: {dist.unit_price ?? r.unit_price ?? '0.00'}
               </Typography>
             </Box>
           ))}
