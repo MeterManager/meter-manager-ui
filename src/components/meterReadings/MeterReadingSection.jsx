@@ -32,7 +32,7 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
   const [readingToEdit, setReadingToEdit] = useState(null);
 
   const [search, setSearch] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState(null);
   const [orderBy, setOrderBy] = useState('reading_date');
   const [order, setOrder] = useState('desc');
 
@@ -68,20 +68,46 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(field);
   };
+  const includesSearch = (value, query) =>
+    String(value || '')
+      .toLowerCase()
+      .includes(query);
+
+  const normalizeDate = (value) => {
+    if (!value) return null;
+
+    if (value.$d instanceof Date) {
+      const d = value.$d;
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    if (typeof value === 'string') {
+      return value.slice(0, 10);
+    }
+
+    if (value instanceof Date) {
+      return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+    }
+    return null;
+  };
 
   const sortedFilteredReadings = useMemo(() => {
+    const query = search.trim().toLowerCase();
     return meterReadings
       .filter((r) => {
-        const tenantName = r.MeterTenant?.Tenant?.name || '';
-        const meterSerial = r.MeterTenant?.Meter?.serial_number || '';
-        const query = search.toLowerCase();
-
+        if (!query && !dateFilter) return true;
+        const meter = r.MeterTenant?.Meter;
+        const location = meter?.Location;
         const matchesSearch =
-          tenantName.toLowerCase().includes(query) ||
-          meterSerial.toLowerCase().includes(query) ||
-          r.reading_date.includes(query);
-
-        const matchesDate = !dateFilter || r.reading_date.startsWith(dateFilter);
+          !query ||
+          [
+            meter?.serial_number,
+            location?.name,
+            location?.address,
+            meter?.EnergyResourceType?.name,
+            r.executor_name,
+          ].some((field) => includesSearch(field, query));
+        const matchesDate = !dateFilter || normalizeDate(r.reading_date) === normalizeDate(dateFilter);
 
         return matchesSearch && matchesDate;
       })
@@ -156,7 +182,7 @@ const MeterReadingsSection = ({ initialExpanded = true }) => {
                 />
                 <CustomDatePicker
                   value={dateFilter || null}
-                  onChange={(newValue) => setDateFilter(newValue || '')}
+                  onChange={(newValue) => setDateFilter(newValue)}
                   label={UA.common_search}
                   sx={{
                     width: { xs: '100%', sm: 200 },
